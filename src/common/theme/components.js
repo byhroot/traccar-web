@@ -14,7 +14,7 @@ export default {
   MuiButton: {
     styleOverrides: {
       sizeMedium: {
-        height: '40px',
+        height: '45px',
       },
     },
   },

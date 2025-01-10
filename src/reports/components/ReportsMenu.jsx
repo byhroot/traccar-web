@@ -96,6 +96,14 @@ const ReportsMenu = () => {
       <Divider />
       <List>
         {admin && (
+            <MenuItem
+              title={t('userAdmin')}
+              link="/reports/userlogs"
+              icon={<NotesIcon />}
+              selected={location.pathname === '/reports/userlogs'}
+            />
+          )}
+        {admin && (
           <MenuItem
             title={t('sharedLogs')}
             link="/reports/logs"

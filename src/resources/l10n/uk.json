@@ -191,7 +191,7 @@
     "loginReset": "Reset Password",
     "loginRegister": "Реєстрація",
     "loginLogin": "Ввійти",
-    "loginOpenId": "Login with OpenID",
+    "loginOpenId": "Login with Google",
     "loginFailed": "Неправильне адреса електронної пошти або пароль",
     "loginCreated": "Новий користувач був зареєстрований",
     "loginResetSuccess": "Check your email",
@@ -535,7 +535,7 @@
     "notificatorFirebase": "Firebase",
     "notificatorTraccar": "Traccar",
     "notificatorTelegram": "Telegram",
-    "notificatorPushover": "Pushover",
+    "notificatorPushover": "Phone Call",
     "reportReplay": "Replay",
     "reportCombined": "Combined",
     "reportRoute": "Маршрут",
@@ -640,5 +640,6 @@
     "handleClickEvents": "Ви можете переглянути місця подій, клацнувши рядок. Список відображає останні 10 сповіщень для всіх ваших транспортних засобів.",
     "handleClickSpeed": "Ваші транспортні засоби з порушеннями швидкості за останні 24 години",
     "handleClickAlertCard": "Для вас відображаються спеціальні сповіщення та сповіщення.",
-    "handleClickTable": "Ви можете легко здійснювати свої платежі зі сторінки 'КОМІСІЇ' > 'Пакети поновлення' нашого веб-сайту Takipon.com. Будьте в безпеці!"
+    "handleClickTable": "Ви можете легко здійснювати свої платежі зі сторінки 'КОМІСІЇ' > 'Пакети поновлення' нашого веб-сайту Takipon.com. Будьте в безпеці!",
+    "notificatorPhoneInfo": "Якщо ви відповісте на вхідний дзвінок, з вашого балансу SMS буде вираховано 4 SMS. Якщо ви не відповісте на вхідний дзвінок або не надішлете його Melgule, буде вираховано 1 SMS."
 }

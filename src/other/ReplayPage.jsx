@@ -11,6 +11,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import FastForwardIcon from '@mui/icons-material/FastForward';
+import InfoIcon from '@mui/icons-material/Info';
 import FastRewindIcon from '@mui/icons-material/FastRewind';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -103,6 +104,14 @@ const ReplayPage = () => {
     return null;
   });
 
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
+  // Tooltip'in tıklama ile açılıp kapanmasını sağlamak için
+  const handleTooltipClick = () => {
+    setTooltipOpen(prevOpen => !prevOpen);  // Mevcut durumu tersine çevir
+  };
+
+
   useEffect(() => {
     if (playing && positions.length > 0) {
       timerRef.current = setInterval(() => {
@@ -169,11 +178,21 @@ const ReplayPage = () => {
       <MapCamera positions={positions} />
       <div className={classes.sidebar}>
         <Paper elevation={3} square>
+
           <Toolbar>
             <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
               <ArrowBackIcon />
             </IconButton>
-            <Typography variant="h6" className={classes.title}>{t('reportReplay')}</Typography>
+            <Typography variant="h6" className={classes.title}>{t('reportReplay')} - {deviceName}</Typography>
+            <Tooltip
+                title="Renkler Mevcut Aralıktaki En Yüksek Hızdan(Kırmızı), En Düşük Hıza doğru (Yeşil) Renklendirilmektedir. Yeşil Renk Duraklama veya Yavaşlama Noktalarını Temsil Eder."
+                open={tooltipOpen}
+                onClick={handleTooltipClick}  // Tooltip'e tıklanabilirlik ekledik
+              >
+                <IconButton>
+                  <InfoIcon />
+                </IconButton>
+              </Tooltip>
             {!expanded && (
               <>
                 <IconButton onClick={handleDownload}>
@@ -189,7 +208,6 @@ const ReplayPage = () => {
         <Paper className={classes.content} square>
           {!expanded ? (
             <>
-              <Typography variant="subtitle1" align="center">{deviceName}</Typography>
               <Slider
                 className={classes.slider}
                 max={positions.length - 1}
@@ -211,8 +229,6 @@ const ReplayPage = () => {
                 </IconButton>
                 {formatTime(positions[index].fixTime, 'seconds')}
               </div>
-              <Tooltip title="Renkler Mevcut Aralıktaki En Yüksek Hızdan(Kırmızı), En Düşük Hıza doğru (Yeşil) Renklendirilmektedir. Yeşil Renk Duraklama veya Yavaşlama Noktalarını Temsil Eder." open ></Tooltip>
-
             </>
           ) : (
             <ReportFilter handleSubmit={handleSubmit} fullScreen showOnly />

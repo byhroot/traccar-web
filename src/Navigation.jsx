@@ -60,6 +60,7 @@ import SharePage from './settings/SharePage';
 import AnnouncementPage from './settings/AnnouncementPage';
 import EmulatorPage from './other/EmulatorPage';
 import Loader from './common/components/Loader';
+import UserlogsPage from './reports/UserlogsPage';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -170,6 +171,7 @@ const Navigation = () => {
           <Route path="trip" element={<TripReportPage />} />
           <Route path="scheduled" element={<ScheduledPage />} />
           <Route path="statistics" element={<StatisticsPage />} />
+          <Route path="userlogs" element={<UserlogsPage />} />
           <Route path="logs" element={<LogsPage />} />
         </Route>
       </Route>

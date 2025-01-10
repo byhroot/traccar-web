@@ -17,13 +17,16 @@ import {
   InputAdornment,
   IconButton,
   OutlinedInput,
+  Tooltip,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';// İmport satırını ekledim
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';// İmport 
+import CopyAllIcon from '@mui/icons-material/CopyAll';
 import makeStyles from '@mui/styles/makeStyles';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import CachedIcon from '@mui/icons-material/Cached';
+import InfoIcon from '@mui/icons-material/Info';
 import CloseIcon from '@mui/icons-material/Close';
 import { useDispatch, useSelector } from 'react-redux';
 import EditItemView from './components/EditItemView';
@@ -91,6 +94,14 @@ const UserPage = () => {
       setDeleteFailed(true);
     }
   });
+
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
+  // Tooltip'in tıklama ile açılıp kapanmasını sağlamak için
+  const handleTooltipClick = () => {
+    setTooltipOpen(prevOpen => !prevOpen);  // Mevcut durumu tersine çevir
+  };
+  
   
   const [showPassword, setShowPassword] = useState(false);
 
@@ -187,14 +198,28 @@ const UserPage = () => {
                     label={t('loginTotpKey')}
                     value={item.totpKey || ''}
                     endAdornment={(
-                      <InputAdornment position="end">
-                        <IconButton size="small" edge="end" onClick={handleGenerateTotp}>
-                          <CachedIcon fontSize="small" />
+                    <InputAdornment position="end">
+                      <IconButton size="small" edge="end" onClick={handleGenerateTotp}>
+                        <CachedIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton size="small" edge="end" onClick={() => setItem({ ...item, totpKey: null })}>
+                        <CloseIcon color="error" />
+                      </IconButton>
+                      <IconButton size="small" edge="end" onClick={() => navigator.clipboard.writeText(item?.totpKey || '')}>
+                        <CopyAllIcon color="success"  />
+                      </IconButton>
+                      <Tooltip
+                        title="DİKKAT:İleri Seviye Kullanıcılar İçindir! 2 aşamalı doğrulamayı aktifleştirmek için Yenile Butonundan Anahtar oluşturup Kaydetmeniz yeterlidir. Bu anahtarı KOPYALAYIN ve bir Auth uygulamasına (örneğin, Google Authenticator) Kurulum Anahtarı ile seçeneğinden Anahtarı Yapıştırarak, TakipOn hesabınız için 2 aşamalı doğrulama kodlarını alabilirsiniz.
+                        Bu anahtarı yenilemeniz durumunda, Auth uygulamanıza daha önceden eklediğiniz anahtarla elde ettiğiniz 2 aşamalı doğrulama kodları çalışmayacaktır. 2 Aşamalı Doğrulamayı İptal etmek için X Butonundan Anahtarı kaldırıp Ayarlarınızı Kaydetmeniz Yeterlidir."
+                        open={tooltipOpen}
+                        onClick={handleTooltipClick}  // Tooltip'e tıklanabilirlik ekledik
+                      >
+                        <IconButton>
+                          <InfoIcon fontSize="small" color="primary"/>
                         </IconButton>
-                        <IconButton size="small" edge="end" onClick={() => setItem({ ...item, totpKey: null })}>
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
+                      </Tooltip>
+                    </InputAdornment>
+
                     )}
                   />
                 </FormControl>

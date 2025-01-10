@@ -121,7 +121,7 @@ const Dashboard = () => {
           setDeviceIds(deviceIds);
           setDeviceDetails(data);
   
-          // Event data fetch
+          // Event data fetch son 24 saat
           const currentTime = new Date();
           const fourHoursAgo = new Date(currentTime - 24 * 60 * 60 * 1000);
           const fromTime = fourHoursAgo.toISOString();
@@ -153,7 +153,8 @@ const Dashboard = () => {
           if (eventResponse.ok) {
             const mergedEventData = await eventResponse.json();
             mergedEventData.sort((a, b) => new Date(b.eventTime) - new Date(a.eventTime));
-            const lastTenEvents = mergedEventData.slice(0, 10);
+            //son 20 olay olarak değiştirdik
+            const lastTenEvents = mergedEventData.slice(0, 20);
             setEvents(lastTenEvents);
   
             const eventsSpeed = mergedEventData.filter(event => event.type === 'deviceOverspeed');

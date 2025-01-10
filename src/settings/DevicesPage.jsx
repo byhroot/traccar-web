@@ -68,6 +68,9 @@ const DevicesPage = () => {
       <Table className={classes.table}>
         <TableHead>
           <TableRow>
+            {admin && (
+            <TableCell>ID</TableCell>
+            )}
             <TableCell>{t('sharedName')}</TableCell>
             {admin && (
 
@@ -97,9 +100,11 @@ const DevicesPage = () => {
         <TableBody>
           {!loading ? items.filter(filterByKeyword(searchKeyword)).map((item) => (
             <TableRow key={item.id}>
+              {admin && (
+              <TableCell>{item.id}</TableCell>
+              )}
               <TableCell>{item.name}</TableCell>
               {admin && (
-
               <TableCell>{item.uniqueId}</TableCell>
               )}
 

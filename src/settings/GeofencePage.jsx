@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import {
-  Accordion, AccordionSummary, AccordionDetails, Typography, TextField,
+  Accordion, AccordionSummary, AccordionDetails, Typography, TextField,Tooltip,Box,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditItemView from './components/EditItemView';
@@ -29,6 +29,7 @@ const GeofencePage = () => {
   const validate = () => item && item.name;
 
   return (
+
     <EditItemView
       endpoint="geofences"
       item={item}
@@ -37,9 +38,10 @@ const GeofencePage = () => {
       onItemSaved={onItemSaved}
       menu={<SettingsMenu />}
       breadcrumbs={['settingsTitle', 'sharedGeofence']}
-    >
+    >          
       {item && (
         <>
+
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">
@@ -52,6 +54,11 @@ const GeofencePage = () => {
                 onChange={(event) => setItem({ ...item, name: event.target.value })}
                 label={t('sharedName')}
               />
+             <Tooltip
+              title="Bölgeyi Kaydettikten sonra Aracınıza veya Araç Grubuna ilgili bölgeyi eklemeyi Unutmayın!"
+              open
+            >
+            </Tooltip>  
             </AccordionDetails>
           </Accordion>
           <Accordion>

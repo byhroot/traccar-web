@@ -191,7 +191,7 @@
     "loginReset": "Reset Password",
     "loginRegister": "Qeydiyyat",
     "loginLogin": "Giriş",
-    "loginOpenId": "Login with OpenID",
+    "loginOpenId": "Login with Google",
     "loginFailed": "Yanlış e-poçt ünvanı və ya şifrə",
     "loginCreated": "Yeni istifadəçi qeydiyyatdan keçmişdir",
     "loginResetSuccess": "Check your email",
@@ -535,7 +535,7 @@
     "notificatorFirebase": "Firebase",
     "notificatorTraccar": "Traccar",
     "notificatorTelegram": "Telegram",
-    "notificatorPushover": "Pushover",
+    "notificatorPushover": "Phone Call",
     "reportReplay": "Replay",
     "reportCombined": "Combined",
     "reportRoute": "Marşrut",
@@ -619,7 +619,6 @@
     "commandAlarmVibrationon": "Titrəmə Həyəcan Aktiv",
     "commandAlarmVibrationoff": "Titrəmə Həyəcan Passiv",
     "attributeUiDisableSms": "SMS Deaktiv",
-    "sharedCopy": "Kopyala",
     "reportLast1": "Son 1 Saat",
     "reportLast4": "Son 4 Saat",
     "mainpageTitle": "Ana Səhifə",
@@ -640,5 +639,6 @@
     "handleClickEvents": "Siz cərgəyə klikləməklə tədbir yerlərinə baxa bilərsiniz. Siyahıda bütün avtomobilləriniz üçün son 10 Bildiriş göstərilir.",
     "handleClickSpeed": "Son 24 saatda sürət pozuntuları olan nəqliyyat vasitələriniz.",
     "handleClickAlertCard": "Sizin üçün xüsusi bildirişlər və xəbərdarlıqlar göstərilir.",
-    "handleClickTable": "Ödənişlərinizi Takipon.com saytımızın 'FES' > 'Yeniləmə Paketləri' səhifəsindən asanlıqla edə bilərsiniz. Təhlükəsiz qalın!"
+    "handleClickTable": "Ödənişlərinizi Takipon.com saytımızın 'FES' > 'Yeniləmə Paketləri' səhifəsindən asanlıqla edə bilərsiniz. Təhlükəsiz qalın!",
+    "notificatorPhoneInfo": "Daxil olan zəngə cavab versəniz, SMS balansınızdan 4 SMS çıxılacaq. Gələn zəngə cavab verməsəniz və ya Melguleyə göndərsəniz, 1 SMS çıxılacaq."
 }

@@ -73,6 +73,7 @@ const UsersPage = () => {
       <Table className={classes.table}>
         <TableHead>
           <TableRow>
+            <TableCell>ID</TableCell>
             <TableCell>{t('sharedName')}</TableCell>
             <TableCell>{t('userEmail')}</TableCell>
             <TableCell>{t('userAdmin')}</TableCell>
@@ -84,6 +85,7 @@ const UsersPage = () => {
         <TableBody>
           {!loading ? items.filter((u) => temporary || !u.temporary).filter(filterByKeyword(searchKeyword)).map((item) => (
             <TableRow key={item.id}>
+              <TableCell>{item.id}</TableCell>
               <TableCell>{item.name}</TableCell>
               <TableCell>{item.email}</TableCell>
               <TableCell>{formatBoolean(item.administrator, t)}</TableCell>

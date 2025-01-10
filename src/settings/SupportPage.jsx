@@ -1,34 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import PageLayout from '../common/components/PageLayout';
+import { useSelector } from 'react-redux';
 
 const SupportPage = () => {
-  const [loading, setLoading] = useState(true);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
+  const currentUser = useSelector((state) => state.session.user);
 
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    setIframeLoaded(false); // Yükleme işlemi başlamadan set edelim
   }, []);
 
   const handleIframeLoad = () => {
     setIframeLoaded(true);
   };
 
+  // Karakter kaydırma işlevi
+  const shiftText = (text, shift) => {
+    return text
+      .split('')
+      .map(char => String.fromCharCode(char.charCodeAt(0) + shift))
+      .join('');
+  };
+
+  // Base64 encode işlemi (Türkçe karakter desteği için UTF-8 kodlama kullanıyoruz)
+  const customEncrypt = (data, shift) => {
+    const shifted = shiftText(data, shift);
+
+    // UTF-8 encoding işlemi
+    const encoder = new TextEncoder();
+    const encodedText = encoder.encode(shifted); // UTF-8 encoding
+
+    // Base64'e dönüştürme
+    let binary = '';
+    encodedText.forEach(byte => {
+      binary += String.fromCharCode(byte);
+    });
+    return btoa(binary); // Base64 kodlama
+  };
+
+  // Kullanıcı bilgilerini düz metin olarak birleştir
+  const userDataString = `name==${currentUser.name};;email==${currentUser.email};;phone==${currentUser.phone};;key==xxxxxxxx`;
+
+  // Şifreleme işlemi (3 karakter kaydırma)
+  const encryptedData = customEncrypt(userDataString, 3);
+
+  // Şifrelenmiş veriyi URL ile gönder
+  const iframeUrl = `https://takipon.com/appcontact?data=${encodeURIComponent(encryptedData)}`;
+
   return (
     <PageLayout breadcrumbs={['support', 'support']}>
-      {loading && (
-        <div className="loading-overlay">
-          <div className="loading-spinner"></div>
-        </div>
-      )}
       <iframe
-        src="https://takipon.com/appcontact"
+        src={iframeUrl}
         width="100%"
         height="100%"
-        style={{ border: 'none', display: loading ? 'none' : 'block' }}
+        style={{ border: 'none', display: iframeLoaded ? 'block' : 'none' }}
         title="Destek"
         onLoad={handleIframeLoad}
       />
@@ -38,34 +64,6 @@ const SupportPage = () => {
         </div>
       )}
       <style>{`
-        .loading-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(255, 255, 255, 0.8);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          z-index: 999;
-        }
-
-        .loading-spinner {
-          width: 50px;
-          height: 50px;
-          border: 5px solid #ccc;
-          border-top: 5px solid #3498db;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
         .iframe-loading-message {
           position: absolute;
           top: 50%;

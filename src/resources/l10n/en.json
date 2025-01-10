@@ -193,7 +193,7 @@
     "loginReset": "Reset Password",
     "loginRegister": "Register",
     "loginLogin": "Login",
-    "loginOpenId": "Login with OpenID",
+    "loginOpenId": "Login with Google",
     "loginFailed": "Incorrect email address or password",
     "loginCreated": "New user has been registered",
     "loginResetSuccess": "Check your email",
@@ -537,7 +537,7 @@
     "notificatorFirebase": "Firebase",
     "notificatorTraccar": "Traccar",
     "notificatorTelegram": "Telegram",
-    "notificatorPushover": "Pushover",
+    "notificatorPushover": "Phone Call",
     "reportReplay": "Replay",
     "reportCombined": "Combined",
     "reportRoute": "Route",
@@ -641,6 +641,6 @@
     "handleClickEvents": "You can view event locations by clicking on the line. The list displays the last 10 notifications for all your vehicles.",
     "handleClickSpeed": "Your vehicles with speed violations in the last 24 hours.",
     "handleClickAlertCard": "Your special notifications and warnings are displayed.",
-    "handleClickTable": "You can easily make your payments from the 'FEES' > 'Renewal Packages' page of our Takipon.com website. Stay safe!"
-
+    "handleClickTable": "You can easily make your payments from the 'FEES' > 'Renewal Packages' page of our Takipon.com website. Stay safe!",
+    "notificatorPhoneInfo": "If you answer an incoming call, 4 SMS will be deducted from your SMS balance. If you do not answer an incoming call or are busy, 1 SMS will be deducted."
 }

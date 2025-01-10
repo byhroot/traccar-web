@@ -6,7 +6,7 @@ export default {
   drawerHeightPhone: '250px',
   filterFormWidth: '160px',
   eventsDrawerWidth: '250px',
-  bottomBarHeight: 56,
+  bottomBarHeight: 40,
   popupMapOffset: 300,
   popupMaxWidth: 288,
   popupImageHeight: 144,

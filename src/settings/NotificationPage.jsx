@@ -12,6 +12,7 @@ import {
   FormGroup,
   Button,
   TextField,
+  Tooltip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useTranslation, useTranslationKeys } from '../common/components/LocalizationProvider';
@@ -115,7 +116,7 @@ const NotificationPage = () => {
                   item.notificators
                     ? smsLimit > 0
                       ? item.notificators.split(/[, ]+/) //tüm notificator'ları göster
-                      : item.notificators.split(/[, ]+/).filter((value) => value !== 'sms') //'sms' hariç diğerlerini göster
+                      : item.notificators.split(/[, ]+/).filter((value) => value !== 'sms' && value !== 'pushover') //'sms' hariç diğerlerini göster
                     : []
                 }
                 onChange={(e) =>
@@ -123,7 +124,7 @@ const NotificationPage = () => {
                     ...item,
                     notificators: smsLimit > 0
                       ? e.target.value.join() // doğrudan seçilen değerleri kaydet
-                      : e.target.value.filter((value) => value !== 'sms').join(), // 'sms' değerini filtrele
+                      : e.target.value.filter((value) => value !== 'sms' && value !== 'pushover').join(), // 'sms' değerini filtrele
                   })
                 }
                 
@@ -132,6 +133,7 @@ const NotificationPage = () => {
                 titleGetter={(it) => t(prefixString('notificator', it.type))}
                 label={t('notificationNotificators')}
               />
+
               {item.notificators?.includes('command') && (
                 <SelectField
                   value={item.commandId}
@@ -140,6 +142,11 @@ const NotificationPage = () => {
                   titleGetter={(it) => it.description}
                   label={t('sharedSavedCommand')}
                 />
+              )}
+              {item.notificators?.includes('pushover') && (
+              <Typography variant="body2" color="secondary">
+                {t('notificatorPhoneInfo')} 
+              </Typography>
               )}
               {(smsLimit == null || smsLimit <= 0) && (
                 <Typography variant="body2" color="secondary">
