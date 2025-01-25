@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect  } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import Draggable from 'react-draggable';
+import { GaugeContainer, GaugeValueArc, GaugeReferenceArc, useGaugeState } from '@mui/x-charts/Gauge';
 import {
+  Accordion, 
+  AccordionSummary, 
+  AccordionDetails,
   Card,
   CardContent,
   Typography,
@@ -22,7 +26,9 @@ import {
   DialogContent,
   Button,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
+import { useMediaQuery, useTheme} from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import CloseIcon from '@mui/icons-material/Close';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -31,6 +37,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PendingIcon from '@mui/icons-material/Pending';
 import HistoryIcon from '@mui/icons-material/History';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
 import SettingsIcon from '@mui/icons-material/Settings';
 import PowerIcon from '@mui/icons-material/Power';
 import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
@@ -244,13 +252,26 @@ function getSatelliteIcon(sat) {
   return <SatelliteAltIcon style={{ color ,  width: 20, height: 20 }} />;
 }
 
-
-
 const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPadding = 0 }) => {
   const classes = useStyles({ desktopPadding });
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const t = useTranslation();
+  const theme = useTheme();
+
+  const desktop = useMediaQuery(theme.breakpoints.up('md'));
+  const [expanded, setExpanded] = useState(desktop); // Başlangıçta çözünürlüğe göre açılma
+  // Kullanıcının accordion'a tıklaması ile durumu değiştirecek bir işlev
+  const handleChange = (event, isExpanded) => {
+    setExpanded(isExpanded);
+  };
+
+  useEffect(() => {
+    setExpanded(desktop); // Ekran çözünürlüğü değiştiğinde güncellenir
+  }, [desktop]);
+
+
+  const location = useLocation();
 
   const deviceReadonly = useDeviceReadonly();
   const admin = useAdministrator();
@@ -263,7 +284,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
   const deviceImage = device?.attributes?.deviceImage;
 
   const positionAttributes = usePositionAttributes(t);
-  const positionItems = useAttributePreference('positionItems', 'speed,address,totalDistance,power,alarm,fixTime');
+  const positionItems = useAttributePreference('positionItems', 'address,totalDistance,power,alarm,fixTime');
 
   const navigationAppLink = useAttributePreference('navigationAppLink');
   const navigationAppTitle = useAttributePreference('navigationAppTitle');
@@ -387,67 +408,171 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                   </IconButton>
                 </div>
               )}
-              {position && (
-                <CardContent className={classes.content}>
-                  {device.status === "online" ? (
-                    <Typography color="primary" style={{ textAlign: 'center' }}>
-                      {device.name}
-                    </Typography>
-                  ) : (
-                    <Typography color="error" style={{ textAlign: 'center' }}>
-                      {device.name} <br />
-                      {t("eventDeviceOffline")}
-                    </Typography>
-                  )}
-                  <Table size="small" classes={{ root: classes.table }}>
-                  <TableBody>
-                      {positionItems.split(',').filter((key) => position.hasOwnProperty(key) || position.attributes.hasOwnProperty(key)).map((key) => {
-                        let icon = null;
+              <Accordion  expanded={expanded} onChange={handleChange} style={{ margin: '0px', padding: '0px' }}>
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls="speed-panel-content"
+                id="speed-panel-header"
+                style={{
+                  minHeight: '50px',
+                  padding: '0 8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  textAlign: 'center', // Tüm öğeleri ortalamak için
+                }}
+              >
+                {/* Sol Sütun: Gauge ve Hız Bilgisi */}
+                {position && position.hasOwnProperty('speed') && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ position: 'relative', display: 'inline-block', width: '125px', height: '40px' }}>
+                      <GaugeContainer
+                        width={125}
+                        height={100}
+                        startAngle={-90}
+                        endAngle={90}
+                        value={(position.speed) / 100 * 100}
+                        style={{
+                          position: 'absolute',
+                          top: '-30px', // Üstteki boşluğu azaltmak için
+                          left: 0,
+                        }}
+                      >
+                        <GaugeReferenceArc />
+                        <GaugeValueArc />
+                      </GaugeContainer>
+                      <Typography
+                        fontSize= "13px"
+                        style={{
+                          position: 'absolute',
+                          top: '35px', // Yazıyı biraz yukarı al
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          fontWeight: 'bold',
+                          margin: 0,
+                        }}
+                      >
+                        {Math.round(position.speed * 1.852)} km/s
+                      </Typography>
+                    </div>
+                  </div>
+                )}
 
-                        // İlgili özelliklere göre uygun ikonları belirle
-                        switch (key) {
-                          case 'speed':
-                          case 'address':
-                          case 'totalDistance':
-                          case 'course':
-                          case 'ignition':
-                          case 'alarm':
-                          case 'blocked':
-                          case 'power':
-                          case 'serverTime':
-                          case 'deviceTime':
-                          case 'fixTime':
-                          case 'network':
-                          case 'geofenceIds':
-                          case 'sat':
-                          case 'distance':
-                          case 'motion':
-                          case 'charge':
-                          case 'batteryLevel':
-                          case 'rssi':
-                          case 'result':
-                            icon = iconMapping[key];
-                            break;
-                          default:
-                            break;
+                {/* Sağ Sütun: Park Durumu ve Süre */}
+                {position && position.fixTime && (
+                  <div style={{ textAlign: 'center' }}>
+                    <Typography variant="body2" style={{ fontWeight: 'bold' }}>
+                    {(() => {
+                      const currentTime = location.pathname === '/replay' ? new Date(position.deviceTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
+                      const fixTime = location.pathname === '/replay' ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : new Date(position.deviceTime); // FixTime zamanı
+                      const diffInMs = currentTime - fixTime;
+                      const diffInMinutes = Math.floor(diffInMs / 60000);
+                        
+                          if (location.pathname === '/replay') {
+                            if (diffInMinutes > 5) {
+                              return <Typography style={{ color: 'green' }}> {t('alarmParking')} </Typography>;
+                            } else if (position.speed < 10 && diffInMinutes > 1 ) {
+                              return <Typography style={{ color: 'blue' }}>{t('eventDeviceStopped')}</Typography>;
+                            } else if (position.speed > 3 && diffInMinutes < 5 ) {
+                              return <Typography style={{ color: 'blue' }}>{t('eventDeviceMoving')}</Typography>;
+                            } 
+
+                          } else if (device.status !== "online") {
+                            // Cihaz çevrimdışıysa
+                            return <Typography color="error">{t("eventDeviceOffline")}</Typography>;
+                          } else {
+                            // Cihaz çevrimiçiyse
+                            if (diffInMinutes > 5) {
+                              return <Typography style={{ color: 'green' }}>{t('alarmParking')} </Typography>;
+                            } else if (position.speed < 20 && diffInMinutes >= 1 ) {
+                              return <Typography style={{ color: 'blue' }}>{t('eventDeviceStopped')}</Typography>;
+                            } else if (diffInMinutes < 5 ) {
+                              return <Typography style={{ color: 'blue' }}>{t('eventDeviceMoving')}</Typography>;
+                            }
+                          }
+                      })()}
+                    </Typography>
+                    <Typography variant="body2" style={{ color: 'gray' }}>
+                      {(() => {
+                        const currentTime = location.pathname === '/replay' ? new Date(position.deviceTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
+                        const fixTime = location.pathname === '/replay' ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : new Date(position.deviceTime); // FixTime zamanı
+                        const diffInMs = currentTime - fixTime;
+
+                        const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+
+                        if (days > 0) {
+                          return `${days} ${t('sharedDays')} ${hours} ${t('sharedHours')}`;
+                        } else if (hours > 0) {
+                          return `${hours} ${t('sharedHours')} ${minutes} ${t('sharedMinutes')}`;
+                        } else if (minutes > 5) {
+                          return `${minutes} ${t('sharedMinutes')}`;
                         }
-                        return (
-                          <StatusRow
-                            key={key}
-                            name={positionAttributes.hasOwnProperty(key) ? positionAttributes[key].name : key}
-                            content={(
-                              <PositionValue
-                                position={position}
-                                property={position.hasOwnProperty(key) ? key : null}
-                                attribute={position.hasOwnProperty(key) ? null : key}
-                              />
-                            )}
-                            icon={icon}
-                          />
-                        );
-                      })}
+                      })()}
+                    </Typography>
+                  </div>
+                )}
+              </AccordionSummary>
+              <AccordionDetails style={{ padding: '0px' }}>
+              {position && (
+                <CardContent className={classes.content} style={{ paddingTop: 0 }}>
+                  <Table size="small" classes={{ root: classes.table }}>
+                    <TableBody>
+                      {positionItems
+                        .split(',')
+                        .filter((key) => position.hasOwnProperty(key) || position.attributes.hasOwnProperty(key))
+                        .map((key) => {
+                          let icon = null;
+                          // İlgili özelliklere göre uygun ikonları belirle
+                          switch (key) {
+                            case 'speed':
+                            case 'address':
+                            case 'totalDistance':
+                            case 'course':
+                            case 'ignition':
+                            case 'alarm':
+                            case 'blocked':
+                            case 'power':
+                            case 'serverTime':
+                            case 'deviceTime':
+                            case 'fixTime':
+                            case 'network':
+                            case 'geofenceIds':
+                            case 'sat':
+                            case 'distance':
+                            case 'motion':
+                            case 'charge':
+                            case 'batteryLevel':
+                            case 'rssi':
+                            case 'result':
+                              icon = iconMapping[key];
+                              break;
+                            default:
+                              break;
+                          }
+                          return (
+                            <StatusRow
+                              key={key}
+                              name={
+                                positionAttributes.hasOwnProperty(key)
+                                  ? positionAttributes[key].name
+                                  : key
+                              }
+                              content={
+                                <PositionValue
+                                  position={position}
+                                  property={position.hasOwnProperty(key) ? key : null}
+                                  attribute={position.hasOwnProperty(key) ? null : key}
+                                />
+                              }
+                              icon={icon}
+                            />
+                          );
+                        })}
                     </TableBody>
                   </Table>
+
                 </CardContent>
               )}
               <CardActions classes={{ root: classes.actions }} disableSpacing>
@@ -492,6 +617,8 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                   </IconButton>
                 )}
               </CardActions>
+            </AccordionDetails>
+            </Accordion>
             </Card>
           </Draggable>
         )}
