@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Button, TextField, Typography, Snackbar, IconButton,
+  Button, TextField, Typography, Snackbar, IconButton, Dialog, DialogActions, DialogContent, DialogTitle,
+  Box, Alert, Checkbox, FormControlLabel, Link
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import { useNavigate } from 'react-router-dom';
@@ -43,8 +44,121 @@ const RegisterPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [totpKey, setTotpKey] = useState(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);  
+  const [rawPhone, setRawPhone] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [verificationTimer, setVerificationTimer] = useState(0);
+  const [intervalId, setIntervalId] = useState(null);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+// Yeni state'ler:
+const [alertMessage, setAlertMessage] = useState('');
+const [alertSeverity, setAlertSeverity] = useState('info');
 
+ const [checkedCheckbox, setChecked] = useState(false);
+
+const handleChangeCheckbox = (event) => {
+  setChecked(event.target.checked);
+};
+
+
+  const fullPhone = `+90 ${rawPhone}`;
+  // Geri sayım başlat
+  const startTimer = () => {
+    if (verificationTimer > 0) return;
+    setVerificationTimer(180); // 3 dakika
+    const id = setInterval(() => {
+      setVerificationTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(id);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    setIntervalId(id);
+  };
+
+  
+  useEffect(() => {
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [intervalId]);
+
+  const handlePhoneChange = (event) => {
+    const input = event.target.value.replace(/\D/g, '').slice(0, 10);
+    setRawPhone(input);
+  };
+
+  const handleVerifyClick = () => {
+    setDialogOpen(true);
+  };
+
+  const [otpId, setOtpId] = useState(null);
+
+  const handleSendCodeClick = async () => {
+    try {
+      const response = await fetch(`/api/registerotp?phone=0${rawPhone}`, {
+        method: 'POST',
+      });
+  
+      // JSON parse etmeyi burada yapıyoruz, hata kodu olsa bile JSON dönebilir
+      const data = await response.json();
+  
+      if (!data.valid) {
+        // valid false ise mesajı alert olarak göster
+        setAlertMessage(data.message || 'Kod gönderimi başarısız');
+        setAlertSeverity('error');
+        return;
+      }
+  
+      // valid true ise id'yi al ve timer başlat
+      setOtpId(data.id);
+      setAlertMessage(data.message || 'Doğrulama kodu gönderildi');
+      setAlertSeverity('success');
+      startTimer();
+  
+    } catch (error) {
+      // fetch hatası veya JSON parse hatası durumunda
+      setAlertMessage(t("commandSendSms") + " " + t("errorConnection") + ': ' + error.message);
+      setAlertSeverity('error');
+    }
+  };
+  
+  
+  const handleCodeSubmit = async () => {
+    if (!otpId || verificationCode.length !== 6) {
+      setAlertMessage(t("commandSendSms") + "/ " + t("errorGeneral"));
+      setAlertSeverity('warning');
+      return;
+    }
+  
+    try {
+      const response = await fetch(`/api/registerotp/${otpId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: verificationCode }),
+      });
+  
+      const data = await response.json();
+      if (data.valid) {
+        setIsVerified(true);
+        setAlertMessage(t("commandPhone") + " " + t("positionValid") );
+        setAlertSeverity('success');
+        setDialogOpen(false);
+      } else {
+        setAlertMessage(t("errorTitle") + " :" + data.message);
+        setAlertSeverity('error');
+      }
+    } catch (error) {
+      setAlertMessage(t("errorTitle") + " :" + error.message);
+      setAlertSeverity('error');
+    }
+  };
+  
+
+  
   useEffectAsync(async () => {
     if (totpForce) {
       const response = await fetch('/api/users/totp', { method: 'POST' });
@@ -55,13 +169,15 @@ const RegisterPage = () => {
       }
     }
   }, [totpForce, setTotpKey]);
-
+  
   const handleSubmit = useCatch(async (event) => {
     event.preventDefault();
+        const phoneFormatted = rawPhone ? `0${rawPhone}` : null;
+
     const response = await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, totpKey }),
+      body: JSON.stringify({ name, email, password, phone: phoneFormatted,  totpKey }),
     });
     if (response.ok) {
       setSnackbarOpen(true);
@@ -121,12 +237,129 @@ const RegisterPage = () => {
             }}
           />
         )}
+      <TextField
+        required
+        label= {t("sharedPhone")}
+        name="phone"
+        value={rawPhone}
+        onChange={handlePhoneChange}
+        InputProps={{
+          startAdornment: <span style={{ marginRight: 8, color: '#888' }}>+90</span>,
+          endAdornment: (
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleVerifyClick}
+              disabled={rawPhone.length !== 10 || isVerified}
+              style={{ marginLeft: 8 }}
+            >
+              {isVerified ? "✅" : 
+              t("sharedAccept")}
+            </Button>
+          ),
+        }}
+        inputProps={{
+          inputMode: 'numeric',
+          pattern: '[0-9]*',
+          maxLength: 10,
+          placeholder: '5XXXXXXXXX',
+        }}
+        fullWidth
+      />
+
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+        <DialogTitle>{t("optBaslik")}</DialogTitle>
+        <DialogContent>
+          <Typography mb={2}>
+            {fullPhone}  {t("optAciklama")}
+          </Typography>
+
+          <Box display="flex" alignItems="center" gap={2}>
+            <Button
+              variant="contained"
+              onClick={handleSendCodeClick}
+              disabled={verificationTimer > 0}
+            >
+              {verificationTimer > 0
+                ? `${t("commandSendSms")} (${Math.floor(verificationTimer / 60)}:${(verificationTimer % 60).toString().padStart(2, '0')})`
+                : t("commandSendSms")}
+
+            </Button>
+
+            <TextField
+              label="Kod"
+              value={verificationCode}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setVerificationCode(val);
+              }}
+              inputProps={{
+                inputMode: 'numeric',
+                pattern: '[0-9]*',
+                maxLength: 6,
+              }}
+              placeholder="6 haneli kod"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>          
+          <Button onClick={() => setDialogOpen(false)}>{t("sharedCancel")}</Button>
+          <Button
+            variant="contained"
+            disabled={verificationCode.length !== 6}
+            onClick={handleCodeSubmit}
+          >
+            {t("sharedAccept")}
+          </Button>
+        </DialogActions>
+        {alertMessage && (
+        <Box mb={2}>
+          <Alert severity={alertSeverity} onClose={() => setAlertMessage('')}>
+            {alertMessage}
+          </Alert>
+        </Box>
+      )}
+      </Dialog>
+      <FormControlLabel
+        control={
+          <Checkbox 
+            checked={checkedCheckbox}
+            onChange={handleChangeCheckbox}
+            inputProps={{ 'aria-label': 'controlled' }}
+          />
+        }
+        label={
+<Typography sx={{ fontSize: 12 }}>
+  {t("userTermsPrompt")}{" "}
+  <Link
+    href="https://www.takipon.com/uyeliksozlesmesi"
+    target="_blank"
+    rel="noopener noreferrer"
+    underline="hover"
+  >
+    {t("userTerms")}
+  </Link>{" "}
+  {" & "}
+  <Link
+    href="https://www.takipon.com/gizlilikpolitikasi"
+    target="_blank"
+    rel="noopener noreferrer"
+    underline="hover"
+  >
+    {t("userPrivacy")}
+  </Link>
+</Typography>
+
+        }
+      />
+        
         <Button
           variant="contained"
           color="secondary"
           onClick={handleSubmit}
           type="submit"
-          disabled={!name || !password || !(server.newServer || /(.+)@(.+)\.(.{2,})/.test(email))}
+          disabled={!name || !password || !checkedCheckbox ||
+            rawPhone.length !== 10 ||!isVerified|| !(server.newServer || /(.+)@(.+)\.(.{2,})/.test(email))}
           fullWidth
         >
           {t('loginRegister')}
@@ -141,6 +374,7 @@ const RegisterPage = () => {
         autoHideDuration={snackBarDurationShortMs}
         message={t('loginCreated')}
       />
+
     </LoginLayout>
   );
 };

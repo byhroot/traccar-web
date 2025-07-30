@@ -162,10 +162,10 @@ const EditAttributesAccordionUser = ({ attribute, attributes, setAttributes, def
   };
 
   return features.disableAttributes ? '' : (
-    <Accordion defaultExpanded={!!attribute}>
+    <Accordion defaultExpanded >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Typography variant="subtitle1">
-          {t('sharedAttributes')}
+          {t('sharedExtra')}
         </Typography>
       </AccordionSummary>
       <AccordionDetails className={classes.details}>

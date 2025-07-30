@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,15 +12,29 @@
     <title>${title}</title>
     <style>
       .loader {
-        position: fixed; top: calc(50% - 25px); left: calc(50% - 25px);
-        width: 50px; aspect-ratio: 1; box-sizing: content-box; animation: ll 1s infinite linear;
-        border-radius: 50%; border: 8px solid lightgray; border-right-color: black;
+        position: fixed;
+        inset: 0;
+        background: rgb(209, 209, 209);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
-      @keyframes ll {to{transform: rotate(1turn)}}
-    </style>
+    
+      @keyframes pulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+      }
+    
+      .loader svg {
+        width: 200px;
+        height: 200px;
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+    </style>    
   </head>
   <body>
-    <noscript>Enable JavaScript to use <a href="https://s1.takipon.com/">Takipon GPS Tracking System</a>.</noscript>
+    <noscript>Enable JavaScript to use <a href="http://s1.takipon.com:8082/">Takipon GPS Tracking System</a>.</noscript>
     <div id="root" class="root"></div>
     <div class="loader"></div>
     <script type="module" src="/src/index.jsx" onerror="alert('Loading error.')"></script>

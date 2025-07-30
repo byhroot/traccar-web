@@ -158,3 +158,14 @@ export const formatNotificationTitle = (t, notification, includeId) => {
   }
   return title;
 };
+
+export const translateNotificators = (notificators, t) => {
+  if (!notificators) return '';
+  return notificators
+    .split(',')
+    .map((n) => t(`notificator${n.charAt(0).toUpperCase()}${n.slice(1)}`))
+    .join(', ');
+};
+
+
+

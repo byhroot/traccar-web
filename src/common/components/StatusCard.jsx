@@ -33,6 +33,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import CloseIcon from '@mui/icons-material/Close';
 import ReplayIcon from '@mui/icons-material/Replay';
 import PublishIcon from '@mui/icons-material/Publish';
+import PersonPinIcon from '@mui/icons-material/PersonPin';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PendingIcon from '@mui/icons-material/Pending';
@@ -70,7 +71,7 @@ import {
 import { useTranslation } from './LocalizationProvider';
 import RemoveDialog from './RemoveDialog';
 import PositionValue from './PositionValue';
-import { useAdministrator, useDeviceReadonly, useRestriction } from '../util/permissions';
+import { useAdministrator, useManager, useDeviceReadonly, useRestriction } from '../util/permissions';
 import usePositionAttributes from '../attributes/usePositionAttributes';
 import { devicesActions } from '../../store';
 import { useCatch, useCatchCallback } from '../../reactHelper';
@@ -99,6 +100,7 @@ const iconMapping = {
   batteryLevel: <Battery4BarIcon color="primary" />,
   rssi: <SignalCellularAltIcon color="primary" />,
   result: <ThumbUpIcon color="primary" />,
+  driverUniqueId: <PersonPinIcon color="primary" />,
 };
 
 const useStyles = makeStyles((theme) => ({
@@ -156,11 +158,11 @@ const useStyles = makeStyles((theme) => ({
     left: '50%',
     [theme.breakpoints.up('md')]: {
       left: `calc(50% + ${desktopPadding} / 2)`,
-      bottom: theme.spacing(3),
+      bottom: theme.spacing(2),
     },
     [theme.breakpoints.down('md')]: {
       left: '50%',
-      bottom: `calc(${theme.spacing(3)} + ${theme.dimensions.bottomBarHeight}px)`,
+      bottom: `calc(${theme.spacing(4)} + ${theme.dimensions.bottomBarHeight}px)`,
     },
     transform: 'translateX(-50%)',
   }),
@@ -275,6 +277,8 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
 
   const deviceReadonly = useDeviceReadonly();
   const admin = useAdministrator();
+  const manager = useManager();
+  const limitCommands = useRestriction('limitCommands');
   const userReadonly = useRestriction('readonly');
 
   const shareDisabled = useSelector((state) => state.session.server.attributes.disableShare);
@@ -284,7 +288,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
   const deviceImage = device?.attributes?.deviceImage;
 
   const positionAttributes = usePositionAttributes(t);
-  const positionItems = useAttributePreference('positionItems', 'address,totalDistance,power,alarm,fixTime');
+  const positionItems = useAttributePreference('positionItems', 'alarm,address,totalDistance,power,fixTime,driverUniqueId');
 
   const navigationAppLink = useAttributePreference('navigationAppLink');
   const navigationAppTitle = useAttributePreference('navigationAppTitle');
@@ -335,10 +339,10 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
     <>
       <div className={classes.root}>
         {device && (
-          <Draggable
+          <Draggable  
             handle={`.${classes.media}, .${classes.header}`}
           >
-            <Card elevation={3} className={classes.card}>
+            <Card sx={{ borderRadius: 5 }} elevation={3} className={classes.card}>
               {deviceImage ? (
                 <CardMedia
                   className={classes.media}
@@ -463,39 +467,48 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                   <div style={{ textAlign: 'center' }}>
                     <Typography variant="body2" style={{ fontWeight: 'bold' }}>
                     {(() => {
-                      const currentTime = location.pathname === '/replay' ? new Date(position.deviceTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
+                      const currentTime = location.pathname === '/replay' ? new Date(position.serverTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
                       const fixTime = location.pathname === '/replay' ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : new Date(position.deviceTime); // FixTime zamanı
                       const diffInMs = currentTime - fixTime;
                       const diffInMinutes = Math.floor(diffInMs / 60000);
                         
                           if (location.pathname === '/replay') {
-                            if (diffInMinutes > 5) {
-                              return <Typography style={{ color: 'green' }}> {t('alarmParking')} </Typography>;
-                            } else if (position.speed < 10 && diffInMinutes > 1 ) {
-                              return <Typography style={{ color: 'blue' }}>{t('eventDeviceStopped')}</Typography>;
-                            } else if (position.speed > 3 && diffInMinutes < 5 ) {
-                              return <Typography style={{ color: 'blue' }}>{t('eventDeviceMoving')}</Typography>;
+                            if (position && position.speed <=5 && diffInMinutes > 3) {
+                              return <Typography style={{ color: 'grey' }}> {t('alarmParking')} </Typography>;
+                            } else if (position.speed < 4 && diffInMinutes > 1 ) {
+                              return <Typography style={{ color: 'grey' }}>{t('eventDeviceStopped')}</Typography>;
+                            } else if (position.speed > 3 && diffInMinutes <= 1 ) {
+                              return <Typography style={{ color: 'green' }}>{t('eventDeviceMoving')}</Typography>;
+                            } else if (position.speed > 1 && diffInMinutes > 1 ) {
+                              return <Typography style={{ color: 'grey' }}> {t('deviceStatusOffline')} {t('commandData')}  {t('sharedLoading')} </Typography>;
                             } 
-
+                             // Cihaz çevrimdışı ve protokol long ise
+                          } else if ((device.status !== "online") && position && position.protocol && position.protocol === "takiponalong") {
+                            return <Typography sx={{ fontSize: '12px' }} color="info">{t("eventDeviceOffline")} | {t("commandModeDeepSleep")}</Typography>;
                           } else if (device.status !== "online") {
                             // Cihaz çevrimdışıysa
-                            return <Typography color="error">{t("eventDeviceOffline")}</Typography>;
+                            return <Typography sx={{ fontSize: '12px' }} color="info">{t("eventDeviceOffline")} </Typography>;
                           } else {
                             // Cihaz çevrimiçiyse
-                            if (diffInMinutes > 5) {
-                              return <Typography style={{ color: 'green' }}>{t('alarmParking')} </Typography>;
-                            } else if (position.speed < 20 && diffInMinutes >= 1 ) {
-                              return <Typography style={{ color: 'blue' }}>{t('eventDeviceStopped')}</Typography>;
-                            } else if (diffInMinutes < 5 ) {
-                              return <Typography style={{ color: 'blue' }}>{t('eventDeviceMoving')}</Typography>;
+                            if (diffInMinutes > 1 ) {
+                              if (position && position.speed > 5) {   
+                              return <Typography style={{ color: 'grey' }}> {t('deviceStatusOffline')} {t('commandData')}  {t('sharedLoading')} </Typography>;
+                              } else if (position && position.speed <= 5) {
+                                return <Typography style={{ color: 'grey' }}> {t('alarmParking')} </Typography>;
+                              }
+                              
+                            } else if (position.speed < 5 && diffInMinutes >= 1 ) {
+                              return <Typography style={{ color: 'grey' }}>{t('eventDeviceStopped')}</Typography>;
+                            } else if (diffInMinutes < 1 ) {
+                              return <Typography style={{ color: 'green' }}>{t('eventDeviceMoving')}</Typography>;
                             }
                           }
                       })()}
                     </Typography>
-                    <Typography variant="body2" style={{ color: 'gray' }}>
+                    <Typography sx={{ fontSize: '12px' }} variant="body2" style={{ color: 'gray' }}>
                       {(() => {
                         const currentTime = location.pathname === '/replay' ? new Date(position.deviceTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
-                        const fixTime = location.pathname === '/replay' ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : new Date(position.deviceTime); // FixTime zamanı
+                        const fixTime = location.pathname === '/replay' ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : device.status !== "online" && position && position.protocol === "takiponalong" ? new Date(position.fixTime) : new Date(position.deviceTime); // FixTime zamanı
                         const diffInMs = currentTime - fixTime;
 
                         const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
@@ -546,6 +559,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                             case 'batteryLevel':
                             case 'rssi':
                             case 'result':
+                            case 'driverUniqueId':
                               icon = iconMapping[key];
                               break;
                             default:
@@ -589,33 +603,28 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                 >
                   <HistoryIcon />
                 </IconButton>
+                
                 <IconButton
-                  onClick={() => navigate(`/settings/device/${deviceId}/command`)}
-                  disabled={disableActions || userReadonly}
+                  onClick={() => navigate(`/settings/device/${deviceId}/commandnew`)}
+                  disabled={disableActions || deviceReadonly}
                 >
                   <SettingsIcon />
                   </IconButton>
+                  
                 <IconButton
                     onClick={() => navigate(`/settings/device/${deviceId}/connections`)}
-                    disabled={disableActions || userReadonly}
+                    disabled={disableActions || deviceReadonly}
                   >
                     <InsertLinkIcon />
                 </IconButton>
+                {admin && 
                 <IconButton
                   onClick={() => navigate(`/settings/device/${deviceId}`)}
                   disabled={disableActions || deviceReadonly}
                 >
                   <EditIcon />
                 </IconButton>
-                {admin && (//takipon
-                  <IconButton
-                    onClick={() => setRemoving(true)}
-                    disabled={disableActions || deviceReadonly}
-                    className={classes.negative}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                )}
+                }
               </CardActions>
             </AccordionDetails>
             </Accordion>
@@ -625,16 +634,16 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
       </div>
       {position && (
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-          {admin && (
+          {manager && (
 
           <MenuItem onClick={() => navigate(`/position/${position.id}`)}><Typography color="secondary">{t('sharedShowDetails')}</Typography></MenuItem>
           )} 
-          <MenuItem onClick={handleGeofence}><Typography color="secondary">{t('sharedCreateGeofence')}</Typography></MenuItem>
+          <MenuItem disabled={disableActions || deviceReadonly} onClick={handleGeofence}><Typography color="secondary">{t('sharedCreateGeofence')}</Typography></MenuItem>
           <MenuItem component="a" target="_blank" href={`https://www.google.com/maps/search/?api=1&query=${position.latitude}%2C${position.longitude}`}>{t('linkGoogleMaps')}</MenuItem>
           <MenuItem component="a" target="_blank" href={`http://maps.apple.com/?ll=${position.latitude},${position.longitude}`}>{t('linkAppleMaps')}</MenuItem>
           <MenuItem component="a" target="_blank" href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${position.latitude}%2C${position.longitude}&heading=${position.course}`}>{t('linkStreetView')}</MenuItem>
           {navigationAppTitle && <MenuItem component="a" target="_blank" href={navigationAppLink.replace('{latitude}', position.latitude).replace('{longitude}', position.longitude)}>{navigationAppTitle}</MenuItem>}
-          {!shareDisabled && !user.temporary && <MenuItem onClick={() => navigate(`/settings/device/${deviceId}/share`)}><Typography color="primary">{t('deviceShare')}</Typography></MenuItem>}
+          {!shareDisabled && !user.temporary && <MenuItem disabled={disableActions || deviceReadonly} onClick={() => navigate(`/settings/device/${deviceId}/share`)}><Typography color="primary">{t('deviceShare')}</Typography></MenuItem>}
         </Menu>
       )}
       <RemoveDialog

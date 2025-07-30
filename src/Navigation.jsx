@@ -12,6 +12,7 @@ import UsersPage from './settings/UsersPage';
 import DevicePage from './settings/DevicePage';
 import UserPage from './settings/UserPage';
 import NotificationsPage from './settings/NotificationsPage';
+import NotificationsPageNew from './settings/NotificationsPageNew';
 import NotificationPage from './settings/NotificationPage';
 import GroupsPage from './settings/GroupsPage';
 import GroupPage from './settings/GroupPage';
@@ -47,6 +48,7 @@ import EventPage from './other/EventPage';
 import PreferencesPage from './settings/PreferencesPage';
 import AccumulatorsPage from './settings/AccumulatorsPage';
 import CommandDevicePage from './settings/CommandDevicePage';
+import CommandDevicePageUsers from './settings/CommandDevicePageUsers';
 import CommandGroupPage from './settings/CommandGroupPage';
 import App from './App';
 import ChangeServerPage from './login/ChangeServerPage';
@@ -132,6 +134,7 @@ const Navigation = () => {
           <Route path="devices" element={<DevicesPage />} />
           <Route path="device/:id/connections" element={<DeviceConnectionsPage />} />
           <Route path="device/:id/command" element={<CommandDevicePage />} />
+          <Route path="device/:id/commandnew" element={<CommandDevicePageUsers />} />
           <Route path="device/:id/share" element={<SharePage />} />
           <Route path="device/:id" element={<DevicePage />} />
           <Route path="device" element={<DevicePage />} />
@@ -148,6 +151,7 @@ const Navigation = () => {
           <Route path="maintenances" element={<MaintenancesPage />} />
           <Route path="maintenance/:id" element={<MaintenancePage />} />
           <Route path="maintenance" element={<MaintenancePage />} />
+          <Route path="notificationsnew" element={<NotificationsPageNew />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="notification/:id" element={<NotificationPage />} />
           <Route path="notification" element={<NotificationPage />} />

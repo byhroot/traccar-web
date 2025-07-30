@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from "react-redux";
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'; // MUI'den gelen pasta dilimi grafiği bileşenleri
 import { Typography, Card, CardContent, Box, Grid } from '@mui/material';
 import PageLayout from '../common/components/PageLayout';
@@ -20,14 +21,23 @@ import AnnouncementIcon from '@mui/icons-material/Announcement';
 import WifiTetheringErrorIcon from '@mui/icons-material/WifiTetheringError';
 import MapIcon from '@mui/icons-material/Map';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import AlertListCard from './AlertListCard';
+import PackageStatusCard from './PackageStatusCard';
 import { useTranslation } from '../common/components/LocalizationProvider';
+import { useRestriction } from '../common/util/permissions';
 
 const Dashboard = () => {
   const theme = useTheme();
   const isLG = useMediaQuery(theme.breakpoints.down('lg'));
   const isMD = useMediaQuery(theme.breakpoints.down('md'));
   const isSM = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const disableReports = useRestriction("disableReports");
+
+  const user = useSelector((state) => state.session.user);
+  const [attributes] = useState(user.attributes);
+  const statuscarddisabled = attributes.statuscarddisabled;
 
   const t = useTranslation();
 
@@ -68,6 +78,11 @@ const Dashboard = () => {
     setOpen(true);
     setMessage(t("handleClickSpeed"));
   };
+  const handleClickGeofence= () => {
+    setOpen(true);
+    setMessage("Son 24 saatte Bölge İhlalinde bulunan Araçlar");
+  };
+  
   const handleClickAlertCard= () => {
     setOpen(true);
     setMessage(t("handleClickAlertCard"));
@@ -176,7 +191,7 @@ const Dashboard = () => {
   
     fetchData();
   
-    const interval = setInterval(fetchData, 15000);
+    const interval = setInterval(fetchData, 60000);
   
     return () => clearInterval(interval);
   }, []);
@@ -199,6 +214,7 @@ const Dashboard = () => {
   const COLORS = ['#00959E', 'grey'];
   const [isExpanded, setIsExpanded] = useState(true);
   const [isExpandedAlert, setIsExpandedAlert] = useState(true);
+  const [isExpandedAccount, setIsExpandedeAccount] = useState(false);
 
 
   const handleToggleExpand = () => {
@@ -209,6 +225,10 @@ const Dashboard = () => {
     setIsExpandedAlert(!isExpandedAlert);
   };
 
+  const handleAccountExpand = () => {
+    setIsExpandedeAccount(!isExpandedAccount);
+  };
+
   const now = new Date();
   const filterTwoMounthLater = new Date(now.setMonth(now.getMonth() + 1));
   const filterLastYear = new Date(now.setMonth(now.getMonth() - 12 ));
@@ -216,18 +236,44 @@ const Dashboard = () => {
   // Geçerli bir expirationTime olup olmadığını kontrol edin
 const hasValidExpiration = deviceDetails.some(device => {
   const expirationTime = new Date(device.expirationTime);
-  return expirationTime >= filterLastYear && expirationTime <= filterTwoMounthLater;
+  const insuranceExpiration = device.attributes?.insuranceExpiration ? new Date(device.attributes.insuranceExpiration) : null;
+
+  return expirationTime >= filterLastYear && expirationTime <= filterTwoMounthLater || insuranceExpiration >= filterLastYear && insuranceExpiration <= filterTwoMounthLater ;
 });
 
   return (
-    <PageLayout menu={<ReportsMenu />} breadcrumbs={['mainpageTitle', 'dashboardTitle']}>
+    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'mainpageTitle']}>
 
-      {hasValidExpiration ? (
+      <Grid container spacing={1} justifyContent="center" style={{ marginTop: '4px' }} > {/* Ortalamak için justifyContent="center" */}
+        {/* User Account List Kartı */}
+        {!statuscarddisabled && 
+        <Grid item xs={12} sm={10} md={10} lg={10} xl={8}>
+          <Card sx={{ width: '100%', maxWidth: '1000px', height: '100%',}}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <AccountBoxIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }}  />
+                <Typography variant="h6" onClick={handleAccountExpand}> {`${t("settingsUser")} ${t("positionStatus")}`} </Typography>
+                {!isExpandedAccount && (
+                  <ExpandMoreIcon onClick={handleAccountExpand}/>
+                )} 
+                {isExpandedAccount && (
+                  <ExpandLessIcon onClick={handleAccountExpand}/>
+                )} 
+              </Box>
+              {isExpandedAccount && (
+              <PackageStatusCard />
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+        }
+      </Grid>
+      
       <Grid container spacing={1} justifyContent="center" style={{ marginTop: '4px' }} > {/* Ortalamak için justifyContent="center" */}
         {/* User Alert List Kartı */}
-        <Grid item xs={12} sm={10} md={10} lg={10} xl={5}>
-          <Card sx={{ width: '100%', maxWidth: '1000px', height: '100%',}} onClick={handleClickTable}>
-            <CardContent>
+        <Grid item xs={12} sm={10} md={10} lg={10} xl={8}>
+          <Card sx={{ width: '100%', maxWidth: '1000px', height: '100%',}}>
+            <CardContent >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <AnnouncementIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickAlertCard} />
                 <Typography variant="h6" onClick={handleAlertExpand}> {`${t("reportCustom")} ${t("sharedNotifications")}`} </Typography>
@@ -239,18 +285,12 @@ const hasValidExpiration = deviceDetails.some(device => {
                 )} 
               </Box>
               {isExpandedAlert && (
-              <AlertListCard deviceDetails={deviceDetails}  />
+              <AlertListCard deviceDetails={deviceDetails} />
               )}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
-      ) : (
-        <Typography variant="justify" style={{ fontSize: '14px', textAlign: 'center', marginTop: '10px' }}>
-          {t("dashboardalert")}
-        </Typography>
-      )
-      }
 
       <Grid container spacing={1} justifyContent="center" style={{ marginTop: '1px'}}> {/* Ortalamak için justifyContent="center" */}
         {/* Araç Bağlantı Durumu Kartı */}
@@ -259,7 +299,7 @@ const hasValidExpiration = deviceDetails.some(device => {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <WifiIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickStatus} />
-                <Typography variant="h6" > {t("sharedConnections")}</Typography>
+                <Typography sx={{ fontSize: "18px" }} variant="h6" > {t("sharedConnections")}</Typography>
                 <HelpCenterIcon style={{ color: 'rgba(128, 128, 128, 0.5)' }} sx={{ justifyContent: 'flex-end' }} onClick={handleClickStatus} />
               </Box>
               <Box display="flex" flexDirection="column" alignItems="center">
@@ -285,7 +325,7 @@ const hasValidExpiration = deviceDetails.some(device => {
                 <Box display="flex" justifyContent="center" alignItems="center" flexWrap="wrap">
                   <Box display="flex" alignItems="center" mr={1} mb={1}>
                     <Box width={12} height={12} mr={1} bgcolor={COLORS[0]} borderRadius="50%" />
-                    <Typography variant="body2">Online</Typography>
+                    <Typography variant="body2">Online </Typography>
                   </Box>
                   <Box display="flex" alignItems="center" mb={1}>
                     <Box width={12} height={12} mr={1} bgcolor={COLORS[1]} borderRadius="50%" />
@@ -303,7 +343,7 @@ const hasValidExpiration = deviceDetails.some(device => {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <SpeedIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickStatus} />
-                <Typography variant="h6" >{t("positionMotion")}</Typography>
+                <Typography sx={{ fontSize: "18px" }} variant="h6" >{t("positionMotion")}</Typography>
                 <HelpCenterIcon style={{ color: 'rgba(128, 128, 128, 0.5)' }} sx={{ justifyContent: 'flex-end' }} onClick={handleClickHareket} />
               </Box>              
               <Box display="flex" flexDirection="column" alignItems="center">
@@ -347,7 +387,7 @@ const hasValidExpiration = deviceDetails.some(device => {
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <WifiTetheringErrorIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickStatus} />
-                <Typography variant="h6" style={{ fontSize: '18px', textAlign: 'center', marginTop: '10px' }} >{t("eventDeviceOverspeed")}</Typography>
+                <Typography sx={{ fontSize: "18px" }} variant="h6" style={{ fontSize: '18px', textAlign: 'center', marginTop: '10px' }} >{t("eventDeviceOverspeed")}</Typography>
                 <HelpCenterIcon style={{ color: 'rgba(128, 128, 128, 0.5)' }} sx={{ justifyContent: 'flex-end' }} onClick={handleClickSpeed} />
               </Box>
               <SpeedListCard deviceDetails={deviceDetails} eventsSpeed={eventsSpeed}  />
@@ -362,7 +402,7 @@ const hasValidExpiration = deviceDetails.some(device => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <MapIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickStatus} />
                 <Typography variant="h6" style={{ fontSize: '16px', textAlign: 'center', marginTop: '10px' }}> {t("eventGeofenceExit")} </Typography>
-                <HelpCenterIcon style={{ color: 'rgba(128, 128, 128, 0.5)' }} sx={{ justifyContent: 'flex-end' }} onClick={handleClickSpeed} />
+                <HelpCenterIcon style={{ color: 'rgba(128, 128, 128, 0.5)' }} sx={{ justifyContent: 'flex-end' }} onClick={handleClickGeofence} />
               </Box>
               <GeofenceListCard deviceDetails={deviceDetails} eventsGeofenceExit={eventsGeofenceExit}  />
             </CardContent>

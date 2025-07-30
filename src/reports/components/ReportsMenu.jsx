@@ -17,6 +17,9 @@ import HomeIcon from '@mui/icons-material/Home';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import { useAdministrator, useRestriction } from '../../common/util/permissions';
+import { Card, CardContent, Typography, Slide, Box } from '@mui/material';
+import AssessmentIcon from '@mui/icons-material/Assessment'; // ikon ekleyelim
+
 
 const MenuItem = ({
   title, link, icon, selected,
@@ -36,6 +39,26 @@ const ReportsMenu = () => {
 
   return (
     <>
+      <Slide in direction="down" timeout={700}>
+        <Box sx={{ px: 2, py: 1 }}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #00959E 30%, #42d7f5 90%)',
+              color: '#fffFFf',
+              borderRadius: 3,
+              boxShadow: 3,
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 3 }}>
+              <AssessmentIcon sx={{ fontSize: 32, mr: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
+                {t('reportTitle')}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+      </Slide>
+
       <List>
         <MenuItem
           title={t('dashboardTitle')}

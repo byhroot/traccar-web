@@ -12,7 +12,8 @@ const currentServer = `${window.location.protocol}//${window.location.host}`;
 const officialServers = [
   currentServer,
   'https://s1.takipon.com',
-  'https://s2.takioon.com',
+  'https://s2.takipon.com',
+  'https://giris.takipon.com',
   'https://test.takipon.com',
 ];
 

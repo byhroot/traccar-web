@@ -53,10 +53,16 @@ export default () => {
       available: true,
     },
     {
+      id: 'locationIqLight',
+      title: t('Light'),
+      style: `https://tiles.locationiq.com/v3/light/vector.json?key=${locationIqKey}`,
+      available: true,
+    },
+    {
       id: 'osm',
       title: t('mapOsm'),
       style: styleCustom({
-        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}/.png'],
         maxZoom: 19,
         attribution: '© <a target="_top" rel="noopener" href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }),
@@ -75,7 +81,7 @@ export default () => {
       id: 'carto',
       title: t('mapCarto'),
       style: styleCustom({
-        tiles: ['a', 'b', 'c', 'd'].map((i) => `https://${i}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png`),
+        tiles: ['a', 'b', 'c', 'd'].map((i) => `https://${i}.basemaps.cartocdn.com/rastertiles/darkmatter/{z}/{x}/{y}@2x.png`),
         maxZoom: 22,
         attribution: '© <a target="_top" rel="noopener" href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a target="_top" rel="noopener" href="https://carto.com/attribution">CARTO</a>',
       }),
@@ -123,7 +129,7 @@ export default () => {
     {
       id: 'mapTilerBasic',
       title: t('mapMapTilerBasic'),
-      style: `https://api.maptiler.com/maps/basic/style.json?key=${mapTilerKey}`,
+      style: `https://api.maptiler.com/maps/019701d3-80f7-760c-8c89-2b3fa35e194f/style.json?key=${mapTilerKey}`,
       available: Boolean(mapTilerKey),
       attribute: 'mapTilerKey',
     },
@@ -221,7 +227,8 @@ export default () => {
       id: 'mapboxStreets',
       title: t('mapMapboxStreets'),
       style: styleCustom({
-        tiles: [`https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${mapboxAccessToken}`],
+        tiles: [`https://api.mapbox.com/styles/v1/mapbox/navigation-night-v1/tiles/{z}/{x}/{y}?access_token=${mapboxAccessToken}`],
+              //https://api.mapbox.com/styles/v1/bilisiminiz/cm6y4o1j701dd01r51qo093z8/wmts?access_token=pk.eyJ1IjoiYmlsaXNpbWluaXoiLCJhIjoiY202eTRocGhwMHd0OTJtczZzc3R0a3ZqOSJ9.nN4OkSUPh9-rfSKuh2o7vQ
         maxZoom: 22,
       }),
       available: Boolean(mapboxAccessToken),

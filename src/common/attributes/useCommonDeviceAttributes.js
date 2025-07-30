@@ -30,4 +30,8 @@ export default (t) => useMemo(() => ({
     name: t('positionBlocked'),
     type: 'boolean',
   },
+  insuranceExpiration: {//takipon//
+    name: t('sigortaTarih') + "" + t('userExpirationTime') ,
+    type: 'string',
+  },
 }), [t]);

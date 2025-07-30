@@ -16,6 +16,7 @@ const element = document.createElement('div');
 element.style.width = '100%';
 element.style.height = '100%';
 element.style.boxSizing = 'initial';
+//takipon harita sorunu burada overflow:hidden i visible yapınca çözülüyor, 
 
 maplibregl.setRTLTextPlugin(mapboxglRtlTextUrl);
 maplibregl.addProtocol('google', googleProtocol);
@@ -80,8 +81,8 @@ const MapView = ({ children }) => {
   const [mapReady, setMapReady] = useState(false);
 
   const mapStyles = useMapStyles();
-  const activeMapStyles = useAttributePreference('activeMapStyles', 'locationIqStreets,osm,carto');
-  const [defaultMapStyle] = usePersistedState('selectedMapStyle', usePreference('map', 'locationIqStreets'));
+  const activeMapStyles = useAttributePreference('activeMapStyles', 'custom');
+  const [defaultMapStyle] = usePersistedState('selectedMapStyle', usePreference('map', 'custom'));
   const mapboxAccessToken = useAttributePreference('mapboxAccessToken');
   const maxZoom = useAttributePreference('web.maxZoom');
 
@@ -97,7 +98,7 @@ const MapView = ({ children }) => {
 
   useEffect(() => {
     const filteredStyles = mapStyles.filter((s) => s.available && activeMapStyles.includes(s.id));
-    const styles = filteredStyles.length ? filteredStyles : mapStyles.filter((s) => s.id === 'osm');
+    const styles = filteredStyles.length ? filteredStyles : mapStyles.filter((s) => s.id === 'custom');
     switcher.updateStyles(styles, defaultMapStyle);
   }, [mapStyles, defaultMapStyle]);
 

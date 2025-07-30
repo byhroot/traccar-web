@@ -150,7 +150,7 @@ const NotificationPage = () => {
               )}
               {(smsLimit == null || smsLimit <= 0) && (
                 <Typography variant="body2" color="secondary">
-                  SMS paketiniz Aktif değil.
+                  SMS/Telefon Çağrı paketiniz Aktif değil.
                 </Typography>
               )}
               {smsLimit >= 0 && (

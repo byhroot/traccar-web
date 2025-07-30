@@ -38,10 +38,14 @@ const GeofencePage = () => {
       onItemSaved={onItemSaved}
       menu={<SettingsMenu />}
       breadcrumbs={['settingsTitle', 'sharedGeofence']}
-    >          
+    >                      
+      <Tooltip
+        title="Bölgeyi Kaydettikten sonra Aracınıza veya Araç Grubuna ilgili bölgeyi eklemeyi Unutmayın!"
+        open
+      >
+      </Tooltip>  
       {item && (
         <>
-
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">
@@ -54,11 +58,6 @@ const GeofencePage = () => {
                 onChange={(event) => setItem({ ...item, name: event.target.value })}
                 label={t('sharedName')}
               />
-             <Tooltip
-              title="Bölgeyi Kaydettikten sonra Aracınıza veya Araç Grubuna ilgili bölgeyi eklemeyi Unutmayın!"
-              open
-            >
-            </Tooltip>  
             </AccordionDetails>
           </Accordion>
           <Accordion>
@@ -80,6 +79,7 @@ const GeofencePage = () => {
                 label={t('sharedCalendar')}
               />
             </AccordionDetails>
+
           </Accordion>
           <EditAttributesAccordion
             attributes={item.attributes}

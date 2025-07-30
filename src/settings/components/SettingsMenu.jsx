@@ -22,6 +22,8 @@ import {
   useAdministrator, useManager, useRestriction,
 } from '../../common/util/permissions';
 import useFeatures from '../../common/util/useFeatures';
+import { Card, CardContent, Typography, Slide, Box } from '@mui/material';
+import AssessmentIcon from '@mui/icons-material/Assessment'; // ikon ekleyelim
 
 const MenuItem = ({
   title, link, icon, selected,
@@ -46,6 +48,25 @@ const SettingsMenu = () => {
 
   return (
     <>
+      <Slide in direction="down" timeout={700}>
+        <Box sx={{ px: 2, py: 1 }}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #00959E 30%, #42d7f5 90%)',
+              color: '#fffFFf',
+              borderRadius: 3,
+              boxShadow: 3,
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 3 }}>
+              <AssessmentIcon sx={{ fontSize: 32, mr: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
+                {t('settingsTitle')}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+      </Slide>
       <List>
         <MenuItem
           title={t('sharedPreferences')}
@@ -57,7 +78,7 @@ const SettingsMenu = () => {
           <>
             <MenuItem
               title={t('sharedNotifications')}
-              link="/settings/notifications"
+              link="/settings/notificationsnew"
               icon={<NotificationsIcon />}
               selected={location.pathname.startsWith('/settings/notification')}
             />
@@ -141,12 +162,14 @@ const SettingsMenu = () => {
         <>
           <Divider />
           <List>
+            {admin && (
             <MenuItem
               title={t('serverAnnouncement')}
               link="/settings/announcement"
               icon={<CampaignIcon />}
               selected={location.pathname === '/settings/announcement'}
             />
+            )}
             {admin && (
               <MenuItem
                 title={t('settingsServer')}

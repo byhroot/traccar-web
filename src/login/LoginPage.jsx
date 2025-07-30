@@ -139,10 +139,15 @@ const LoginPage = () => {
       throw Error(await response.text());
     }
   });
-
   const handleOpenIdLogin = () => {
+  
+    nativePostMessage(`openIdLoginActive`);
+  
     document.location = '/api/session/openid/auth';
+    
   };
+  
+  
 
   useEffect(() => nativePostMessage('authentication'), []);
 

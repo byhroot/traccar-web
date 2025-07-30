@@ -6,7 +6,7 @@ import {
 import LoginIcon from '@mui/icons-material/Login';
 import LinkIcon from '@mui/icons-material/Link';
 import { useCatch, useEffectAsync } from '../reactHelper';
-import { formatBoolean, formatTime } from '../common/util/formatter';
+import { formatAltitude, formatBoolean, formatTime } from '../common/util/formatter';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import PageLayout from '../common/components/PageLayout';
 import SettingsMenu from './components/SettingsMenu';
@@ -78,6 +78,7 @@ const UsersPage = () => {
             <TableCell>{t('userEmail')}</TableCell>
             <TableCell>{t('userAdmin')}</TableCell>
             <TableCell>{t('sharedDisabled')}</TableCell>
+            <TableCell>{t('notificatorSms')}</TableCell>
             <TableCell>{t('userExpirationTime')}</TableCell>
             <TableCell className={classes.columnAction} />
           </TableRow>
@@ -90,6 +91,7 @@ const UsersPage = () => {
               <TableCell>{item.email}</TableCell>
               <TableCell>{formatBoolean(item.administrator, t)}</TableCell>
               <TableCell>{formatBoolean(item.disabled, t)}</TableCell>
+              <TableCell>{item.attributes?.smsLimit ?? 'Standart'}</TableCell>
               <TableCell>{formatTime(item.expirationTime, 'date')}</TableCell>
               <TableCell className={classes.columnAction} padding="none">
                 <CollectionActions

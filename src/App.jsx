@@ -15,7 +15,7 @@ import Loader from './common/components/Loader';
 const useStyles = makeStyles(() => ({
   page: {
     flexGrow: 1,
-    overflow: 'auto',
+    overflow: 'hidden',
   },
   menu: {
     zIndex: 4,

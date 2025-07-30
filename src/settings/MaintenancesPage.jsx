@@ -81,7 +81,7 @@ const MaintenacesPage = () => {
             {admin && 
 
             <TableCell>{t('sharedType')}</TableCell>
-          }
+            }
 
             <TableCell>{t('maintenanceStart')}</TableCell>
             <TableCell>{t('maintenancePeriod')}</TableCell>
@@ -93,9 +93,8 @@ const MaintenacesPage = () => {
             <TableRow key={item.id}>
               <TableCell>{item.name}</TableCell>
               {admin && 
-
               <TableCell>{item.type}</TableCell>
-            }
+              }
 
               <TableCell>{convertAttribute(item.type, true, item.start)}</TableCell>
               <TableCell>{convertAttribute(item.type, false, item.period)}</TableCell>

@@ -62,7 +62,7 @@ const EmulatorPage = () => {
   const navigate = useNavigate();
   const t = useTranslation();
 
-  const isPhone = useMediaQuery(theme.breakpoints.down('sm'));
+  const isPhone = useMediaQuery(points.down('sm'));
 
   const devices = useSelector((state) => state.devices.items);
   const deviceId = useSelector((state) => state.devices.selectedId);

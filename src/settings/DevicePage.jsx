@@ -68,7 +68,7 @@ const DevicePage = () => {
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">
-                {t('sharedRequired')}
+                {t('reportDeviceName')}
               </Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
@@ -89,10 +89,10 @@ const DevicePage = () => {
               }
             </AccordionDetails>
           </Accordion>
-          <Accordion>
+          <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">
-                {t('sharedExtra')}
+                {t('deviceSecondaryInfo')}
               </Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
@@ -143,7 +143,7 @@ const DevicePage = () => {
               <TextField
                 label={t('userExpirationTime')}
                 type="date"
-                value={item.expirationTime ? item.expirationTime.split('T')[0] : '2099-01-01'}
+                value={item.expirationTime ? item.expirationTime.split('T')[0] : '2027-01-01'}
                 onChange={(e) => {
                   if (e.target.value) {
                     setItem({ ...item, expirationTime: new Date(e.target.value).toISOString() });
@@ -157,9 +157,9 @@ const DevicePage = () => {
                 disabled={!admin}
               />
             </AccordionDetails>
-          </Accordion>
+          </Accordion >
           {item.id && admin && (
-            <Accordion>
+            <Accordion defaultExpanded>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="subtitle1">
                   {t('attributeDeviceImage')}
@@ -177,8 +177,9 @@ const DevicePage = () => {
               </AccordionDetails>
             </Accordion>
           )}
+
           <EditAttributesAccordionUser
-            attributes={admin ? item.attributes : Object.fromEntries(Object.entries(item.attributes).filter(([key]) => key === "speedLimit"))}
+            attributes={admin ? item.attributes : Object.fromEntries(Object.entries(item.attributes).filter(([key]) => key === "speedLimit" || key === "insuranceExpiration"))}
             setAttributes={(attributes) => setItem({ ...item, attributes })}
             definitions={{ ...commonDeviceAttributes, ...deviceAttributes }}
           />

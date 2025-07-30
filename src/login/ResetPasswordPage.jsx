@@ -29,6 +29,25 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const ua = navigator.userAgent || "";
+const platform = navigator.userAgentData?.platform || navigator.platform || "";
+
+// Apple cihazlarını algıla (iPhone, iPad, iPod, dokunmatik Mac)
+const isAppleDevice = /iPhone|iPad|iPod/.test(ua) || (/Mac/i.test(platform) && 'ontouchend' in document);
+
+// Android cihazlarını algıla
+const isAndroidDevice = /Android/.test(ua);
+
+const handleClose = () => {
+  if (isAppleDevice) {
+      window.location.href = "https://apps.apple.com/us/app/takipon/id6472163280";
+  } else if (isAndroidDevice) {
+      window.location.href = "https://play.google.com/store/apps/details?id=org.takipon.manager";
+  } else {
+      navigate('/login');
+  }
+};
+
 const ResetPasswordPage = () => {
   const classes = useStyles();
   const navigate = useNavigate();
@@ -40,6 +59,7 @@ const ResetPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+
 
   const handleSubmit = useCatch(async (event) => {
     event.preventDefault();
@@ -107,7 +127,7 @@ const ResetPasswordPage = () => {
       </div>
       <Snackbar
         open={snackbarOpen}
-        onClose={() => navigate('/login')}
+        onClose={handleClose}
         autoHideDuration={snackBarDurationShortMs}
         message={!token ? t('loginResetSuccess') : t('loginUpdateSuccess')}
       />

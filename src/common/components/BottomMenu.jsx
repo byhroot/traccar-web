@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Paper, BottomNavigation, BottomNavigationAction, Menu, MenuItem, Typography, Badge, ListItemIcon,Snackbar
+  Paper,Box, BottomNavigation, BottomNavigationAction, Menu, MenuItem, Typography, Badge, ListItemIcon,Snackbar
 } from '@mui/material';
 
-import DescriptionIcon from '@mui/icons-material/Description';
+import OtherHousesIcon from '@mui/icons-material/OtherHouses';
 import MapIcon from '@mui/icons-material/Map';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -13,7 +13,6 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import ContactEmergencyIcon from '@mui/icons-material/ContactEmergency';
 import AddAlertIcon from '@mui/icons-material/AddAlert';
-import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
 import CropIcon from '@mui/icons-material/Crop';
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -21,13 +20,15 @@ import HomeIcon from '@mui/icons-material/Home';
 import GroupIcon from '@mui/icons-material/Group';
 import BuildIcon from '@mui/icons-material/Build';
 import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
+import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
 
 import { sessionActions } from '../../store';
 import { useTranslation } from './LocalizationProvider';
-import { useAdministrator, useRestriction } from '../util/permissions';
+import { useAdministrator, useManager, useRestriction } from '../util/permissions';
 import { nativePostMessage } from './NativeInterface';
 import PhonelinkSetup from '@mui/icons-material/PhonelinkSetup';
 
@@ -37,30 +38,25 @@ const BottomMenu = () => {
   const dispatch = useDispatch();
   const t = useTranslation();
   const admin = useAdministrator();
-
+  const manager = useManager();
   const readonly = useRestriction('readonly');
   const disableReports = useRestriction('disableReports');
   const user = useSelector((state) => state.session.user);
   const socket = useSelector((state) => state.session.socket);
   const theme = useTheme();
-  const desktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const [anchorEl, setAnchorEl] = useState(null);
-  const [isReportsMenuOpen, setIsReportsMenuOpen] = useState(false);
 
-
-  const handleReportsMenuToggle = () => {
-    setIsReportsMenuOpen(!isReportsMenuOpen);
-    // Diğer menüyü kapatmak için
-  };
 
   const currentSelection = () => {
     if (location.pathname === `/settings/user/${user.id}`) {
       return 'account';
     } if (location.pathname.startsWith('/settings/preferences')) {
-      return 'settings';
+      return 'account';
     } if (location.pathname.startsWith('/settings')) {
-      return 'settings';
+      return 'account';
+    } if (location.pathname.startsWith('/geofences')) {
+      return 'account';
     } if (location.pathname.startsWith('/reports')) {
       return 'reports';
     } if (location.pathname.startsWith('/Reportsmenu')) {
@@ -86,7 +82,7 @@ const BottomMenu = () => {
   };
   const handleNotifications = () => {
     setAnchorEl(null);
-    navigate('/settings/notifications');
+    navigate('/settings/notificationsnew');
   };
   const handleDevices = () => {
     setAnchorEl(null);
@@ -189,53 +185,76 @@ const BottomMenu = () => {
 
   return (
     <Paper square elevation={6}>
-      <BottomNavigation value={currentSelection()} onChange={handleSelection} showLabels>
-      {!disableReports ?
-        <BottomNavigationAction
-          label={t('dashboardTitle')}
-          icon={(
-              <HomeIcon />
-          )}
-          value="dashboard"
-        />
-        :
-        <BottomNavigationAction
-        label={t('dashboardTitle')}
-        icon={(
-            <HomeIcon />
-        )}
-        value=""
-      />
-        }
-        <BottomNavigationAction
-          label={t('mapTitle')}
-          icon={(
-            <Badge color="error" variant="dot" overlap="circular" invisible={socket !== false}>
-              <MapIcon />
-            </Badge>
-          )}
-          value="map"
-        />
-        {!disableReports ? (desktop ? (
-          <BottomNavigationAction label={t('reportTitle')} icon={<DescriptionIcon />} value="reports" onClick={handleReportsMenuToggle} />
-        ) : (
-          <BottomNavigationAction label={t('reportTitle')} icon={<DescriptionIcon />} value="reports" onClick={handleReportsMenuToggle} />
-        )) : (
-          <BottomNavigationAction label={t('reportTitle')} icon={<DescriptionIcon />} value="" />
-        )}
-        {readonly ? (
-          <BottomNavigationAction label={t('loginLogout')} icon={<ExitToAppIcon />} value="logout" />
-        ) : (
-          <BottomNavigationAction label={t('settingsTitle')} icon={<SettingsIcon />} value="account" />
-        )}
-        
+      <BottomNavigation
+        value={currentSelection()}
+        onChange={handleSelection}
+        showLabels
+        sx={{
+          left: 0,
+          right: 0,
+          borderTopLeftRadius: 10,
+          borderTopRightRadius: 10,
+          overflow: 'isvisible',
+          clipPath: 'path("M0,0 Hcalc(50% - 50px) Q50%,20 50%,0 Hcalc(50% + 40px) V100% H0 Z")',
+        }}
+      >
+        {[
+          { label: t('mainpageTitle'), value: 'dashboard', icon: <OtherHousesIcon /> },
+          { label: t('mapTitle'), value: 'map', icon: <SatelliteAltIcon />, badge: socket === false },
+          { label: t('reportTitle'), value: 'reports', icon: <AssessmentIcon />, disabled: disableReports },
+          { label: readonly ? t('loginLogout') : t('commandIndex'), value: readonly ? 'logout' : 'account', icon: readonly ? <ExitToAppIcon /> : <SettingsSuggestIcon /> },
+        ].map((item) => (
+          !item.disabled && (
+            <BottomNavigationAction
+              key={item.value}
+              label={item.label}
+              value={item.value}
+              icon={
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    mt: currentSelection() === item.value ? -3 : 0,
+                    bgcolor: currentSelection() === item.value ? theme.palette.primary.contrastText : 'transparent',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: currentSelection() === item.value ? '0 4px 12px rgba(124, 58, 237, 0.3)' : 'none',
+                  }}
+                >
+                  {item.badge ? (
+                    <Badge color="error" variant="dot" overlap="circular">
+                      {item.icon}
+                    </Badge>
+                  ) : (
+                    item.icon
+                  )}
+                </Box>
+              }
+              sx={{
+                color: currentSelection() === item.value ? '#7c3aed' : '##4a6166',
+                fontWeight: currentSelection() === item.value ? 'bold' : 'normal',
+                minWidth: 60,
+                paddingTop: 1,
+                paddingBottom: 1.5,
+                gap: '0px',
+                '& .MuiBottomNavigationAction-label': {
+                  fontSize: '0.80rem',
+                  marginTop: '0px',
+                },
+              }}
+            />
+          )
+        ))}
       </BottomNavigation>
+
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={handleSettings}>
           <ListItemIcon>
             <PhonelinkSetup fontSize="small" color="second" />
           </ListItemIcon>
-          <Typography color="textSecond">{t('sharedExtra')}</Typography>
+          <Typography color="textSecond">{t('settingsTitle')}</Typography>
         </MenuItem>
         <MenuItem onClick={handleAccount}>
           <ListItemIcon>
@@ -293,7 +312,7 @@ const BottomMenu = () => {
             <Typography color="textPrimary">{t('settingsServer')}</Typography>
           </MenuItem>
         }
-        {admin && 
+        {manager && 
           <MenuItem onClick={handleUsers}>
             <ListItemIcon>
               <GroupIcon fontSize="small" color="error" />

@@ -21,7 +21,7 @@ import MapRoutePoints from '../map/MapRoutePoints';
 import MapPositions from '../map/MapPositions';
 import { formatTime } from '../common/util/formatter';
 import ReportFilter from '../reports/components/ReportFilter';
-import { useTranslation } from '../common/components/LocalizationProvider';
+import { useTranslation, useTranslationKeys } from '../common/components/LocalizationProvider';
 import { useCatch } from '../reactHelper';
 import MapCamera from '../map/MapCamera';
 import MapGeofence from '../map/MapGeofence';
@@ -82,7 +82,7 @@ const ReplayPage = () => {
   const classes = useStyles();
   const navigate = useNavigate();
   const timerRef = useRef();
-
+  
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
 
   const [positions, setPositions] = useState([]);
@@ -183,9 +183,9 @@ const ReplayPage = () => {
             <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
               <ArrowBackIcon />
             </IconButton>
-            <Typography variant="h6" className={classes.title}>{t('reportReplay')} - {deviceName}</Typography>
+            <Typography variant="h7" className={classes.title}>{t('reportReplay')} - {deviceName}</Typography>
             <Tooltip
-                title="Renkler Mevcut Aralıktaki En Yüksek Hızdan(Kırmızı), En Düşük Hıza doğru (Yeşil) Renklendirilmektedir. Yeşil Renk Duraklama veya Yavaşlama Noktalarını Temsil Eder."
+                title={t("replayAciklama")}
                 open={tooltipOpen}
                 onClick={handleTooltipClick}  // Tooltip'e tıklanabilirlik ekledik
               >
@@ -205,7 +205,7 @@ const ReplayPage = () => {
             )}
           </Toolbar>
         </Paper>
-        <Paper className={classes.content} square>
+        <Paper sx={{ borderRadius: 3 }}  className={classes.content} square>
           {!expanded ? (
             <>
               <Slider

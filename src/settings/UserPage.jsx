@@ -18,6 +18,10 @@ import {
   IconButton,
   OutlinedInput,
   Tooltip,
+  Grid,
+  Card,
+  CardContent,
+  Box,  
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';// İmport satırını ekledim
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';// İmport 
@@ -43,6 +47,9 @@ import { useCatch } from '../reactHelper';
 import useMapStyles from '../map/core/useMapStyles';
 import { map } from '../map/core/MapView';
 import useSettingsStyles from './common/useSettingsStyles';
+import PackageStatusCard from '../main/PackageStatusCard';
+import AccountBoxIcon from '@mui/icons-material/AccountBox';
+import LinkField from '../common/components/LinkField';
 
 const useStyles = makeStyles((theme) => ({
   details: {
@@ -154,10 +161,25 @@ const UserPage = () => {
     >
       {item && (
         <>
+
+        {/* User Account List Kartı */}
+        {id && 
+        <Grid item xs={12} sm={10} md={10} lg={10} xl={8}>
+          <Card sx={{ width: '100%', maxWidth: '1000px', height: '100%',}}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <AccountBoxIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }}  />
+                <Typography variant="h6" > {`${t("settingsUser")} ${t("positionStatus")}`} </Typography>
+              </Box>
+              <PackageStatusCard />
+            </CardContent>
+          </Card>
+        </Grid>
+        }
           <Accordion defaultExpanded={!attribute}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">
-                {t('sharedRequired')}
+                {t('settingsUser')}
               </Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
@@ -165,7 +187,7 @@ const UserPage = () => {
                 value={item.name || ''}
                 onChange={(e) => setItem({ ...item, name: e.target.value })}
                 label={t('sharedName')}
-                disabled={fixedEmail}
+                disabled={fixedEmail && item.id === currentUser.id}
 
               />
               <TextField
@@ -270,7 +292,7 @@ const UserPage = () => {
                 <InputLabel>{t('settingsSpeedUnit')}</InputLabel>
                 <Select
                   label={t('settingsSpeedUnit')}
-                  value={(item.attributes && item.attributes.speedUnit) || 'kn'}
+                  value={(item.attributes && item.attributes.speedUnit) || 'kmh'}
                   onChange={(e) => setItem({ ...item, attributes: { ...item.attributes, speedUnit: e.target.value } })}
                 >
                   <MenuItem value="kn">{t('sharedKn')}</MenuItem>
@@ -332,7 +354,7 @@ const UserPage = () => {
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="subtitle1">
-                {t('sharedLocation')}
+              {t('mapDefault')} {t('sharedLocation')}
               </Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
@@ -371,7 +393,7 @@ const UserPage = () => {
               </Button>
             </AccordionDetails>
           </Accordion>
-          {admin && (
+          {manager && (
 
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -383,7 +405,7 @@ const UserPage = () => {
               <TextField
                 label={t('userExpirationTime')}
                 type="date"
-                value={item.expirationTime ? item.expirationTime.split('T')[0] : '2099-01-01'}
+                value={item.expirationTime ? item.expirationTime.split('T')[0] : '2027-01-01'}
                 onChange={(e) => {
                   if (e.target.value) {
                     setItem({ ...item, expirationTime: new Date(e.target.value).toISOString() });
@@ -482,7 +504,74 @@ const UserPage = () => {
           )}
         </>
       )}
+      
+
+
+
+
+
+        
+        <Accordion defaultExpanded>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="subtitle1">
+              {t('sharedConnections')} & {t('sharedPermissions')}
+            </Typography>
+          </AccordionSummary>
+          {!id && 
+          <AccordionDetails className={classes.details}>
+
+            <Typography variant="subtitle1">
+                  Kullanıcıya Cihaz & Grup Ataması yapmak için, Kullanıcıyı oluşturduktan sonra tekrar düzenleme sayfasını açınız
+            </Typography>
+            </AccordionDetails>
+
+            }
+          {manager && id && item && item.id !== currentUser.id && 
+          <AccordionDetails className={classes.details}>
+            <LinkField
+              endpointAll="/api/devices?all=true"
+              endpointLinked={`/api/devices?userId=${id}`}
+              baseId={id}
+              keyBase="userId"
+              keyLink="deviceId"
+              titleGetter={(it) => `${it.name} (${it.uniqueId})`}
+              label={t('deviceTitle')}
+            />
+            
+            <LinkField
+              endpointAll="/api/groups?all=true"
+              endpointLinked={`/api/groups?userId=${id}`}
+              baseId={id}
+              keyBase="userId"
+              keyLink="groupId"
+              titleGetter={(it) => `${it.name} (${it.id})`}
+              label={t('settingsGroups')}
+            />
+            
+            <LinkField
+              endpointAll="/api/drivers?all=true"
+              endpointLinked={`/api/drivers?userId=${id}`}
+              baseId={id}
+              keyBase="userId"
+              keyLink="driverId"
+              titleGetter={(it) => `${it.name} (${it.uniqueId})`}
+              label={t('sharedDrivers')}
+            />
+            
+            <LinkField
+              endpointAll="/api/maintenance?all=true"
+              endpointLinked={`/api/maintenance?userId=${id}`}
+              baseId={id}
+              keyBase="userId"
+              keyLink="maintenanceId"
+              label={t('sharedMaintenance')}
+            />
+          </AccordionDetails>
+        }
+        </Accordion>
+        
     </EditItemView>
+    
   );
 };
 

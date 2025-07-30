@@ -1,4 +1,6 @@
-import React from 'react';
+import React, {useState} from 'react';
+import { useSelector } from 'react-redux';
+
 import { useParams } from 'react-router-dom';
 import {
   Accordion,
@@ -11,7 +13,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LinkField from '../common/components/LinkField';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import SettingsMenu from './components/SettingsMenu';
-import { formatNotificationTitle } from '../common/util/formatter';
+import { formatNotificationTitle, translateNotificators } from '../common/util/formatter';
 import PageLayout from '../common/components/PageLayout';
 import useFeatures from '../common/util/useFeatures';
 import useSettingsStyles from './common/useSettingsStyles';
@@ -23,6 +25,11 @@ const DeviceConnectionsPage = () => {
   const { id } = useParams();
 
   const features = useFeatures();
+  const defaultDeviceId = useSelector((state) => state.devices.selectedId);
+
+  const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
+
+  const device = useSelector((state) => state.devices.items[id]);
 
   return (
     <PageLayout
@@ -33,7 +40,7 @@ const DeviceConnectionsPage = () => {
         <Accordion defaultExpanded>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography variant="subtitle1">
-              {t('sharedConnections')}
+              {t('sharedConnections')}  - {device.name}
             </Typography>
           </AccordionSummary>
           <AccordionDetails className={classes.details}>
@@ -43,6 +50,7 @@ const DeviceConnectionsPage = () => {
               baseId={id}
               keyBase="deviceId"
               keyLink="geofenceId"
+              titleGetter={(it) => `${it.name} (${it.id})`}
               label={t('sharedGeofences')}
             />
             <LinkField
@@ -51,7 +59,7 @@ const DeviceConnectionsPage = () => {
               baseId={id}
               keyBase="deviceId"
               keyLink="notificationId"
-              titleGetter={(it) => formatNotificationTitle(t, it)}
+              titleGetter={(it) => formatNotificationTitle(t, it, false) +" | " +translateNotificators(it.notificators, t)}
               label={t('sharedNotifications')}
             />
             {!features.disableDrivers && (
