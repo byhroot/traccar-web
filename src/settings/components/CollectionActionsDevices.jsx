@@ -74,7 +74,7 @@ const CollectionActionsDevices = ({
             ))}
             {!readonly && (
               <>
-                <MenuItem onClick={handleEdit}>{t('sharedEdit')}</MenuItem>
+                <MenuItem onClick={handleEdit}> { admin ? t('sharedEdit') : t('settingsTitle') }</MenuItem>
                 {admin && 
                 <MenuItem onClick={handleRemove}>{t('sharedRemove')}</MenuItem>
                 }

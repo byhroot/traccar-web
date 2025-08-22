@@ -16,6 +16,7 @@ import {
   CardContent,
   Typography,
   Slider,
+  Box,
 } from '@mui/material';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import PageLayout from '../common/components/PageLayout';
@@ -25,6 +26,9 @@ import useSettingsStyles from './common/useSettingsStyles';
 import { useCatch } from '../reactHelper';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useAdministrator, useRestriction } from '../common/util/permissions';
+import DeviceBakimNotlariCard from '../common/components/DeviceBakimNotlariCard';
+import DeviceMaintenanceCard from '../common/components/DeviceMaintenanceCard';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 
 const CommandDevicePageUsers = () => {
   const navigate = useNavigate();
@@ -183,15 +187,15 @@ const CommandDevicePageUsers = () => {
       { admin && 
       <Button   variant="outlined"   color="primary"   size="large"  fullWidth  onClick={() => navigate(`/settings/device/${id}/command`)}>{t('deviceCommand')}</Button>
       }
-      <Container maxWidth="md" className={classes.container} sx={{ marginTop: '2rem' }}>
-      <Typography textAlign= 'center' variant="h6" gutterBottom> {t('reportDeviceName')} : {device.name}</Typography>
+      <Container maxWidth="md" className={classes.container} sx={{ marginTop: '2rem' , marginBottom: '2rem'  } }>
+      <Typography textAlign= 'center' variant="h6" gutterBottom> {t('reportDeviceName')} : {device?.name} </Typography>
 
         <Grid container spacing={2}>
           {/* Motor Durum Kartı */}
           <Grid item xs={12} sm={6}>
             <Card sx={{ position: 'relative' }}>
               {blockedDevice === false && (
-                <CheckCircleIcon
+                <VerifiedUserIcon
                   sx={{
                     position: 'absolute',
                     top: 15,
@@ -233,7 +237,7 @@ const CommandDevicePageUsers = () => {
           <Grid item xs={12} sm={6}>
             <Card  sx={{ position: 'relative' }}>
               {vibrationStatus === true && (
-                <CheckCircleIcon
+                <VerifiedUserIcon
                   sx={{
                     position: 'absolute',
                     top: 15,
@@ -246,7 +250,7 @@ const CommandDevicePageUsers = () => {
                 />
               )}
               <CardContent  sx={{ textAlign: 'center' }}>
-                <Typography variant="h6" gutterBottom> {t('alarmVibration')}</Typography>
+                <Typography variant="h6" gutterBottom> {vibrationStatus ? t('commandAlarmVibrationon'): t('commandAlarmVibrationoff')}</Typography>
                 {limitCommands &&  <Typography gutterBottom> Yetkiniz Yok </Typography>}
 
                 <Button
@@ -259,55 +263,76 @@ const CommandDevicePageUsers = () => {
                     setConfirmOpen(true);
                   }}
                 >
-                  {vibrationStatus ? t('commandAlarmVibrationoff') : t('commandAlarmVibrationon')}
+                  {vibrationStatus ? t('commandAlarmDisarm') : t('commandAlarmArm')}
                 </Button>
               </CardContent>
             </Card>
           </Grid>
 
+            <Grid item xs={12} sm={6}>
+              <Card>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <Typography variant="h6" gutterBottom>
+                    {t('commandAlarmVibrationlevel')} : {sensorLevelServer}
+                  </Typography>
 
-          {/* Titreşim Hassasiyet Seviyesi Kartı */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h6" gutterBottom>{t('commandAlarmVibrationlevel')} : {sensorLevelServer} </Typography>
+                  <Slider
+                    disabled={limitCommands}
+                    value={parseInt(sensorLevel)}
+                    min={2}
+                    max={9}
+                    step={1}
+                    onChange={(e, newValue) => setSensorLevel(newValue.toString())}
+                    valueLabelDisplay="on"
+                  />
 
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  {t('commandAlarmSensorlevel')}
-                </Alert>
+                  {/* Slider açıklama etiketleri */}
+                  <Box display="flex" justifyContent="space-between" px={2} mt={-1}>
+                    <Typography variant="body2" color="textSecondary">
+                      Yüksek Hassasiyet
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Düşük Hassasiyet
+                    </Typography>
+                  </Box>
 
-                <Slider
-                  disabled={limitCommands}
-                  value={parseInt(sensorLevel)}
-                  min={2}
-                  max={9}
-                  step={1}
-                  onChange={(e, newValue) => setSensorLevel(newValue.toString())}
-                  valueLabelDisplay="on"
-                />
-                 {limitCommands &&  <Typography gutterBottom> Yetkiniz Yok </Typography>}
+                  {limitCommands && (
+                    <Typography gutterBottom>Yetkiniz Yok</Typography>
+                  )}
 
-                <Button
-                  disabled={limitCommands}
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  sx={{ marginTop: '1rem' }}
-                  onClick={() => {
-                    setSelectedCommand('alarmVibrationlevel');
-                    setConfirmOpen(true);
-                  }}
-                >
-                  {t('sharedSave')}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
+                  <Button
+                    disabled={limitCommands}
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    sx={{ marginTop: '1rem' }}
+                    onClick={() => {
+                      setSelectedCommand('alarmVibrationlevel');
+                      setConfirmOpen(true);
+                    }}
+                  >
+                    {t('sharedSave')}
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+
              {/* Insurance and Speed Limit Card */}
              
-            <Grid  container justifyContent="center" item xs={12}>
+            <Grid item xs={12} sm={6}>
               <InsuranceCard deviceId={ id } />
             </Grid>
+
+
+            <Grid  container justifyContent="center" item xs={12}>
+            <DeviceMaintenanceCard deviceId={id} deviceName={device?.name} devicePositionId={device?.positionId} />
+            </Grid>
+
+                                     
+            <Grid  container justifyContent="center" item xs={12}>
+              <DeviceBakimNotlariCard deviceId={ id } />
+            </Grid>
+
         </Grid>
 
         {/* Onay Dialog */}

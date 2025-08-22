@@ -654,6 +654,12 @@
     "paketStandartAciklama2" : "У вас немає обмежень на SMS та дзвінки. Ви можете придбати Професійні Додаткові пакети у будь-який час на нашому сайті. Web: www.takipon.com >> Додаткові пакети",
     "paketProfesyonelUyari" : "Ваш ліміт SMS/дзвінків зменшується! Придбайте Професійні Додаткові пакети на нашому сайті.",
     "replayAciklama" : "Кольори відображають швидкість від найвищої (Червоний) до найнижчої (Зелений) у поточному діапазоні. Зелений колір означає зупинки або уповільнення.",
-    "changeDetected" : "Change detected, confirm to save..."
+    "changeDetected" : "Change detected, confirm to save...",
+    "notes": "Ваші нотатки",
+    "records": "Записи",
+    "sharedServiceName": "Назва сервісу",
+    "live": "Актуальний",
+    "date": "Дата",
+    "positionTotalDistance": "Км транспортного засобу"
    
 }

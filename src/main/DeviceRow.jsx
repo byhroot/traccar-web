@@ -2,7 +2,7 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import makeStyles from '@mui/styles/makeStyles';
 import {
-  IconButton, Tooltip, Avatar, ListItemAvatar, ListItemText, ListItemButton,
+  IconButton, Tooltip, Avatar, ListItemAvatar, ListItemText, ListItemButton,Typography,
 } from '@mui/material';
 import BatteryFullIcon from '@mui/icons-material/BatteryFull';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
@@ -63,7 +63,28 @@ const DeviceRow = ({ data, index, style }) => {
 
   const devicePrimary = useAttributePreference('devicePrimary', 'name');
   const deviceSecondary = useAttributePreference('deviceSecondary', '');
+  
+  const getStatusColorList = () => {
+    const isOnline = item.status === 'online';
+    const speed =  position && position.speed != null ? position.speed : 0;
+    const ignition = position && position.attributes ? position.attributes.ignition : null;
+    const motion = item.motionState === true;
 
+    if (!isOnline) {
+      return 'grey'; // offline
+    }
+  
+    if (position && position.attributes && motion && ignition && speed > 1) {
+      return 'green'; // aktif hareket
+    }
+  
+    if (position && position.attributes && ignition && (speed === 0)) {
+      return '#90ee90'; // açık yeşil - kontak açık ama hareketsiz
+    }
+  
+    return 'grey'; // online ama kontak kapalı veya bilinmeyen durum
+  };
+  
   const secondaryText = () => {
     let status;
     if (item.status === 'online' || !item.lastUpdate) {
@@ -87,13 +108,17 @@ const DeviceRow = ({ data, index, style }) => {
         disabled={!admin && item.disabled}
       >
         {/* ---takipon güncellemesi - blocked cihaz kilit simgesi------------------------*/}
-        <ListItemAvatar> 
+        <ListItemAvatar > 
           {position && position.attributes && position.attributes.hasOwnProperty('blocked') && position.attributes.blocked ? (
             <Avatar>
               <LockIcon style={{ color: 'red' }} />
             </Avatar>
           ) : (
-            <Avatar>
+          <Avatar
+            sx={{
+              bgcolor: getStatusColorList(item)
+            }}
+          >
               <img className={classes.icon} src={mapIcons[mapIconKey(item.category)]} alt="" />
             </Avatar>
           )}
@@ -107,6 +132,12 @@ const DeviceRow = ({ data, index, style }) => {
         />
         {position && (
           <>
+          {position.speed != null && (
+            <Typography sx={{ fontSize: '12px' }} variant="body2"   color={position && position.speed > 0 ? 'green' : 'textSecondary'}            >
+              {`${Math.round(position.speed * 1.852)}km/h`}
+            </Typography>
+          )}
+
             {position.attributes.hasOwnProperty('alarm') && (
               <Tooltip title={`${t('eventAlarm')}: ${formatAlarm(position.attributes.alarm, t)}`}>
                 <IconButton size="small">

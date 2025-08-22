@@ -19,6 +19,7 @@ export default (keyword, filter, filterSort, filterMap, positions, setFilteredDe
 
     const filtered = Object.values(devices)
       .filter((device) => !filter.statuses.length || filter.statuses.includes(device.status))
+      .filter((device) => !(filter.motiones?.length) || filter.motiones.includes(device.motionState))
       .filter((device) => !filter.groups.length || deviceGroups(device).some((id) => filter.groups.includes(id)))
       .filter((device) => {
         const lowerCaseKeyword = keyword.toLowerCase();

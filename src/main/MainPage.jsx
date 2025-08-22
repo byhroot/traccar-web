@@ -82,6 +82,7 @@ const MainPage = () => {
   const [filter, setFilter] = usePersistedState('filter', {
     statuses: [],
     groups: [],
+    motiones:[],
   });
   const [filterSort, setFilterSort] = usePersistedState('filterSort', '');
   const [filterMap, setFilterMap] = usePersistedState('filterMap', false);

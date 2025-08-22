@@ -465,6 +465,11 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                 {/* Sağ Sütun: Park Durumu ve Süre */}
                 {position && position.fixTime && (
                   <div style={{ textAlign: 'center' }}>
+                    {device.expirationTime && new Date(device.expirationTime) < new Date() && (
+                    <Typography sx={{ fontSize: '12px' }} variant="body2" color="error" >
+                    {t("paketAlertgecmis")}  
+                    </Typography>
+                   )}
                     <Typography variant="body2" style={{ fontWeight: 'bold' }}>
                     {(() => {
                       const currentTime = location.pathname === '/replay' ? new Date(position.serverTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
@@ -497,7 +502,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                                 return <Typography style={{ color: 'grey' }}> {t('alarmParking')} </Typography>;
                               }
                               
-                            } else if (position.speed < 5 && diffInMinutes >= 1 ) {
+                            } else if (position && position.attributes && !position.attributes.ignition && position.speed < 5 || diffInMinutes >= 1 ) {
                               return <Typography style={{ color: 'grey' }}>{t('eventDeviceStopped')}</Typography>;
                             } else if (diffInMinutes < 1 ) {
                               return <Typography style={{ color: 'green' }}>{t('eventDeviceMoving')}</Typography>;
@@ -505,6 +510,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                           }
                       })()}
                     </Typography>
+
                     <Typography sx={{ fontSize: '12px' }} variant="body2" style={{ color: 'gray' }}>
                       {(() => {
                         const currentTime = location.pathname === '/replay' ? new Date(position.deviceTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
@@ -606,7 +612,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                 
                 <IconButton
                   onClick={() => navigate(`/settings/device/${deviceId}/commandnew`)}
-                  disabled={disableActions || deviceReadonly}
+                  disabled={disableActions || userReadonly}
                 >
                   <SettingsIcon />
                   </IconButton>

@@ -654,6 +654,12 @@
     "paketStandartAciklama2" : "Sie haben keine Begrenzung für SMS- und Anrufbenachrichtigungen. Sie können jederzeit professionelle Zusatzbenachrichtigungspakete auf unserer Website kaufen. Web: www.takipon.com >> Zusatzpakete",
     "paketProfesyonelUyari" : "Ihr SMS-/Anrufbenachrichtigungslimit wird knapp! Sie können professionelle Zusatzpakete auf unserer Website kaufen.",
     "replayAciklama" : "Die Farben zeigen die Geschwindigkeit im aktuellen Bereich von der höchsten (Rot) zur niedrigsten (Grün) an. Grün steht für Halte- oder Verlangsamungspunkte.",
-    "changeDetected" : "Change detected, confirm to save..."
+    "changeDetected" : "Change detected, confirm to save...",
+    "notes": "Ihre Notizen",
+    "records": "Aufzeichnungen",
+    "sharedServiceName": "Dienstname",
+    "live": "Aktuell",
+    "date": "Datum",
+    "positionTotalDistance": "Fahrzeug-Kilometer"
 
 }

@@ -654,6 +654,12 @@
     "paketStandartAciklama2" : "SMS və Zəng Bildirişi limitiniz yoxdur. Veb saytımızdan istədiyiniz zaman Peşəkar Əlavə Bildiriş paketləri ala bilərsiniz. Web: www.takipon.com >> Əlavə Paketlər",
     "paketProfesyonelUyari" : "SMS/Zəng Bildiriş limitiniz azalır! Veb saytımızdan Peşəkar Əlavə Paketlər ala bilərsiniz.",
     "replayAciklama" : "Rənglər cari intervalda ən yüksək sürətdən (Qırmızı) ən aşağı sürətə (Yaşıl) qədər göstərilir. Yaşıl rəng dayanma və ya yavaşlama nöqtələrini göstərir.",
-    "changeDetected" : "Change detected, confirm to save..."
+    "changeDetected" : "Change detected, confirm to save...",
+    "notes": "Qeydləriniz",
+    "records": "Qeydlər",
+    "sharedServiceName": "Xidmət Adı",
+    "live": "Cari",
+    "date": "Tarix",
+    "positionTotalDistance": "Avtomobil Km"
    
 }

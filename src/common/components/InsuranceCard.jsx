@@ -77,7 +77,7 @@ const InsuranceCard = ({ deviceId }) => {
   };
 
   return (
-    <Grid item xs={14} sm={6}>
+    <Grid >
       <Card>
         <CardContent sx={{ textAlign: 'center' }}>
           <Typography variant="h6" gutterBottom>{t('deviceInsuranceAndSpeed')}</Typography>

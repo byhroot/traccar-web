@@ -56,6 +56,10 @@ const MainToolbar = ({
   const [devicesAnchorEl, setDevicesAnchorEl] = useState(null);
 
   const deviceStatusCount = (status) => Object.values(devices).filter((d) => d.status === status).length;
+  const deviceMotionesCount = (motionState) =>
+  Object.values(devices)
+    .filter((d) => d.status !== "offline" && d.motionState === motionState)
+    .length;
 
   return (
     <Toolbar ref={toolbarRef} className={classes.toolbar}>
@@ -121,6 +125,47 @@ const MainToolbar = ({
         }}
       >
         <div className={classes.filterPanel}>
+
+
+
+
+        <FormControl>
+  <InputLabel>{t('positionMotion')}</InputLabel>
+  <Select
+    multiple
+    label={t('positionMotion')}
+    value={Array.isArray(filter.motiones) ? filter.motiones : []}
+    onChange={(e) => {
+      let value = e.target.value;
+      if (!Array.isArray(value)) value = [value];
+      setFilter({
+        ...filter,
+        motiones: value, // boolean dizisi geliyor artık
+      });
+    }}
+    renderValue={(selected) =>
+      selected
+        .map((val) =>
+          val === true
+            ? t('alarmMovement')
+            : val === false
+            ? t('alarmParking')
+            : val
+        )
+        .join(', ')
+    }
+  >
+    <MenuItem value={true}>
+      {`${t('alarmMovement')} (${deviceMotionesCount(true)})`}
+    </MenuItem>
+    <MenuItem value={false}>
+      {`${t('alarmParking')} (${deviceMotionesCount(false)})`}
+    </MenuItem>
+  </Select>
+</FormControl>
+
+
+
           <FormControl>
             <InputLabel>{t('deviceStatus')}</InputLabel>
             <Select

@@ -21,6 +21,7 @@ import useSettingsStyles from './common/useSettingsStyles';
 import DeviceUsersValue from './components/DeviceUsersValue';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import OnlinePredictionIcon from '@mui/icons-material/OnlinePrediction';
 
 const DevicesPage = () => {
   const classes = useSettingsStyles();
@@ -151,11 +152,14 @@ const DevicesPage = () => {
               <React.Fragment key={item.id}>
                 <TableRow onClick={() => toggleRow(item.id)}    sx={{
                     cursor: 'pointer',
-                    backgroundColor: theme.palette.secondary.contrastText // veya custom bir renk
+                    backgroundColor:
+                    item.expirationTime && new Date(item.expirationTime) < new Date()
+                      ? theme.palette.error.light
+                      : theme.palette.secondary.contrastText, // normal durum // veya custom bir renk
                     
                   }}>
-            
-                  {admin && <TableCell>{item.id}</TableCell>}
+                  {}
+                  {admin && <TableCell> <OnlinePredictionIcon sx={{ color: item.status === "online" ? "green" : "red"}}/> {item.id}</TableCell>}
                   <TableCell>{item.name} </TableCell>
                   {admin && <TableCell>{item.uniqueId}</TableCell>}
                   {admin && <TableCell>{item.groupId ? groups[item.groupId]?.name : null}</TableCell>}
