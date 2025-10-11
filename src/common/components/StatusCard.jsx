@@ -472,12 +472,12 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                    )}
                     <Typography variant="body2" style={{ fontWeight: 'bold' }}>
                     {(() => {
-                      const currentTime = location.pathname === '/replay' ? new Date(position.serverTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
-                      const fixTime = location.pathname === '/replay' ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : new Date(position.deviceTime); // FixTime zamanı
+                      const currentTime = (location.pathname === '/replay' || location.pathname.startsWith('/reports'))  ? new Date(position.serverTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
+                      const fixTime = (location.pathname === '/replay' || location.pathname.startsWith('/reports'))  ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : new Date(position.serverTime); // FixTime zamanı
                       const diffInMs = currentTime - fixTime;
                       const diffInMinutes = Math.floor(diffInMs / 60000);
                         
-                          if (location.pathname === '/replay') {
+                      if (location.pathname === '/replay' || location.pathname.startsWith('/reports'))  {
                             if (position && position.speed <=5 && diffInMinutes > 3) {
                               return <Typography style={{ color: 'grey' }}> {t('alarmParking')} </Typography>;
                             } else if (position.speed < 4 && diffInMinutes > 1 ) {
@@ -513,8 +513,8 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
 
                     <Typography sx={{ fontSize: '12px' }} variant="body2" style={{ color: 'gray' }}>
                       {(() => {
-                        const currentTime = location.pathname === '/replay' ? new Date(position.deviceTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
-                        const fixTime = location.pathname === '/replay' ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : device.status !== "online" && position && position.protocol === "takiponalong" ? new Date(position.fixTime) : new Date(position.deviceTime); // FixTime zamanı
+                        const currentTime = (location.pathname === '/replay' || location.pathname.startsWith('/reports'))   ? new Date(position.serverTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
+                        const fixTime = (location.pathname === '/replay' || location.pathname.startsWith('/reports'))  ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : device.status !== "online" && position && position.protocol === "takiponalong" ? new Date(position.fixTime) : new Date(position.serverTime); // FixTime zamanı
                         const diffInMs = currentTime - fixTime;
 
                         const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));

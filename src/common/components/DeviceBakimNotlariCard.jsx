@@ -29,7 +29,7 @@ import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutli
 import { useDeviceReadonly } from '../util/permissions';
 import CheckIcon from '@mui/icons-material/Check';
 
-const DeviceBakimCard = ({ deviceId }) => {
+const DeviceBakimCard = ({ deviceId , deviceData }) => {
   const [device, setDevice] = useState(null);
   const [bakimlar, setBakimlar] = useState({});
   const [selectedBakimKey, setSelectedBakimKey] = useState(null);
@@ -44,14 +44,13 @@ const DeviceBakimCard = ({ deviceId }) => {
   const deviceReadonly = useDeviceReadonly();
   
   
+  // Eğer deviceData değişirse state’i güncelle
   useEffect(() => {
-    fetch(`/api/devices/${deviceId}`)
-      .then(res => res.json())
-      .then(data => {
-        setDevice(data);
-        setBakimlar(data.attributes?.bakimlar || {});
-      });
-  }, [deviceId]);
+    if (deviceData) {
+      setDevice(deviceData);
+      setBakimlar(deviceData.attributes?.bakimlar || {});
+    }
+  }, [deviceData]);
 
   const updateDeviceAttributes = async (newBakimlar) => {
     const updatedDevice = { ...device, attributes: { ...device.attributes, bakimlar: newBakimlar } };
@@ -94,8 +93,9 @@ const DeviceBakimCard = ({ deviceId }) => {
 
   const handleAddBakim = () => {
     const nextKey = (Object.keys(bakimlar).length + 1).toString();
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatında
     setSelectedBakimKey(nextKey);
-    setEditData({ tarih: '', servis: '', notlar: [] });
+    setEditData({ tarih: today , servis: '', notlar: [] });
     setEditDialogOpen(true);
   };
   
@@ -128,14 +128,14 @@ const DeviceBakimCard = ({ deviceId }) => {
       <Grid item xs={12}>
         <Card>
           <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
 
-            <Typography variant="h6" gutterBottom>
-              <EditNoteIcon sx={{ mr: 1 }} /> {t("eventMaintenance")}  {t("notes")}
-            </Typography>
-            <Button  disabled={deviceReadonly} variant="outlined" startIcon={<AddIcon/>} onClick={() => handleAddBakim()}>
-            {t("sharedAdd")}
-            </Button>
+              <Typography variant="h6" gutterBottom>
+                <EditNoteIcon sx={{ mr: 1 }} /> {t("eventMaintenance")}  {t("notes")}
+              </Typography>
+              <Button  disabled={deviceReadonly} variant="outlined" startIcon={<AddIcon/>} onClick={() => handleAddBakim()}>
+              {t("sharedAdd")}
+              </Button>
             </Box>
 
             {Object.entries(bakimlar).length === 0 && (
@@ -149,7 +149,7 @@ const DeviceBakimCard = ({ deviceId }) => {
                       <Grid item xs={8}>
                         <Typography variant="subtitle1">
                           <EventNote sx={{ mr: 1 }} />
-                          {bakim.tarih} - {bakim.servis}
+                          {bakim.tarih}  {bakim.servis}
                         </Typography>
                       </Grid>
                       
@@ -176,8 +176,6 @@ const DeviceBakimCard = ({ deviceId }) => {
                     </Collapse>
                   </div>
                 ))}
-
-
           </CardContent>
         </Card>
       </Grid>

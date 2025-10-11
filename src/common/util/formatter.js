@@ -131,7 +131,7 @@ export const getBatteryStatus = (batteryLevel) => {
   if (batteryLevel >= 70) {
     return 'success';
   }
-  if (batteryLevel > 30) {
+  if (batteryLevel > 40) {
     return 'warning';
   }
   return 'error';

@@ -54,6 +54,7 @@ import App from './App';
 import ChangeServerPage from './login/ChangeServerPage';
 import DevicesPage from './settings/DevicesPage';
 import ScheduledPage from './reports/ScheduledPage';
+import DevicesPage2 from './settings/DevicesPage2';
 import DeviceConnectionsPage from './settings/DeviceConnectionsPage';
 import GroupConnectionsPage from './settings/GroupConnectionsPage';
 import UserConnectionsPage from './settings/UserConnectionsPage';
@@ -63,6 +64,8 @@ import AnnouncementPage from './settings/AnnouncementPage';
 import EmulatorPage from './other/EmulatorPage';
 import Loader from './common/components/Loader';
 import UserlogsPage from './reports/UserlogsPage';
+import Paymentpage from './settings/PaymentPage';
+import ReportsMenuNew from './reports/components/ReportsMenuNew';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -133,6 +136,7 @@ const Navigation = () => {
           <Route path="attribute" element={<ComputedAttributePage />} />
           <Route path="devices" element={<DevicesPage />} />
           <Route path="device/:id/connections" element={<DeviceConnectionsPage />} />
+          <Route path="devicesuser" element={<DevicesPage2 />} />
           <Route path="device/:id/command" element={<CommandDevicePage />} />
           <Route path="device/:id/commandnew" element={<CommandDevicePageUsers />} />
           <Route path="device/:id/share" element={<SharePage />} />
@@ -155,6 +159,7 @@ const Navigation = () => {
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="notification/:id" element={<NotificationPage />} />
           <Route path="notification" element={<NotificationPage />} />
+          <Route path="paymentpage" element={<Paymentpage />} />
           <Route path="preferences" element={<PreferencesPage />} />
           <Route path="server" element={<ServerPage />} />
           <Route path="users" element={<UsersPage />} />
@@ -177,6 +182,8 @@ const Navigation = () => {
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="userlogs" element={<UserlogsPage />} />
           <Route path="logs" element={<LogsPage />} />
+          <Route path="reports" element={<ReportsMenuNew />} />
+
         </Route>
       </Route>
     </Routes>

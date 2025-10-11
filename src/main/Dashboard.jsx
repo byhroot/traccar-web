@@ -1,445 +1,365 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from "react-redux";
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'; // MUI'den gelen pasta dilimi grafiği bileşenleri
-import { Typography, Card, CardContent, Box, Grid } from '@mui/material';
+import { useSelector } from "react-redux";
+import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import {
+  Typography, Card, CardContent, Box, Grid, Chip, Tooltip,
+  Dialog, DialogTitle, IconButton,DialogContent, Badge, List, ListItem,ListItemText,Slide,CardActionArea
+} from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from '../reports/components/ReportsMenu';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
 import EventListCard from './EventListCard';
 import SpeedListCard from './SpeedListCard';
 import GeofenceListCard from './GeofenceListCard';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import Snackbar from '@mui/material/Snackbar';
-import HelpCenterIcon from '@mui/icons-material/HelpCenter';
-import CloseIcon from '@mui/icons-material/Close';
-import IconButton from '@mui/material/IconButton';
-import WifiIcon from '@mui/icons-material/Wifi';
-import SpeedIcon from '@mui/icons-material/Speed';
-import AnnouncementIcon from '@mui/icons-material/Announcement';
-import WifiTetheringErrorIcon from '@mui/icons-material/WifiTetheringError';
-import MapIcon from '@mui/icons-material/Map';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import AlertListCard from './AlertListCard';
 import PackageStatusCard from './PackageStatusCard';
+import DashboardChartsCard from './DashboardChartsCard'
+
+import { ShoppingCart as ShoppingCartIcon, AccountBalanceWallet as WalletIcon } from '@mui/icons-material';
+import {
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  AccountBox as AccountBoxIcon,
+  Announcement as AnnouncementIcon,
+  Wifi as WifiIcon,
+  Speed as SpeedIcon,
+  WifiTetheringError as WifiTetheringErrorIcon,
+  Map as MapIcon,
+  NotificationsActive as NotificationsActiveIcon
+} from '@mui/icons-material';
 import { useTranslation } from '../common/components/LocalizationProvider';
-import { useRestriction } from '../common/util/permissions';
+import CloseIcon from '@mui/icons-material/Close';
 
 const Dashboard = () => {
   const theme = useTheme();
-  const isLG = useMediaQuery(theme.breakpoints.down('lg'));
-  const isMD = useMediaQuery(theme.breakpoints.down('md'));
   const isSM = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const disableReports = useRestriction("disableReports");
-
   const user = useSelector((state) => state.session.user);
   const [attributes] = useState(user.attributes);
   const statuscarddisabled = attributes.statuscarddisabled;
-
-  const t = useTranslation();
-
-  const [deviceIds, setDeviceIds] = useState([]);
   
+  const t = useTranslation();
+  const navigate = useNavigate();
+  const desktop = useMediaQuery(theme.breakpoints.up('md'));
+
   const [deviceDetails, setDeviceDetails] = useState([]);
   const [events, setEvents] = useState([]);
   const [eventsSpeed, setEventsSpeed] = useState([]);
   const [eventsGeofenceExit, setEventsGeofenceExit] = useState([]);
-
-
-  // Online ve offline+unknown araç sayılarını state'te saklayalım
   const [onlineCount, setOnlineCount] = useState(0);
-  const [offlineAndUnknownCount, setOfflineAndUnknownCount] = useState(0);
+  const [offlineCount, setOfflineCount] = useState(0);
   const [motionCountTrue, setMotionCountTrue] = useState(0);
   const [motionCountFalse, setMotionCountFalse] = useState(0);
+  const [expandedAlert, setExpandedAlert] = useState(false);
+  const [expandedEvents, setExpandedEvents] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogDevices, setDialogDevices] = useState([]);
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [packageDialogOpen, setPackageDialogOpen] = useState(false);
 
-  const [open, setOpen] = React.useState(false);
-  const [message, setMessage] = React.useState(true);
+  const COLORS = [theme.palette.primary.main, theme.palette.grey[300]];
+// 1️⃣ Sadece cihaz listesini çeken fonksiyon (sayfa açılışında bir kez)
+const fetchDevices = async () => {
+  try {
+    const res = await fetch('/api/devices');
+    if(!res.ok) throw Error(await res.text());
+    const data = await res.json();
+    setDeviceDetails(data);
+    setOnlineCount(data.filter(d=>d.status==='online').length);
+    setOfflineCount(data.filter(d=>d.status!=='online').length);
+    setMotionCountTrue(data.filter(d=>d.status==='online' && d.motionState===true).length);
+    setMotionCountFalse(data.filter(d=>d.status!=='online' || d.motionState!==true).length);
+    return data; // <-- burada data return et
+  } catch(err){ console.error(err); return []; }
+};
 
 
-  const handleClickHareket = () => {
-    setOpen(true);
-    setMessage(t("handleClickMotion"));
-  };
+// 2️⃣ Sadece eventleri çeken fonksiyon (interval ile yenilenebilir)
+const fetchEvents = async (devicesList = deviceDetails) => {
+  if(!devicesList || devicesList.length === 0) return;
+  try {
+    const now = new Date();
+    const from = new Date(now - 2*24*60*60*1000).toISOString();
+    const to = now.toISOString();
+    const params = new URLSearchParams({ from, to });
+    devicesList.forEach(d=>params.append('deviceId', d.id));
+    ['alarm', 'deviceInactive', 'deviceMoving', 'deviceStopped',
+    'deviceOverspeed', 'deviceFuelDrop', 'geofenceEnter', 'geofenceExit',
+    'ignitionOn', 'ignitionOff', 'maintenance', 'driverChanged'].forEach(type=>params.append('type',type));
 
-  const handleClickStatus = () => {
-    setOpen(true);
-    setMessage(t("handleClickStatus"));
-  };
+    const eventsRes = await fetch(`/api/reports/events?${params.toString()}`);
+    if(!eventsRes.ok) throw Error(await eventsRes.text());
+    const merged = await eventsRes.json();
+    merged.sort((a,b)=>new Date(b.eventTime)-new Date(a.eventTime));
+    setEvents(merged.slice(0,50));
+    setEventsSpeed(merged.filter(e=>e.type==='deviceOverspeed'));
+    setEventsGeofenceExit(merged.filter(e=>e.type==='geofenceExit'));
+  } catch(err){ console.error(err); }
+};
 
-  const handleClickEvents = () => {
-    setOpen(true);
-    setMessage(t("handleClickEvents"));
-  };
+// useEffect ile uygulama
+useEffect(() => {
+  fetchDevices().then(data => fetchEvents(data)); // devices yüklendikten sonra events
+  const interval = setInterval(() => fetchEvents(deviceDetails), 10000);
+  return () => clearInterval(interval);
+}, []);
 
-  const handleClickSpeed= () => {
-    setOpen(true);
-    setMessage(t("handleClickSpeed"));
-  };
-  const handleClickGeofence= () => {
-    setOpen(true);
-    setMessage("Son 24 saatte Bölge İhlalinde bulunan Araçlar");
-  };
-  
-  const handleClickAlertCard= () => {
-    setOpen(true);
-    setMessage(t("handleClickAlertCard"));
-  };
+  const KPIData = [
+    {title: "Online", value:onlineCount, icon:WifiIcon, color:"green", data:deviceDetails.filter(d=>d.status==='online')},
+    {title: "Offline", value:offlineCount, icon:WifiTetheringErrorIcon, color:"gray", data:deviceDetails.filter(d=>d.status!=='online')},
+    {title: t("positionMotion"), value:motionCountTrue, icon:SpeedIcon, color:"blue", data:deviceDetails.filter(d=>d.status==='online' && d.motionState===true)},
+    {title: "Park", value:motionCountFalse, icon:SpeedIcon, color:"orange", data:deviceDetails.filter(d=>d.status!=='online' || d.motionState!==true)},
+    {title: t("eventDeviceOverspeed"), value:eventsSpeed.length, icon:WifiTetheringErrorIcon, color:"red", data:eventsSpeed},
+    {title: t("eventGeofenceExit"), value:eventsGeofenceExit.length, icon:MapIcon, color:"purple", data:eventsGeofenceExit},
+  ];
 
-  const handleClickTable = () => {
-    setOpen(true);
-    setMessage(t("handleClickTable"));
-  };
+  const handleKpiClick = (title, data) => {
+    if (!data || data.length === 0) return;
+    setDialogTitle(title);
 
-  const handleClose = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
+    if (title === t("eventDeviceOverspeed") || title === t("eventGeofenceExit")) {
+      const counts = {};
+      data.forEach(e => { counts[e.deviceId] = (counts[e.deviceId] || 0) + 1; });
+      const groupedData = Object.entries(counts).map(([deviceId, count]) => {
+        const device = deviceDetails.find(d => d.id === parseInt(deviceId));
+        return { id: deviceId, name: device?.name || `Cihaz ${deviceId}`, count };
+      });
+      setDialogDevices(groupedData);
+    } else {
+      setDialogDevices(data);
     }
 
-    setOpen(false);
+    setDialogOpen(true);
   };
 
-  const action = (
-    <React.Fragment>
-      <IconButton
-        size="small"
-        aria-label="close"
-        color="inherit"
-        onClick={handleClose}
-      >
-        <CloseIcon fontSize="small" />
-      </IconButton>
-    </React.Fragment>
+  const CardWrapper = ({children, onClick}) => (
+    <Card sx={{
+      p:2, borderRadius:3, boxShadow:'0 6px 18px rgba(0,0,0,0.12)',
+      mb:2, cursor: onClick?'pointer':'default',
+      transition:'all 0.3s ease-in-out',
+      backgroundColor: theme.palette.background.paper,
+      '&:hover': { transform: onClick?'translateY(-3px) scale(1.03)':'none', boxShadow:'0 10px 25px rgba(0,0,0,0.15)'}
+    }} onClick={onClick}>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 
-  // API'den verileri almak için useEffect kullanalım
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/devices');
-        if (response.ok) {
-          const data = await response.json();
-          // Verileri işleyerek online, offline ve unknown araç sayılarını ve hareketli araç sayısını alalım
-          const onlineDevices = data.filter(device => device.status === 'online');
-          const offlineAndUnknownDevices = data.filter(device => device.status !== 'online');
-          const motionDevicesTrue = data.filter(device => device.status === 'online' && device.motionState === true);
-          const motionDevicesFalse = data.filter(device => device.motionState !== true || device.status !== 'online');
-          setOnlineCount(onlineDevices.length);
-          setOfflineAndUnknownCount(offlineAndUnknownDevices.length);
-          setMotionCountTrue(motionDevicesTrue.length);
-          setMotionCountFalse(motionDevicesFalse.length);
-  
-          // Device IDs'leri de state'e set et
-          const deviceIds = data.map(device => device.id);
-          setDeviceIds(deviceIds);
-          setDeviceDetails(data);
-  
-          // Event data fetch son 24 saat
-          const currentTime = new Date();
-          const fourHoursAgo = new Date(currentTime - 24 * 60 * 60 * 1000);
-          const fromTime = fourHoursAgo.toISOString();
-          const toTime = currentTime.toISOString();
-  
-          const queryParams = new URLSearchParams({
-            from: fromTime,
-            to: toTime,
-          });
-  
-          deviceIds.forEach(deviceId => {
-            queryParams.append('deviceId', deviceId);
-          });
-  
-          const types = [
-            'alarm', 'deviceInactive', 'deviceMoving', 'deviceStopped',
-            'deviceOverspeed', 'deviceFuelDrop', 'geofenceEnter', 'geofenceExit',
-            'ignitionOn', 'ignitionOff', 'maintenance', 'driverChanged'
-          ];
-  
-          types.forEach(type => {
-            queryParams.append('type', type);
-          });
-  
-          const eventResponse = await fetch(`/api/reports/events?${queryParams.toString()}`, {
-            headers: { Accept: 'application/json' },
-          });
-  
-          if (eventResponse.ok) {
-            const mergedEventData = await eventResponse.json();
-            mergedEventData.sort((a, b) => new Date(b.eventTime) - new Date(a.eventTime));
-            //son 20 olay olarak değiştirdik
-            const lastTenEvents = mergedEventData.slice(0, 20);
-            setEvents(lastTenEvents);
-  
-            const eventsSpeed = mergedEventData.filter(event => event.type === 'deviceOverspeed');
-            setEventsSpeed(eventsSpeed);
-  
-            const eventsGeofenceExit = mergedEventData.filter(event => event.type === 'geofenceExit');
-            setEventsGeofenceExit(eventsGeofenceExit);
-          } else {
-            throw Error(await eventResponse.text());
-          }
-  
-        } else {
-          throw Error(await response.text());
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-  
-    fetchData();
-  
-    const interval = setInterval(fetchData, 60000);
-  
-    return () => clearInterval(interval);
-  }, []);
-  
-
-   // [] içindeki değişkenler değiştiğinde useEffect çalışır, bu durumda sadece ilk render'da çalışması için boş dizi veriyoruz
-
-  // Pasta dilimi grafiği için veri formatını oluşturalım
-  const pieChartData = [
-    { name: 'Online', value: onlineCount },
-    { name: 'Offline', value: offlineAndUnknownCount }
-  ];
-
-  const pieMotionData = [
-    { name: 'Hareket', value: motionCountTrue },
-    { name: 'Park', value: motionCountFalse }
-  ];
-
-  // Renklerin belirlenmesi
-  const COLORS = ['#00959E', 'grey'];
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [isExpandedAlert, setIsExpandedAlert] = useState(true);
-  const [isExpandedAccount, setIsExpandedeAccount] = useState(false);
-
-
-  const handleToggleExpand = () => {
-    setIsExpanded(!isExpanded);
-  };
-
-  const handleAlertExpand = () => {
-    setIsExpandedAlert(!isExpandedAlert);
-  };
-
-  const handleAccountExpand = () => {
-    setIsExpandedeAccount(!isExpandedAccount);
-  };
-
-  const now = new Date();
-  const filterTwoMounthLater = new Date(now.setMonth(now.getMonth() + 1));
-  const filterLastYear = new Date(now.setMonth(now.getMonth() - 12 ));
-
-  // Geçerli bir expirationTime olup olmadığını kontrol edin
-const hasValidExpiration = deviceDetails.some(device => {
-  const expirationTime = new Date(device.expirationTime);
-  const insuranceExpiration = device.attributes?.insuranceExpiration ? new Date(device.attributes.insuranceExpiration) : null;
-
-  return expirationTime >= filterLastYear && expirationTime <= filterTwoMounthLater || insuranceExpiration >= filterLastYear && insuranceExpiration <= filterTwoMounthLater ;
-});
-
   return (
-    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'mainpageTitle']}>
-
-      <Grid container spacing={1} justifyContent="center" style={{ marginTop: '4px' }} > {/* Ortalamak için justifyContent="center" */}
-        {/* User Account List Kartı */}
+    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle','mainpageTitle']}>
+      <Box position="relative" pt={1}>
+        {/* Üst sağ simgeler */}
+        <Box position="absolute" top={10} right={16} zIndex={10} display="flex" gap={1}>
         {!statuscarddisabled && 
-        <Grid item xs={12} sm={10} md={10} lg={10} xl={8}>
-          <Card sx={{ width: '100%', maxWidth: '1000px', height: '100%',}}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <AccountBoxIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }}  />
-                <Typography variant="h6" onClick={handleAccountExpand}> {`${t("settingsUser")} ${t("positionStatus")}`} </Typography>
-                {!isExpandedAccount && (
-                  <ExpandMoreIcon onClick={handleAccountExpand}/>
-                )} 
-                {isExpandedAccount && (
-                  <ExpandLessIcon onClick={handleAccountExpand}/>
-                )} 
-              </Box>
-              {isExpandedAccount && (
-              <PackageStatusCard />
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
+        <Badge color="success" variant="dot">
+          <AccountBoxIcon sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}
+            onClick={()=>setPackageDialogOpen(true)} />
+        </Badge>
         }
-      </Grid>
-      
-      <Grid container spacing={1} justifyContent="center" style={{ marginTop: '4px' }} > {/* Ortalamak için justifyContent="center" */}
-        {/* User Alert List Kartı */}
-        <Grid item xs={12} sm={10} md={10} lg={10} xl={8}>
-          <Card sx={{ width: '100%', maxWidth: '1000px', height: '100%',}}>
-            <CardContent >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <AnnouncementIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickAlertCard} />
-                <Typography variant="h6" onClick={handleAlertExpand}> {`${t("reportCustom")} ${t("sharedNotifications")}`} </Typography>
-                {!isExpandedAlert && (
-                  <ExpandMoreIcon onClick={handleAlertExpand}/>
-                )} 
-                {isExpandedAlert && (
-                  <ExpandLessIcon onClick={handleAlertExpand}/>
-                )} 
+        {!statuscarddisabled && 
+          <ShoppingCartIcon sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}
+            onClick={()=>navigate('/settings/paymentpage')} />
+          }
+        </Box>
+      <Grid item xs={12} container spacing={2} mt={3} mb={2} justifyContent="center">
+          <Grid item xs={12}>
+          {/* Alerts */}
+          {!statuscarddisabled && 
+              <CardContent sx={{
+                borderRadius: 3,
+                background: theme.palette.background.paper,
+                boxShadow: 3,
+              }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Badge onClick={()=>setExpandedAlert(!expandedAlert)} color="error" variant="dot" invisible={events.length===0}>
+                  <AnnouncementIcon sx={{fontSize:32, color:theme.palette.primary.main}}/>
+                </Badge>
+                <Typography onClick={()=>setExpandedAlert(!expandedAlert)} variant="h6">
+                  {`${t("reportCustom")} ${t("sharedNotifications")}`}
+                </Typography>
+                {expandedAlert ? <ExpandLessIcon onClick={()=>setExpandedAlert(!expandedAlert)}/> 
+                              : <ExpandMoreIcon onClick={()=>setExpandedAlert(!expandedAlert)}/>}
               </Box>
-              {isExpandedAlert && (
-              <AlertListCard deviceDetails={deviceDetails} />
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+              {expandedAlert && <AlertListCard deviceDetails={deviceDetails} />}
+              </CardContent>
 
-      <Grid container spacing={1} justifyContent="center" style={{ marginTop: '1px'}}> {/* Ortalamak için justifyContent="center" */}
-        {/* Araç Bağlantı Durumu Kartı */}
-        <Grid item xs={6} sm={5} md={5} lg={3} xl={3}>
-          <Card sx={{ height: '100%', maxWidth: '400px' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <WifiIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickStatus} />
-                <Typography sx={{ fontSize: "18px" }} variant="h6" > {t("sharedConnections")}</Typography>
-                <HelpCenterIcon style={{ color: 'rgba(128, 128, 128, 0.5)' }} sx={{ justifyContent: 'flex-end' }} onClick={handleClickStatus} />
-              </Box>
-              <Box display="flex" flexDirection="column" alignItems="center">
-                <ResponsiveContainer width="100%" height={isMD ? 100 : isLG ? 100 : 150}>
-                  <PieChart>
-                    <Pie
-                      dataKey="value"
-                      data={pieChartData}
-                      label={({ value }) => `${value}`}
-                      labelLine={{ length: 1, strokeWidth: 1 }}
-                      outerRadius={isMD ? 20 : isLG ? 25 : 35}
-                      fill="#8884d8"
-                      innerRadius={isMD ? 8 : isLG ? 10 : 15}
-                      paddingAngle={8}
-                      cornerRadius={5}
-                    >
-                      {pieChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <Box display="flex" justifyContent="center" alignItems="center" flexWrap="wrap">
-                  <Box display="flex" alignItems="center" mr={1} mb={1}>
-                    <Box width={12} height={12} mr={1} bgcolor={COLORS[0]} borderRadius="50%" />
-                    <Typography variant="body2">Online </Typography>
-                  </Box>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <Box width={12} height={12} mr={1} bgcolor={COLORS[1]} borderRadius="50%" />
-                    <Typography variant="body2">Offline</Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+            }
+            </Grid>
+            { /* KPI Kartları - Modern Tema */}
+          <Grid  mt={0} container spacing={1.5}>
+            {KPIData.map((kpi, index) => (
+              <Grid item xs={6} sm={4} md={3} lg={2.4} xl={2} key={kpi.title}>
+                  <Card
+                    onClick={() => handleKpiClick(kpi.title, kpi.data)}
+                    sx={{
+                      height: 140,
+                      borderRadius: 4,
+                      overflow: 'hidden',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      background: theme.palette.background.paper,
+                      boxShadow: 3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'transform 0.2s',
+                      '&:hover': { transform: 'scale(1.05)', boxShadow: 6 },
+                    }}
+                  >
+                    <CardActionArea sx={{ height: '100%' }}>
+                      <CardContent
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          textAlign: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        {/* KPI Icon */}
+                        <Grid
+                          container
+                          alignItems="center"
+                          justifyContent="center"
+                          spacing={1} // 🔹 ikon ve değer arasında boşluk
+                        >
+                          <Grid item>
+                            <Tooltip title={kpi.title}>
+                              <kpi.icon sx={{ fontSize: 35, color: kpi.color }} />
+                            </Tooltip>
+                          </Grid>
 
-        {/* Hareketli Araçlar Kartı */}
-        <Grid item xs={6} sm={5} md={5} lg={3} xl={3}>
-        <Card sx={{ height: '100%', maxWidth: '400px' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <SpeedIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickStatus} />
-                <Typography sx={{ fontSize: "18px" }} variant="h6" >{t("positionMotion")}</Typography>
-                <HelpCenterIcon style={{ color: 'rgba(128, 128, 128, 0.5)' }} sx={{ justifyContent: 'flex-end' }} onClick={handleClickHareket} />
-              </Box>              
-              <Box display="flex" flexDirection="column" alignItems="center">
-              <ResponsiveContainer width="100%" height={isMD ? 100 : isLG ? 100 : 150}>
-                  <PieChart>
-                    <Pie
-                      dataKey="value"
-                      data={pieMotionData}
-                      label={({ value }) => `${value}`}
-                      labelLine={{ length: 1, strokeWidth: 1 }}
-                      outerRadius={isMD ? 20 : isLG ? 25 : 35}
-                      fill="#8884d8"
-                      innerRadius={isMD ? 8 : isLG ? 10 : 15}
-                      paddingAngle={11}
-                      cornerRadius={2}
-                    >
-                      {pieMotionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                  <Box display="flex" justifyContent="center" alignItems="center" flexWrap="wrap">
-                    <Box display="flex" alignItems="center" mr={1} mb={1}>
-                      <Box width={12} height={12} mr={1} bgcolor={COLORS[0]} borderRadius="50%" />
-                      <Typography variant="body2">{t("alarmMovement")}</Typography>
-                    </Box>
-                    <Box display="flex" alignItems="center" mb={1}>
-                      <Box width={12} height={12} mr={1} bgcolor={COLORS[1]} borderRadius="50%" />
-                      <Typography variant="body2">{t("alarmParking")}</Typography>
-                    </Box>
-                  </Box>
-                </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        {/* Speed List Kartı */}
-        <Grid item xs={6} sm={5} md={5} lg={3} xl={3}>
-          <Card sx={{ width: '100%', maxWidth: '600px', height: '100%',}}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <WifiTetheringErrorIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickStatus} />
-                <Typography sx={{ fontSize: "18px" }} variant="h6" style={{ fontSize: '18px', textAlign: 'center', marginTop: '10px' }} >{t("eventDeviceOverspeed")}</Typography>
-                <HelpCenterIcon style={{ color: 'rgba(128, 128, 128, 0.5)' }} sx={{ justifyContent: 'flex-end' }} onClick={handleClickSpeed} />
-              </Box>
-              <SpeedListCard deviceDetails={deviceDetails} eventsSpeed={eventsSpeed}  />
-            </CardContent>
-          </Card>
-        </Grid>
+                          <Grid item>
+                            <Typography variant="h5" fontWeight="bold">
+                              {kpi.value || 0}
+                            </Typography>
+                          </Grid>
+                        </Grid>
 
-        {/* Bölge İhlal Kartı */}
-        <Grid item xs={6} sm={5} md={5} lg={3} xl={3}>
-          <Card sx={{ width: '100%', maxWidth: '600px', height: '100%',}}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <MapIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickStatus} />
-                <Typography variant="h6" style={{ fontSize: '16px', textAlign: 'center', marginTop: '10px' }}> {t("eventGeofenceExit")} </Typography>
-                <HelpCenterIcon style={{ color: 'rgba(128, 128, 128, 0.5)' }} sx={{ justifyContent: 'flex-end' }} onClick={handleClickGeofence} />
-              </Box>
-              <GeofenceListCard deviceDetails={deviceDetails} eventsGeofenceExit={eventsGeofenceExit}  />
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+                        {/* KPI Title */}
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: 'bold',
+                            color: '#fff',
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: 2,
+                            backgroundColor: kpi.color,
+                          }}
+                        >
+                          {kpi.title}
+                        </Typography>
+                      </CardContent>
+                    </CardActionArea>
+                  </Card>
+              </Grid>
+            ))}
+          </Grid>
 
-      <Grid container spacing={1} justifyContent="center" style={{ marginTop: '4px' }} > {/* Ortalamak için justifyContent="center" */}
-        {/* Event List Kartı */}
-        <Grid item xs={12} sm={10} md={10} lg={10} xl={5}>
-          <Card sx={{ width: '100%', maxWidth: '1000px', height: '100%',}}>
-            <CardContent onClick={handleToggleExpand} >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <NotificationsActiveIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} onClick={handleClickEvents} />
-                <Typography variant="h6" onClick={handleToggleExpand}> {t("last10event")} </Typography>
-                {!isExpanded && (
-                  <ExpandMoreIcon onClick={handleToggleExpand}/>
-                )} 
-                {isExpanded && (
-                  <ExpandLessIcon onClick={handleToggleExpand}/>
-                )} 
+
+          <Grid item xs={12} sm={12} md={12} lg={12}>
+            <DashboardChartsCard devices={deviceDetails} />
+          </Grid>
+
+<Grid container spacing={1} mt={5} justifyContent="center">
+  <Grid item xs={6} sm={6} md={5} lg={4}>
+    <CardWrapper onClick={() => handleKpiClick(t("eventDeviceOverspeed"), eventsSpeed)}>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <WifiTetheringErrorIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
+        <Typography
+          variant="h6"
+          sx={{
+            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' }, // 👈 mobilde küçük, desktopta normal
+            fontWeight: 600,
+          }}
+        >
+          {t("eventDeviceOverspeed")}
+        </Typography>
+      </Box>
+      <SpeedListCard deviceDetails={deviceDetails} eventsSpeed={eventsSpeed} />
+    </CardWrapper>
+  </Grid>
+
+  <Grid item xs={6} sm={6} md={5} lg={4}>
+    <CardWrapper onClick={() => handleKpiClick(t("eventGeofenceExit"), eventsGeofenceExit)}>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <MapIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
+        <Typography
+          variant="h6"
+          sx={{
+            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+            fontWeight: 600,
+          }}
+        >
+          {t("eventGeofenceExit")}
+        </Typography>
+      </Box>
+      <GeofenceListCard deviceDetails={deviceDetails} eventsGeofenceExit={eventsGeofenceExit} />
+    </CardWrapper>
+  </Grid>
+</Grid>
+
+
+
+
+          {/* Son 10 Event */}
+          <Grid item xs={12} sm={12} md={8} lg={6}>
+            <CardWrapper onClick={()=>setExpandedEvents(!expandedEvents)}>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <NotificationsActiveIcon sx={{fontSize:32, color:theme.palette.primary.main}}/>
+                <Typography variant="h6">{t("last10event")}</Typography>
+                {expandedEvents ? <ExpandLessIcon/> : <ExpandMoreIcon/>}
               </Box>
-              {isExpanded && (
-              <EventListCard  events={events} deviceDetails={deviceDetails}  />
-              )}
-            </CardContent>
-          </Card>
+              {expandedEvents && <EventListCard events={events} deviceDetails={deviceDetails}/>}
+            </CardWrapper>
+          </Grid>
+
         </Grid>
 
-      </Grid>
-      <Snackbar
-        open={open}
-        autoHideDuration={6000}
-        onClose={handleClose}
-        action={action}
-        message={message}
-      />
+        {/* Dialoglar */}
+        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth>
+  <DialogTitle sx={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+    {dialogTitle}
+    <IconButton
+      aria-label="close"
+      onClick={() => setDialogOpen(false)}
+      sx={{ color: theme.palette.grey[500] }}
+    >
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
+          <DialogContent>
+            {dialogDevices.length > 0 ? (
+              <List>
+                {dialogDevices.map(device => (
+                  <ListItem key={device.id}>
+                    <ListItemText
+                      primary={device.name}
+                      secondary={
+                        device.count 
+                          ? `İhlal Sayısı: ${device.count}` 
+                          : `Durum: ${device.status || "-"}`
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography align="center">Cihaz bulunamadı</Typography>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={packageDialogOpen} onClose={()=>setPackageDialogOpen(false)} fullWidth maxWidth="sm">
+          <DialogTitle>{t("settingsUser")} {t("positionStatus")}</DialogTitle>
+          <DialogContent>
+            <PackageStatusCard />
+          </DialogContent>
+        </Dialog>
+
+      </Box>
     </PageLayout>
   );
 };

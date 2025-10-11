@@ -31,15 +31,15 @@ const SpeedListCard = ({ deviceDetails, eventsSpeed }) => {
   // Veri yoksa boş grafik göstermek için bir koşul oluştur
   if (data.length === 0) {
     return (
-      <div style={{   color: '#26aeb5', textAlign: 'center', marginTop: '20px' }}>
-        <ThumbUpOffAltIcon style={{ color: '#26aeb5', fontSize: 75 }} />
+      <div style={{   color: '#26aeb5', textAlign: 'center', marginTop: '10px' }}>
+        <ThumbUpOffAltIcon style={{ color: '#26aeb5', fontSize: 60 }} />
         <p>Mevcut Değil</p>
       </div>
     );
   }
   return (
     <div>
-      <div style={{ marginTop: '20px' }}>
+      <div style={{ marginTop: '5px'}}>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={data} layout="vertical">
             <CartesianGrid strokeDasharray="1 1" />

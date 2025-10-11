@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Table, TableRow, TableCell, TableHead, TableBody,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  IconButton,
+  Box,
+  CircularProgress,
 } from '@mui/material';
 import LinkIcon from '@mui/icons-material/Link';
 import PublishIcon from '@mui/icons-material/Publish';
@@ -11,9 +17,8 @@ import PageLayout from '../common/components/PageLayout';
 import SettingsMenu from './components/SettingsMenu';
 import CollectionFab from './components/CollectionFab';
 import CollectionActionsGroup from './components/CollectionActionsGroup';
-import TableShimmer from '../common/components/TableShimmer';
 import SearchHeader, { filterByKeyword } from './components/SearchHeader';
-import { useAdministrator,useRestriction } from '../common/util/permissions';
+import { useAdministrator, useRestriction } from '../common/util/permissions';
 import useSettingsStyles from './common/useSettingsStyles';
 
 const GroupsPage = () => {
@@ -21,8 +26,6 @@ const GroupsPage = () => {
   const navigate = useNavigate();
   const t = useTranslation();
   const admin = useAdministrator();
-
-
   const limitCommands = useRestriction('limitCommands');
 
   const [timestamp, setTimestamp] = useState(Date.now());
@@ -44,51 +47,56 @@ const GroupsPage = () => {
     }
   }, [timestamp]);
 
-  const actionCommand = {
-    key: 'command',
-    title: t('deviceCommand'),
-    icon: <PublishIcon fontSize="small" />,
-    handler: (groupId) => navigate(`/settings/group/${groupId}/command`),
-  };
-
-  const actionConnections = {
-    key: 'connections',
-    title: t('sharedConnections'),
-    icon: <LinkIcon fontSize="small" />,
-    handler: (groupId) => navigate(`/settings/group/${groupId}/connections`),
-  };
-
   return (
     <PageLayout menu={<SettingsMenu />} breadcrumbs={['settingsTitle', 'settingsGroups']}>
       <SearchHeader keyword={searchKeyword} setKeyword={setSearchKeyword} />
-      <Table className={classes.table}>
-        <TableHead>
-          <TableRow>
-            <TableCell>{t('sharedName')}</TableCell>
-            <TableCell className={classes.columnAction} />
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {!loading ? items.filter(filterByKeyword(searchKeyword)).map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>{item.name}</TableCell>
-              <TableCell className={classes.columnAction} padding="none">
-                <CollectionActionsGroup
-                  itemId={item.id}
-                  editPath="/settings/group"
-                  endpoint="groups"
-                  setTimestamp={setTimestamp}
-                  customActions={limitCommands ? [actionConnections] : [actionConnections, actionCommand]}
-                />
-              </TableCell>
-            </TableRow>
-          )) : (<TableShimmer columns={2} endAction />)}
-        </TableBody>
-      </Table>
-      {admin &&
-        <CollectionFab editPath="/settings/group" />
-      }
 
+      {loading ? (
+        <Box display="flex" justifyContent="center" mt={4}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Grid container spacing={3} mt={1}>
+          {items.filter(filterByKeyword(searchKeyword)).map((item) => (
+            <Grid item xs={12} sm={6} md={4} key={item.id}>
+<Card elevation={3} sx={{ position: 'relative' }}>
+  <CardContent onClick={() => navigate('/settings/devicesuser')}>
+    <Typography variant="h6" gutterBottom>
+      {item.name}
+    </Typography>
+  </CardContent>
+
+                  <Box display="flex" justifyContent="flex-end" mt={1}>
+                    <CollectionActionsGroup
+                      itemId={item.id}
+                      editPath="/settings/group"
+                      endpoint="groups"
+                      setTimestamp={setTimestamp}
+                      customActions={
+                        limitCommands
+                          ? [{ key: 'connections', title: t('sharedConnections'), icon: <LinkIcon fontSize="small" />, handler: (groupId) => navigate(`/settings/group/${groupId}/connections`) }]
+                          : [
+                              { key: 'connections', title: t('sharedConnections'), icon: <LinkIcon fontSize="small" />, handler: (groupId) => navigate(`/settings/group/${groupId}/connections`) },
+                              { key: 'command', title: t('deviceCommand'), icon: <PublishIcon fontSize="small" />, handler: (groupId) => navigate(`/settings/group/${groupId}/command`) },
+                            ]
+                      }
+                    />
+                  </Box>
+              </Card>
+            </Grid>
+          ))}
+
+          {items.filter(filterByKeyword(searchKeyword)).length === 0 && (
+            <Grid item xs={12}>
+              <Typography textAlign="center" mt={4} color="textSecondary">
+                {t('sharedNoItems')}
+              </Typography>
+            </Grid>
+          )}
+        </Grid>
+      )}
+
+      {admin && <CollectionFab editPath="/settings/group" />}
     </PageLayout>
   );
 };

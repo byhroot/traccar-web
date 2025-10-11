@@ -46,7 +46,7 @@ const EventReportPage = () => {
 
   const [allEventTypes, setAllEventTypes] = useState([['allEvents', 'eventAll']]);
 
-  const [columns, setColumns] = usePersistedState('eventColumns', ['eventTime', 'type', 'attributes']);
+  const [columns, setColumns] = usePersistedState('eventColumns', ['eventTime', 'type', 'attributes', 'geofenceId','maintenanceId']);
   const [eventTypes, setEventTypes] = useState(['allEvents']);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);

@@ -23,7 +23,7 @@ import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
 import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
-
+import PersonPinIcon from '@mui/icons-material/PersonPin';
 import { useTheme } from '@mui/material/styles';
 
 import { sessionActions } from '../../store';
@@ -86,7 +86,7 @@ const BottomMenu = () => {
   };
   const handleDevices = () => {
     setAnchorEl(null);
-    navigate('/settings/devices');
+    navigate('/settings/devicesuser');
   };
   const handleGeofences = () => {
     setAnchorEl(null);
@@ -103,6 +103,11 @@ const BottomMenu = () => {
   const mainterance = () => {
     setAnchorEl(null);
     navigate('/settings/maintenances');
+  };
+
+  const drivers = () => {
+    setAnchorEl(null);
+    navigate('/settings/drivers');
   };
   const handleSupport = () => {
     setAnchorEl(null);
@@ -161,7 +166,7 @@ const BottomMenu = () => {
         navigate('/Supportpage');
         break;
       case 'reports':
-        navigate('/reports/event');
+        navigate('/reports/reports');
         break;
       case 'reportsmenu':
         navigate('/Reportsmenu');
@@ -286,18 +291,19 @@ const BottomMenu = () => {
           </ListItemIcon>
           <Typography color="textSecond">{t('settingsGroups')}</Typography>
         </MenuItem>
+        <MenuItem onClick={drivers}>
+          <ListItemIcon>
+            <PersonPinIcon fontSize="small" color="second" />
+          </ListItemIcon>
+          <Typography color="textSecond">{t('sharedDrivers')}</Typography>
+        </MenuItem>
         <MenuItem onClick={handleClendars}>
           <ListItemIcon>
             <CalendarMonthIcon fontSize="small" color="second" />
           </ListItemIcon>
           <Typography color="textSecond">{t('sharedCalendars')}</Typography>
         </MenuItem>
-        <MenuItem onClick={mainterance}>
-          <ListItemIcon>
-            <BuildIcon fontSize="small" color="second" />
-          </ListItemIcon>
-          <Typography color="textSecond">{t('sharedMaintenance')}</Typography>
-        </MenuItem>
+
         <MenuItem onClick={handleSupport}>
           <ListItemIcon>
             <SupportAgentIcon fontSize="small" color="primary" />

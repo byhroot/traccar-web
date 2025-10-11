@@ -138,8 +138,8 @@ const AlertListCard = ({ deviceDetails }) => {
                   endDate = insuranceExpiration;
                 } 
                 return (
-                  <TableRow onClick={() => handleClickInsurance(device.id)} key={device.id}>
-                    <TableCell
+                  <TableRow key={device.id}>
+                    <TableCell onClick={() => handleClickInsurance(device.id)} 
                       style={{
                         fontFamily: 'Segoe UI, Roboto, sans-serif',
                         fontSize: '14px',
@@ -153,7 +153,18 @@ const AlertListCard = ({ deviceDetails }) => {
                       {device.name}
                     </TableCell>
 
-                    <TableCell>{endDate ? endDate.toLocaleDateString('tr-TR') : '-'}</TableCell>
+                    <TableCell>{endDate ? endDate.toLocaleDateString('tr-TR') + " " : '-'}
+                    {(expirationTime && expirationTime < now) ||
+                        (expirationTime && expirationTime >= now && expirationTime <= new Date(now.getFullYear(), now.getMonth() + 1, now.getDate())) ? (
+                         <Button
+                           variant="contained"
+                           color="primary"
+                           onClick={() => navigate("/settings/paymentpage")}
+                         >
+                           Öde
+                         </Button>
+                       ) : null}
+                    </TableCell>
                     <TableCell                       style={{
                         fontFamily: 'Segoe UI, Roboto, sans-serif',
                         fontSize: '12px',
@@ -161,7 +172,10 @@ const AlertListCard = ({ deviceDetails }) => {
                         color: 'orange',
                         transition: 'color 0.3s ease',
                         cursor: 'pointer',
-                      }}>{alertMessage}</TableCell>
+                      }}>{alertMessage}
+                    </TableCell>
+            
+
                   </TableRow>
                 );
               })

@@ -465,7 +465,7 @@
     "commandPhone": "Phone Number",
     "commandServer": "Server",
     "commandPort": "Port",
-    "eventAll": "All Events",
+    "eventAll": "All",
     "eventDeviceOnline": "Status online",
     "eventDeviceUnknown": "Status unknown",
     "eventDeviceOffline": "Status offline",

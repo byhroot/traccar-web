@@ -36,9 +36,8 @@ import { useDeviceReadonly } from '../util/permissions';
 import { ExpandMore, ExpandLess } from "@mui/icons-material";
 
 
-const MaintenanceDeviceUser = ({ deviceId , deviceName , devicePositionId}) => {
+const MaintenanceDeviceUser = ({ deviceId , deviceName , position }) => {
   const [maintenances, setMaintenances] = useState([]);
-  const [position, setPositionData] = useState([]);
   const deviceReadonly = useDeviceReadonly();
 
   const [openDialog, setOpenDialog] = useState(false);
@@ -110,27 +109,10 @@ const MAINTENANCE_TYPES = [
     }
   };
 
-  const fetchLastPosition = async () => {
-    try {
-      const response = await fetch(`/api/positions?id=${devicePositionId}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setPositionData(data[0]); // yalnızca ilk pozisyonu al
-        } else {
-          console.warn("Beklenen pozisyon verisi alınamadı veya boş.");
-        }
-      }
-    } catch (err) {
-      console.error("Son Position verileri alınamadı", err);
-    }
-  };
-  
 
   useEffect(() => {
     if (deviceId) {
       fetchMaintenances();
-      fetchLastPosition();
     }
   }, [deviceId]);
 

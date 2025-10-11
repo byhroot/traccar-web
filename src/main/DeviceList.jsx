@@ -1,11 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import makeStyles from '@mui/styles/makeStyles';
 import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { devicesActions } from '../store';
 import { useEffectAsync } from '../reactHelper';
 import DeviceRow from './DeviceRow';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from "@mui/material";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs"; // import ekle
+import { useTranslation } from '../common/components/LocalizationProvider';
+
 
 const useStyles = makeStyles((theme) => ({
   list: {
@@ -21,6 +28,47 @@ const DeviceList = ({ devices }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const listInnerEl = useRef(null);
+// DeviceList fonksiyonunun içinde:
+const [dialogOpen, setDialogOpen] = useState(false);
+const navigate = useNavigate();
+// DeviceList içinde state olarak ekle
+const [expiringDevices, setExpiringDevices] = useState([]);
+const t = useTranslation();
+
+const user = useSelector((state) => state.session.user);
+const [attributes] = useState(user.attributes);
+const statuscarddisabled = attributes.statuscarddisabled;
+
+useEffect(() => {
+  const lastShown = localStorage.getItem("expirationDialogLastShown");
+  const now = Date.now();
+
+  if (lastShown && now - parseInt(lastShown, 10) < 24 * 60 * 60 * 1000) return; //10 Dakika göstermes
+
+  const expDevicesPast = devices.filter(d => {
+    if (!d.expirationTime) return false;
+    const expTime = new Date(d.expirationTime).getTime();
+    return expTime < now; // geçmiş olanlar
+  });
+  
+  const expDevicesSoon = devices.filter(d => {
+    if (!d.expirationTime) return false;
+    const expTime = new Date(d.expirationTime).getTime();
+    return expTime >= now && expTime - now <= 30 * 24 * 60 * 60 * 1000; // 30 gün içinde bitecek olanlar
+  });
+  
+  // ikisini birleştir
+  const expDevices = [...expDevicesPast, ...expDevicesSoon];
+  
+
+  if (expDevices.length > 0) {
+    setExpiringDevices(expDevices);
+    {!statuscarddisabled && 
+      setDialogOpen(true);
+    }
+    localStorage.setItem("expirationDialogLastShown", now.toString());
+  }
+}, [devices]);
 
   if (listInnerEl.current) {
     listInnerEl.current.className = classes.listInner;
@@ -45,6 +93,7 @@ const DeviceList = ({ devices }) => {
   }, []);
 
   return (
+    <>
     <AutoSizer className={classes.list}>
       {({ height, width }) => (
         <FixedSizeList
@@ -60,6 +109,33 @@ const DeviceList = ({ devices }) => {
         </FixedSizeList>
       )}
     </AutoSizer>
+    <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+  <DialogTitle>
+    <Box display="flex" alignItems="center" gap={1}>
+      <WarningAmberIcon color="warning" />
+      {t("paketAlert")}
+    </Box>
+  </DialogTitle>
+  <DialogContent dividers>
+    <Typography>
+      {t("paketAlert")} & {t("paketAlertgecmis")} 
+    </Typography>
+    <Box mt={2}>
+      {expiringDevices.map((d, i) => (
+        <Typography key={i} variant="body2">
+          • {d.name} ({dayjs(d.expirationTime).format("DD/MM/YYYY")})
+        </Typography>
+      ))}
+    </Box>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => navigate("/settings/paymentpage")} variant="contained" color="primary">
+     {t("positionCard")} 
+    </Button>
+    <Button onClick={() => setDialogOpen(false)}>{t("sharedCancel")}</Button>
+  </DialogActions>
+</Dialog>
+</>
   );
 };
 

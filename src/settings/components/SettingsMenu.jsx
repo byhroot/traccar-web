@@ -90,7 +90,7 @@ const SettingsMenu = () => {
             />
             <MenuItem
               title={t('deviceTitle')}
-              link="/settings/devices"
+              link= {admin ? "/settings/devices" :"/settings/devicesuser"  }
               icon={<SmartphoneIcon />}
               selected={location.pathname.startsWith('/settings/device')}
             />

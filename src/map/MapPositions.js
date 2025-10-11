@@ -1,4 +1,4 @@
-import { useId, useCallback, useEffect } from 'react';
+import { useId, useCallback, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/styles';
@@ -12,6 +12,7 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
   const id = useId();
   const clusters = `${id}-clusters`;
   const selected = `${id}-selected`;
+  const pulseLayer = `${id}-pulse`;
 
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
@@ -19,14 +20,18 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
 
   const devices = useSelector((state) => state.devices.items);
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
+  const userLiveRoutes = useSelector((state) => state.session?.user?.attributes['mapLiveRoutes']);
 
-  const mapCluster = useAttributePreference('mapCluster', true);
+  const mapCluster = useAttributePreference('mapCluster', false);
   const directionType = useAttributePreference('mapDirection', 'selected');
+  const mapLiveRoutes = useAttributePreference('mapLiveRoutes', 'all');
+  const pulseRef = useRef(0);
 
+  // 🧠 Feature oluşturma
   const createFeature = (devices, position, selectedPositionId) => {
     const device = devices[position.deviceId];
-    {/*category tanımı yaptık locked ekledikten sonra */}
-    const category = position && position.attributes && position.attributes.blocked ? 'locked' : device.category ;
+    const category = position?.attributes?.blocked ? 'locked' : device.category;
+
     let showDirection;
     switch (directionType) {
       case 'none':
@@ -39,66 +44,87 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
         showDirection = selectedPositionId === position.id && position.course > 0;
         break;
     }
+
     return {
       id: position.id,
       deviceId: position.deviceId,
       name: device.name,
       fixTime: formatTime(position.deviceTime, 'seconds'),
       category: mapIconKey(category),
-      color: showStatus ? position.attributes.color || position.attributes.blocked ? 'error' : getStatusColor(device.status) : 'neutral' ,
+      color: showStatus
+        ? device.status === 'online'
+          ? device.motionState
+            ? 'success'
+            : 'greyy'
+          : 'error'
+        : position.attributes.color ||
+          (position.attributes.blocked ? 'error' : getStatusColor(device.status)),
       rotation: position.course,
       direction: showDirection,
+      isOnline: device.status === 'online',
+      motionState: !!device.motionState,
+      pulseStep: 0,
     };
   };
 
-  const onMouseEnter = () => map.getCanvas().style.cursor = 'pointer';
-  const onMouseLeave = () => map.getCanvas().style.cursor = '';
+  // 🖱️ İmleç kontrolü
+  const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
+  const onMouseLeave = () => (map.getCanvas().style.cursor = '');
 
-  const onMapClick = useCallback((event) => {
-    if (!event.defaultPrevented && onClick) {
-      onClick(event.lngLat.lat, event.lngLat.lng);
-    }
-  }, [onClick]);
+  // 🗺️ Boş alana tıklama → seçimi iptal et
+  const onMapClick = useCallback(
+    (event) => {
+      const features = map.queryRenderedFeatures(event.point, {
+        layers: [id, selected, clusters],
+      });
+      if (features.length === 0 && onClick) onClick(null, null);
+    },
+    [onClick],
+  );
 
-  const onMarkerClick = useCallback((event) => {
-    event.preventDefault();
-    const feature = event.features[0];
-    if (onClick) {
-      onClick(feature.properties.id, feature.properties.deviceId);
-    }
-  }, [onClick]);
+  // 📍 Marker tıklama
+  const onMarkerClick = useCallback(
+    (event) => {
+      event.preventDefault();
+      const feature = event.features[0];
+      if (onClick) {
+        onClick(feature.properties.id, feature.properties.deviceId);
+      }
+    },
+    [onClick],
+  );
 
-  const onClusterClick = useCatchCallback(async (event) => {
-    event.preventDefault();
-    const features = map.queryRenderedFeatures(event.point, {
-      layers: [clusters],
-    });
-    const clusterId = features[0].properties.cluster_id;
-    const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
-    map.easeTo({
-      center: features[0].geometry.coordinates,
-      zoom,
-    });
-  }, [clusters]);
+  // 🔘 Cluster genişletme
+  const onClusterClick = useCatchCallback(
+    async (event) => {
+      event.preventDefault();
+      const features = map.queryRenderedFeatures(event.point, { layers: [clusters] });
+      const clusterId = features[0].properties.cluster_id;
+      const zoom = await map.getSource(id).getClusterExpansionZoom(clusterId);
+      map.easeTo({ center: features[0].geometry.coordinates, zoom });
+    },
+    [clusters],
+  );
 
+  // 🌍 Layer ve kaynak oluşturma
   useEffect(() => {
+    if (!map?.getSource) return;
+
+    // Ana kaynak
     map.addSource(id, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
       cluster: mapCluster,
       clusterMaxZoom: 14,
       clusterRadius: 50,
     });
+
     map.addSource(selected, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
+      data: { type: 'FeatureCollection', features: [] },
     });
+
+    // Ana ve seçili cihaz layer'ları
     [id, selected].forEach((source) => {
       map.addLayer({
         id: source,
@@ -120,15 +146,13 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
           'text-halo-width': 1,
         },
       });
+
+      // Yön oku
       map.addLayer({
         id: `direction-${source}`,
         type: 'symbol',
         source,
-        filter: [
-          'all',
-          ['!has', 'point_count'],
-          ['==', 'direction', true],
-        ],
+        filter: ['all', ['!has', 'point_count'], ['==', 'direction', true]],
         layout: {
           'icon-image': 'direction',
           'icon-size': iconScale,
@@ -142,6 +166,8 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       map.on('mouseleave', source, onMouseLeave);
       map.on('click', source, onMarkerClick);
     });
+
+    // Cluster layer
     map.addLayer({
       id: clusters,
       type: 'symbol',
@@ -155,56 +181,119 @@ const MapPositions = ({ positions, onClick, showStatus, selectedPosition, titleF
       },
     });
 
-    map.on('mouseenter', clusters, onMouseEnter);
-    map.on('mouseleave', clusters, onMouseLeave);
     map.on('click', clusters, onClusterClick);
     map.on('click', onMapClick);
 
+    // 🔵 Pulse layer (GPU animasyon)
+    if ((userLiveRoutes === undefined && mapLiveRoutes === 'all') || userLiveRoutes === 'all') {
+      map.addLayer({
+      id: pulseLayer,
+      type: 'circle',
+      source: id,
+      filter: [
+        'all',
+        ['!has', 'point_count'],
+        ['==', 'motionState', true],
+        ['==', 'isOnline', true],
+      ],
+      paint: {
+        // Başlangıçta küçük (ikonun hemen dışında) → dışa doğru büyür
+        'circle-radius': [
+          'interpolate',
+          ['linear'],
+          ['get', 'pulseStep'],
+          0, 10,   // ikonun hemen dışı
+          1, 35,   // dışa kadar yayılır
+        ],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#00bcd4',
+        'circle-stroke-opacity': [
+          'interpolate',
+          ['linear'],
+          ['get', 'pulseStep'],
+          0, 0.9,
+          1, 0.0,
+        ],
+        // iç dolgu çok hafif olsun
+        'circle-color': '#00bcd4',
+        'circle-opacity': [
+          'interpolate',
+          ['linear'],
+          ['get', 'pulseStep'],
+          0, 0.2,
+          1, 0,
+        ],
+      },
+    });
+  }
+    // 🔁 GPU optimizasyonlu animasyon döngüsü
+    let frame;
+    const animate = () => {
+      pulseRef.current += 0.01;
+      if (pulseRef.current > 1) pulseRef.current = 0;
+    
+      const src = map.getSource(id);
+      if (src?._data?.features) {
+        src._data.features.forEach((f) => {
+          if (f.properties.motionState && f.properties.isOnline) {
+            f.properties.pulseStep = pulseRef.current;
+          }
+        });
+        src.setData(src._data);
+      }
+      frame = requestAnimationFrame(animate);
+    };
+    animate();
+    
+
+    // Cleanup
     return () => {
-      map.off('mouseenter', clusters, onMouseEnter);
-      map.off('mouseleave', clusters, onMouseLeave);
+      cancelAnimationFrame(frame);
       map.off('click', clusters, onClusterClick);
       map.off('click', onMapClick);
 
-      if (map.getLayer(clusters)) {
-        map.removeLayer(clusters);
-      }
+      if (map.getLayer(pulseLayer)) map.removeLayer(pulseLayer);
+      if (map.getLayer(clusters)) map.removeLayer(clusters);
 
       [id, selected].forEach((source) => {
         map.off('mouseenter', source, onMouseEnter);
         map.off('mouseleave', source, onMouseLeave);
         map.off('click', source, onMarkerClick);
-
-        if (map.getLayer(source)) {
-          map.removeLayer(source);
-        }
-        if (map.getLayer(`direction-${source}`)) {
-          map.removeLayer(`direction-${source}`);
-        }
-        if (map.getSource(source)) {
-          map.removeSource(source);
-        }
+        if (map.getLayer(source)) map.removeLayer(source);
+        if (map.getLayer(`direction-${source}`)) map.removeLayer(`direction-${source}`);
+        if (map.getSource(source)) map.removeSource(source);
       });
     };
-  }, [mapCluster, clusters, onMarkerClick, onClusterClick]);
+  }, [mapCluster, iconScale, onMarkerClick, onClusterClick, onMapClick]);
 
+  // 🔄 Verileri güncelle (render azaltılmış)
   useEffect(() => {
-    [id, selected].forEach((source) => {
-      map.getSource(source)?.setData({
-        type: 'FeatureCollection',
-        features: positions.filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) => (source === id ? it.deviceId !== selectedDeviceId : it.deviceId === selectedDeviceId))
-          .map((position) => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [position.longitude, position.latitude],
-            },
-            properties: createFeature(devices, position, selectedPosition && selectedPosition.id),
-          })),
-      });
-    });
-  }, [mapCluster, clusters, onMarkerClick, onClusterClick, devices, positions, selectedPosition]);
+    const sources = [id, selected];
+    for (const source of sources) {
+      const src = map.getSource(source);
+      if (!src) continue;
+
+      const filteredPositions = positions.filter((it) =>
+        devices.hasOwnProperty(it.deviceId),
+      );
+      const features = filteredPositions
+        .filter((it) =>
+          source === id
+            ? it.deviceId !== selectedDeviceId
+            : it.deviceId === selectedDeviceId,
+        )
+        .map((position) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [position.longitude, position.latitude],
+          },
+          properties: createFeature(devices, position, selectedPosition?.id),
+        }));
+
+      src.setData({ type: 'FeatureCollection', features });
+    }
+  }, [devices, positions, selectedDeviceId, selectedPosition]);
 
   return null;
 };

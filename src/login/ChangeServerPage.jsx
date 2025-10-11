@@ -53,20 +53,15 @@ const ChangeServerPage = () => {
     <Container maxWidth="xs" className={classes.container}>
       <ElectricalServicesIcon className={classes.icon} />
       <Autocomplete
-        freeSolo
-        className={classes.field}
-        options={officialServers}
-        renderInput={(params) => <TextField {...params} label={t('settingsServer')} />}
-        value={currentServer}
-        onChange={(_, value) => value && handleSubmit(value)}
-        filterOptions={(options, params) => {
-          const filtered = filter(options, params);
-          if (params.inputValue && !filtered.includes(params.inputValue)) {
-            filtered.push(params.inputValue);
-          }
-          return filtered;
-        }}
-      />
+  className={classes.field}
+  options={officialServers}
+  disableClearable
+  renderInput={(params) => <TextField {...params} label={t('settingsServer')} />}
+  value={currentServer}
+  onChange={(_, value) => value && handleSubmit(value)}
+/>
+
+
       <Button
         onClick={() => navigate(-1)}
         color="secondary"

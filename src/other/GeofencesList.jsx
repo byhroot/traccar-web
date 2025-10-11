@@ -41,7 +41,7 @@ const GeofencesList = ({ onGeofenceSelected }) => {
       {Object.values(items).map((item, index, list) => (
         <Fragment key={item.id}>
           <ListItemButton key={item.id} onClick={() => onGeofenceSelected(item.id)}>
-            <ListItemText primary={item.name} />
+            <ListItemText primary={item.name + " (" + item.id +  ")"} />
             <CollectionActions itemId={item.id} editPath="/settings/geofence" endpoint="geofences" setTimestamp={refreshGeofences} />
           </ListItemButton>
           {index < list.length - 1 ? <Divider /> : null}

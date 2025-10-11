@@ -23,7 +23,7 @@ import useMapStyles from '../map/core/useMapStyles';
 import useMapOverlays from '../map/overlay/useMapOverlays';
 import { useCatch } from '../reactHelper';
 import { sessionActions } from '../store';
-import { useAdministrator, useRestriction } from '../common/util/permissions';
+import { useAdministrator, useManager, useRestriction } from '../common/util/permissions';
 import useSettingsStyles from './common/useSettingsStyles';
 import alert from '../../src/resources/alert.mp3';
 import alert2 from '../../src/resources/alert2.mp3';
@@ -115,6 +115,7 @@ const PreferencesPage = () => {
   const t = useTranslation();
 
   const admin = useAdministrator();
+  const manager = useManager();
   const readonly = useRestriction('readonly');
 
   const user = useSelector((state) => state.session.user);
@@ -276,7 +277,7 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
 
 
 
-        {!readonly && admin && (
+        {!readonly && (
           <>
             <Accordion defaultExpanded>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -284,7 +285,9 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
                   {t('mapTitle')}
                 </Typography>
               </AccordionSummary>
+            
               <AccordionDetails className={classes.details}>
+               {admin && 
                 <FormControl>
                   <InputLabel>{t('mapActive')}</InputLabel>
                   <Select
@@ -308,6 +311,9 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
                     ))}
                   </Select>
                 </FormControl>
+                }
+                {admin && 
+
                 <FormControl>
                   <InputLabel>{t('mapOverlay')}</InputLabel>
                   <Select
@@ -331,6 +337,9 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
                     ))}
                   </Select>
                 </FormControl>
+                }
+                {admin && 
+
                 <Autocomplete
                   multiple
                   freeSolo
@@ -354,20 +363,21 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
                     />
                   )}
                 />
+                  }
                 <FormControl>
                   <InputLabel>{t('mapLiveRoutes')}</InputLabel>
                   <Select
                     label={t('mapLiveRoutes')}
-                    value={attributes.mapLiveRoutes || 'none'}
+                    value={attributes.mapLiveRoutes || 'all'}
                     onChange={(e) => setAttributes({ ...attributes, mapLiveRoutes: e.target.value })}
                   >
                     <MenuItem value="none">{t('sharedDisabled')}</MenuItem>
-                    <MenuItem value="selected">{t('deviceSelected')}</MenuItem>
+                    <MenuItem value="selected">{t('deviceSelected')}  </MenuItem>
                     <MenuItem value="all">{t('notificationAlways')}</MenuItem>
                   </Select>
                 </FormControl>
                 <FormControl>
-                  <InputLabel>{t('mapDirection')}</InputLabel>
+                  <InputLabel>{t('mapDirection')} </InputLabel>
                   <Select
                     label={t('mapDirection')}
                     value={attributes.mapDirection || 'selected'}
@@ -400,7 +410,7 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
                   <FormControlLabel
                     control={(
                       <Checkbox
-                        checked={attributes.hasOwnProperty('mapCluster') ? attributes.mapCluster : true}
+                        checked={attributes.hasOwnProperty('mapCluster') ? attributes.mapCluster : false}
                         onChange={(e) => setAttributes({ ...attributes, mapCluster: e.target.checked })}
                       />
                     )}
@@ -418,6 +428,7 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
                 </FormGroup>
               </AccordionDetails>
             </Accordion>
+            {admin && 
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="subtitle1">
@@ -441,6 +452,7 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
                 />
               </AccordionDetails>
             </Accordion>
+            }
             </>
           )}
             { isAppleDevice &&
