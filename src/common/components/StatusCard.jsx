@@ -24,6 +24,7 @@ import {
   TextField,
   DialogActions,
   DialogContent,
+  DialogTitle,
   Button,
   Tooltip,
   CircularProgress,
@@ -39,6 +40,14 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PendingIcon from '@mui/icons-material/Pending';
 import HistoryIcon from '@mui/icons-material/History';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import Battery20Icon from '@mui/icons-material/Battery20';
+import Battery30Icon from '@mui/icons-material/Battery20';
+import Battery50Icon from '@mui/icons-material/Battery20';
+import Battery60Icon from '@mui/icons-material/Battery20';
+import Battery80Icon from '@mui/icons-material/Battery20';
+import Battery90Icon from '@mui/icons-material/Battery20';
+import BatteryAlertIcon from '@mui/icons-material/BatteryAlert';
+import Battery6BarIcon from '@mui/icons-material/Battery6Bar';
 
 import SettingsIcon from '@mui/icons-material/Settings';
 import PowerIcon from '@mui/icons-material/Power';
@@ -61,7 +70,6 @@ import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import FenceIcon from '@mui/icons-material/Fence';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
-import BatteryAlertIcon from '@mui/icons-material/BatteryAlert';
 import Battery4BarIcon from '@mui/icons-material/Battery4Bar';
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
@@ -77,7 +85,7 @@ import { devicesActions } from '../../store';
 import { useCatch, useCatchCallback } from '../../reactHelper';
 import { useAttributePreference } from '../util/preferences';
 import EngineIcon from '../../resources/images/data/engine.svg?react';
-
+import DeviceSettingsNew from '../../settings/DeviceSettingsNew';
 
 const iconMapping = {
   speed: <SpeedIcon color="primary" />,
@@ -296,6 +304,11 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
   const [anchorEl, setAnchorEl] = useState(null);
 
   const [removing, setRemoving] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const handleOpenSettings = () => setSettingsOpen(true);
+  const handleCloseSettings = () => setSettingsOpen(false);
+
 
   const handleRemove = useCatch(async (removed) => {
     if (removed) {
@@ -337,6 +350,27 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
 
   return (
     <>
+          {/* Dialog */}
+          <Dialog
+        open={settingsOpen}
+        onClose={handleCloseSettings}
+        maxWidth="md"
+        fullWidth
+      >
+        {/* Başlık ve çarpı butonu */}
+        <DialogTitle sx={{ m: 0, pt: 0, pb: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="body4" align="center" gutterBottom>
+          {device?.name || '...'}
+        </Typography>          
+        <IconButton onClick={handleCloseSettings} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        {/* Dialog içeriği */}
+        <DialogContent   sx={{ p: 0, pb: 1 }}dividers>
+          <DeviceSettingsNew deviceId={deviceId} />
+        </DialogContent>
+      </Dialog>
       <div className={classes.root}>
         {device && (
           <Draggable  
@@ -388,9 +422,12 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                       <IconButton size="small">
                         {position.attributes.charge ? (
                           <BatteryChargingFullIcon style={{color: "#00959E", width: 25, height: 25 }}  />
-                        ) : (
-                          <BatteryAlertIcon className={classes.error} style={{ width: 25, height: 25 }}/>
-                        )}
+                        ) 
+                        : position.attributes.hasOwnProperty('batteryLevel') < 100 ?
+                        (< Battery6BarIcon className={classes.error} style={{ width: 25, height: 25 }}/>)
+                        :
+                        (<BatteryAlertIcon className={classes.error} style={{ width: 25, height: 25 }}/>)
+                      }
                       </IconButton>
                     </Tooltip>
                   )}
@@ -418,7 +455,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                 aria-controls="speed-panel-content"
                 id="speed-panel-header"
                 style={{
-                  minHeight: '50px',
+                  minHeight: '40px',
                   padding: '0 8px',
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -470,16 +507,15 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                     {t("paketAlertgecmis")}  
                     </Typography>
                    )}
-                    <Typography variant="body2" style={{ fontWeight: 'bold' }}>
                     {(() => {
-                      const currentTime = (location.pathname === '/replay' || location.pathname.startsWith('/reports'))  ? new Date(position.serverTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
-                      const fixTime = (location.pathname === '/replay' || location.pathname.startsWith('/reports'))  ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : new Date(position.serverTime); // FixTime zamanı
+                      const currentTime = (location.pathname === '/replay' || location.pathname.startsWith('/reports') || location.pathname.startsWith('/event')) ? new Date(position.serverTime) : device.status === "online" ? new Date() : new Date(); // Mevcut zaman
+                      const fixTime = (location.pathname === '/replay' || location.pathname.startsWith('/reports') ||location.pathname.startsWith('/event'))  ? new Date(position.fixTime) : device.status === "online" ? new Date(position.fixTime) : new Date(position.serverTime); // FixTime zamanı
                       const diffInMs = currentTime - fixTime;
                       const diffInMinutes = Math.floor(diffInMs / 60000);
                         
-                      if (location.pathname === '/replay' || location.pathname.startsWith('/reports'))  {
+                      if (location.pathname === '/replay' || location.pathname.startsWith('/reports') || location.pathname.startsWith('/event'))  {
                             if (position && position.speed <=5 && diffInMinutes > 3) {
-                              return <Typography style={{ color: 'grey' }}> {t('alarmParking')} </Typography>;
+                              return <Typography style={{ color: 'grey' }}> {t('eventDeviceStopped')} </Typography>;
                             } else if (position.speed < 4 && diffInMinutes > 1 ) {
                               return <Typography style={{ color: 'grey' }}>{t('eventDeviceStopped')}</Typography>;
                             } else if (position.speed > 3 && diffInMinutes <= 1 ) {
@@ -499,7 +535,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                               if (position && position.speed > 5) {   
                               return <Typography style={{ color: 'grey' }}> {t('deviceStatusOffline')} {t('commandData')}  {t('sharedLoading')} </Typography>;
                               } else if (position && position.speed <= 5) {
-                                return <Typography style={{ color: 'grey' }}> {t('alarmParking')} </Typography>;
+                                return <Typography style={{ color: 'grey' }}> {t('eventDeviceStopped')} </Typography>;
                               }
                               
                             } else if (position && position.attributes && !position.attributes.ignition && position.speed < 5 || diffInMinutes >= 1 ) {
@@ -509,7 +545,6 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                             }
                           }
                       })()}
-                    </Typography>
 
                     <Typography sx={{ fontSize: '12px' }} variant="body2" style={{ color: 'gray' }}>
                       {(() => {
@@ -582,7 +617,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                               content={
                                 <PositionValue
                                   position={position}
-                                  property={position.hasOwnProperty(key) ? key : null}
+                                  property={position.hasOwnProperty(key) ? key: null}
                                   attribute={position.hasOwnProperty(key) ? null : key}
                                 />
                               }
@@ -611,7 +646,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, desktopPaddin
                 </IconButton>
                 
                 <IconButton
-                  onClick={() => navigate(`/settings/device/${deviceId}/commandnew`)}
+                 onClick={handleOpenSettings}
                   disabled={disableActions || userReadonly}
                 >
                   <SettingsIcon />

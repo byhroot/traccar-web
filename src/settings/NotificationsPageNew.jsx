@@ -241,7 +241,7 @@ const NotificationsPage = () => {
 
   
   return (
-    <PageLayout   mb={5} menu={<SettingsMenu />} breadcrumbs={['settingsTitle', 'sharedNotifications']}>
+    <PageLayout   mb={5} menu={<SettingsMenu />} breadcrumbs={['alarmGeneral', 'sharedNotifications']}>
       <SearchHeader keyword={searchKeyword} setKeyword={setSearchKeyword} />
       <Box
           display="flex"

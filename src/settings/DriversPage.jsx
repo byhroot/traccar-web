@@ -86,7 +86,7 @@ const DriversPage = () => {
                     😊 {item.name} {/* Smiley ekledik */}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    {t('deviceIdentifier')}: {item.uniqueId}
+                    {t('positionDriverUniqueId')}: {item.uniqueId}
                   </Typography>
                   {item.attributes && (
                     <>
@@ -127,7 +127,7 @@ const DriversPage = () => {
           <TableHead>
             <TableRow>
               <TableCell>{t('sharedName')}</TableCell>
-              <TableCell>{t('deviceIdentifier')}</TableCell>
+              <TableCell>{t('positionDriverUniqueId')}</TableCell>
               <TableCell className={classes.columnAction} />
             </TableRow>
           </TableHead>

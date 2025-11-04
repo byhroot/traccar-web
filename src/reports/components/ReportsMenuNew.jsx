@@ -27,6 +27,7 @@ import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import NotesIcon from '@mui/icons-material/Notes';
 import HomeIcon from '@mui/icons-material/Home';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import HubIcon from '@mui/icons-material/Hub';
 import PageLayout from '../../common/components/PageLayout';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import { useAdministrator, useRestriction } from '../../common/util/permissions';
@@ -42,16 +43,15 @@ const ReportsMenuNew = () => {
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const menuItems = [
-    { title: t('dashboardTitle'), link: '/dashboard', icon: <HomeIcon />, adminOnly: false },
     { title: t('reportRoute'), link: '/reports/route', icon: <TimelineIcon />, adminOnly: true },
-    { title: t('reportEvents'), link: '/reports/event', icon: <NotificationsActiveIcon />, adminOnly: false },
-    { title: t('reportTrips'), link: '/reports/trip', icon: <RouteIcon />, adminOnly: false },
-    { title: t('reportStops'), link: '/reports/stop', icon: <PauseCircleFilledIcon />, adminOnly: false },
-    { title: t('reportSummary'), link: '/reports/summary', icon: <FormatListBulletedIcon />, adminOnly: false },
-    { title: t('reportCombined'), link: '/reports/combined', icon: <StarIcon />, adminOnly: false },
-    { title: t('reportChart'), link: '/reports/chart', icon: <TrendingUpIcon />, adminOnly: false },
-    { title: t('reportReplay'), link: '/replay', icon: <PlayCircleFilledIcon />, adminOnly: false },
-    { title: t('userAdmin'), link: '/reports/userlogs', icon: <NotesIcon />, adminOnly: true },
+    { title: t('reportEvents'), link: '/reports/event', icon: <NotificationsActiveIcon />, adminOnly: false, subItems: [t("eventAlarm"), t('sharedGeofence'), t('eventMaintenance')]  },
+    { title: t('reportTrips'), link: '/reports/trip', icon: <RouteIcon />, adminOnly: false, subItems: [t("reportReplay"), t('positionHours'), t('sharedDrivers')] },
+    { title: t('reportStops'), link: '/reports/stop', icon: <PauseCircleFilledIcon />, adminOnly: false , subItems: [t("eventDeviceStopped"), t('reportDuration')] },
+    { title: t('reportSummary'), link: '/reports/summary', icon: <FormatListBulletedIcon />, adminOnly: false, subItems: [t("calendarDays"), t('calendarWeekly'), t('calendarMonthly')]  },
+    { title: t('reportCombined'), link: '/reports/combined', icon: <StarIcon />, adminOnly: false, subItems: [t("reportEvents"), t('sharedGetMapState')] },
+    { title: t('reportChart'), link: '/reports/chart', icon: <TrendingUpIcon />, adminOnly: false, subItems: [ t('commandData')]  },
+    { title: t('reportReplay'), link: '/replay', icon: <PlayCircleFilledIcon />, adminOnly: false, subItems: [ t('reportRoute')] },
+    { title: t('userAdmin'), link: '/reports/actions', icon: <HubIcon />, adminOnly: true },
     { title: t('sharedLogs'), link: '/reports/logs', icon: <NotesIcon />, adminOnly: true },
     { title: t('reportScheduled'), link: '/reports/scheduled', icon: <EventRepeatIcon />, readonlyDisabled: true },
     { title: t('statisticsTitle'), link: '/reports/statistics', icon: <BarChartIcon />, adminOnly: true },
@@ -69,38 +69,7 @@ const ReportsMenuNew = () => {
     boxSizing: 'border-box', // padding hesaba katılsın
   }}
 >      {/* Üst Başlık Kartı */}
-      
-      {!desktop && 
-      <Slide in direction="down" timeout={700}>
-        <Card
-          sx={{
-            mb: 4,
-            background: 'linear-gradient(135deg, #00959E 30%, #42d7f5 90%)',
-            color: '#fff',
-            borderRadius: 4,
-            boxShadow: 4,
-          }}
-        >
-          <CardContent
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              py: 3,
-            }}
-          >
-            <AssessmentIcon sx={{ fontSize: 40, mr: 1 }} />
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: 'bold', letterSpacing: 1 }}
-            >
-              {t('reportTitle')}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Slide>
-      }
-      {/* Menü Kartları */}
+         {/* Menü Kartları */}
       <Grid container spacing={3}>
         {menuItems.map((item, index) => {
           if (item.adminOnly && !admin) return null;
@@ -119,7 +88,7 @@ const ReportsMenuNew = () => {
   component={Link}
   to={item.link}
   sx={{
-    height: 140,
+    minHeight: 120, // sabit değil, gerektiğinde uzayabilir
     borderRadius: 4,
     overflow: 'hidden', // 🔹 köşe yuvarlamaları düzgün olsun
     textDecoration: 'none',
@@ -138,6 +107,7 @@ const ReportsMenuNew = () => {
   <CardActionArea sx={{ height: '100%' }}>
     <CardContent
       sx={{
+        p: 0, // 🔹 dikey boşluğu ciddi azaltır
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -147,9 +117,9 @@ const ReportsMenuNew = () => {
     > 
       <Box
         sx={{
-          mb: 1,
           color: isSelected ? 'primary.contrastText' : 'primary.main',
           fontSize: 50,
+          lineHeight: 0,
         }}
       >
         {React.cloneElement(item.icon, { fontSize: 'inherit' })}
@@ -164,6 +134,34 @@ const ReportsMenuNew = () => {
       >
         {item.title}
       </Typography>
+      {item.subItems && (
+  <Box
+    sx={{
+      mt: 0.4,
+      display: 'flex',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: 0.5, // aralar çok az boşluk
+    }}
+  >
+    {item.subItems.map((sub, i) => (
+      <Typography
+        key={i}
+        variant="caption"
+        sx={{
+          fontSize: '0.7rem',
+          color: isSelected ? 'primary.contrastText' : 'text.secondary',
+          lineHeight: 1.1,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        • {sub}
+      </Typography>
+    ))}
+  </Box>
+)}
+
+
     </CardContent>
   </CardActionArea>
 </Card>

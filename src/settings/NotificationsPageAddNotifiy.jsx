@@ -22,23 +22,10 @@ const NotificationsPageAddNotifiy = ({ onSuccess }) => {
         'maintenance',
         'driverChanged',
       ];
-
-      const alarmAttributes = {
-        alarms:
-          'vibration,tow',
-      };
-      const alarmAttributes2 = {
-        alarms:
-          'lowPower,powerCut,powerRestored,lowBattery,removing,gpsAntennaCut',
-      };
-      const alarmAttributes3 = {
-        alarms:
-          'accident,hardAcceleration,hardBraking,hardCornering,fatigueDriving',
-      };
       const alarmAttributesList = [
         { alarms: 'vibration,tow' },
         { alarms: 'lowPower,powerCut,powerRestored,lowBattery,removing,gpsAntennaCut' },
-        { alarms: 'accident,hardAcceleration,hardBraking,hardCornering,fatigueDriving' },
+        { alarms: 'parking,accident,hardAcceleration,hardBraking,hardCornering,fatigueDriving' },
       ];
       
 
@@ -61,16 +48,16 @@ const NotificationsPageAddNotifiy = ({ onSuccess }) => {
   
         // diğer tipler
         ...types.map((type) =>
-          fetch('/api/notifications', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type,
-              notificators,
-              always: true,
-            }),
-          })
-        ),
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type,
+            notificators: type === 'maintenance' ? 'web,firebase,mail' : 'web,firebase',
+            always: true,
+          }),
+        })
+      ),
       ];
       
       const responses = await Promise.all(requests);

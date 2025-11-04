@@ -421,11 +421,11 @@ const CommandDevicePageUsers = () => {
 
                       <Box display="flex" justifyContent="space-between" px={0} mt={-1}>
                         <Typography sx={{ fontSize: { xs: '0.6rem', sm: '0.9rem' } }}  variant="body2" color="textSecondary">
-                          Yüksek Hassasiyet
+                          {t("commandAlarmVibrationHigh")}
                         </Typography>
                         ⇔
                         <Typography sx={{ fontSize: { xs: '0.6rem', sm: '0.9rem' } }} variant="body2" color="textSecondary">
-                          Düşük Hassasiyet
+                        {t("commandAlarmVibrationLow")}
                         </Typography>
                       </Box>
 
@@ -502,12 +502,7 @@ const CommandDevicePageUsers = () => {
           <Grid  container justifyContent="center" item xs={12}>
             <DeviceBakimNotlariCard deviceId={ id } deviceData={deviceData} />
           </Grid>
-
           </Grid>
-
-
-
-
         </Grid>
 
         {/* Onay Dialog */}
@@ -546,11 +541,11 @@ const CommandDevicePageUsers = () => {
         </Snackbar>
       </Container>
       <Snackbar
-  open={snackbarInfo.open}
-  autoHideDuration={4000}
-  onClose={() => setSnackbarInfo({ open: false, message: '' })}
-  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
->
+        open={snackbarInfo.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarInfo({ open: false, message: '' })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
   <Alert severity="info" sx={{ width: '100%' }}>
     {snackbarInfo.message}
   </Alert>

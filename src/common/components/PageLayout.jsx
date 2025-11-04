@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import Draggable from 'react-draggable';
 import {
   AppBar,
   Breadcrumbs,
@@ -8,14 +10,16 @@ import {
   Toolbar,
   Typography,
   useMediaQuery,
-  useTheme,
+  useTheme,Badge,Box,Dialog,DialogContent,DialogTitle
 } from '@mui/material';
+import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from './LocalizationProvider';
-
+import PackageStatusCard from '../../../src/main/PackageStatusCard';
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 const useStyles = makeStyles((theme) => ({
   desktopRoot: {
     height: '100%',
@@ -73,6 +77,10 @@ const PageLayout = ({ menu, breadcrumbs, children }) => {
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const [openDrawer, setOpenDrawer] = useState(false);
+  const [packageDialogOpen, setPackageDialogOpen] = useState(false);
+  const user = useSelector((state) => state.session.user);
+  const [attributes] = useState(user.attributes);
+  const statuscarddisabled = attributes.statuscarddisabled;
 
   return desktop ? (
     <div className={classes.desktopRoot}>
@@ -85,12 +93,52 @@ const PageLayout = ({ menu, breadcrumbs, children }) => {
           <IconButton color="inherit" edge="start" sx={{ mr: 2 }} onClick={() => navigate('/')}>
             <ArrowBackIcon />
           </IconButton>
+          {!statuscarddisabled&&
+            <Box position="absolute" top={10} right={16} zIndex={10} display="flex" gap={1}>
+<Badge color="success" variant="dot">
+  <IconButton
+    onClick={() => setPackageDialogOpen(true)}
+    sx={{
+      width: 56,
+      height: 40,
+      borderRadius: 2, // 0 tam kare olur, 2 hafif yumuşatır
+      backgroundColor: theme.palette.background.paper,
+      boxShadow: 1,
+      border: `1px solid ${theme.palette.primary.light}`,
+      transition: 'all 0.25s ease-in-out',
+      '&:hover': {
+        transform: 'scale(1.08)',
+        boxShadow: 4,
+        backgroundColor: theme.palette.action.hover,
+      },
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    <AssignmentIndIcon
+      sx={{
+        fontSize: 32,
+        color: theme.palette.primary.main,
+      }}
+    />
+  </IconButton>
+</Badge>
+
+          </Box>
+
+          }
           <PageTitle breadcrumbs={breadcrumbs} />
         </Toolbar>
         <Divider />
         {menu}
       </Drawer>
       <div className={classes.content}>{children}</div>
+    <Dialog open={packageDialogOpen} onClose={()=>setPackageDialogOpen(false)} fullWidth maxWidth="sm">
+          <DialogContent>
+            <PackageStatusCard />
+          </DialogContent>
+      </Dialog>
     </div>
   ) : (
     <div className={classes.mobileRoot}>
@@ -108,8 +156,48 @@ const PageLayout = ({ menu, breadcrumbs, children }) => {
             <MenuIcon />
           </IconButton>
           <PageTitle breadcrumbs={breadcrumbs} />
+          {!statuscarddisabled&&
+            <Box position="absolute" top={10} right={16} zIndex={10} display="flex" gap={1}>
+<Badge color="success" variant="dot">
+  <IconButton
+    onClick={() => setPackageDialogOpen(true)}
+    sx={{
+      width: 56,
+      height: 40,
+      borderRadius: 2, // 0 tam kare olur, 2 hafif yumuşatır
+      backgroundColor: theme.palette.background.paper,
+      boxShadow: 1,
+      border: `1px solid ${theme.palette.primary.light}`,
+      transition: 'all 0.25s ease-in-out',
+      '&:hover': {
+        transform: 'scale(1.08)',
+        boxShadow: 4,
+        backgroundColor: theme.palette.action.hover,
+      },
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    <AssignmentIndIcon
+      sx={{
+        fontSize: 32,
+        color: theme.palette.primary.main,
+      }}
+    />
+  </IconButton>
+</Badge>
+
+          </Box>
+
+          }
         </Toolbar>
       </AppBar>
+      <Dialog open={packageDialogOpen} onClose={()=>setPackageDialogOpen(false)} fullWidth maxWidth="sm">
+          <DialogContent>
+            <PackageStatusCard />
+          </DialogContent>
+      </Dialog>
       <div className={classes.content}>{children}</div>
     </div>
   );

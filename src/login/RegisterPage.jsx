@@ -250,7 +250,7 @@ const handleChangeCheckbox = (event) => {
               variant="outlined"
               size="small"
               onClick={handleVerifyClick}
-              disabled={rawPhone.length !== 10 || isVerified}
+              disabled={rawPhone.length !== 10 || isVerified || !rawPhone.startsWith('5')}
               style={{ marginLeft: 8 }}
             >
               {isVerified ? "✅" : 
@@ -260,9 +260,9 @@ const handleChangeCheckbox = (event) => {
         }}
         inputProps={{
           inputMode: 'numeric',
-          pattern: '[0-9]*',
+          pattern: '5[0-9]{9}', // 5 ile başlasın ve toplam 10 rakam olsun
           maxLength: 10,
-          placeholder: '5XXXXXXXXX',
+          placeholder: '5xx xxx xx xx',
         }}
         fullWidth
       />

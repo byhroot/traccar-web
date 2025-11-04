@@ -19,11 +19,21 @@ export default (keyword, filter, filterSort, filterMap, positions, setFilteredDe
 
     const filtered = Object.values(devices)
       .filter((device) => !filter.statuses.length || filter.statuses.includes(device.status))
-      .filter((device) => !(filter.motiones?.length) || filter.motiones.includes(device.motionState))
+      .filter((device) => {
+        if (!(filter.motiones?.length)) return true;
+      
+        const position = positions[device.id]; // Son pozisyonu al
+        const ignition = position?.attributes?.ignition; // ignition değeri
+        return filter.motiones.includes(ignition);
+      })
       .filter((device) => !filter.groups.length || deviceGroups(device).some((id) => filter.groups.includes(id)))
       .filter((device) => {
         const lowerCaseKeyword = keyword.toLowerCase();
-        return [device.name, device.uniqueId, device.phone, device.model, device.contact].some((s) => s && s.toLowerCase().includes(lowerCaseKeyword));
+          // Cihazın bağlı olduğu grup adını al
+          const group = groups[device.groupId];
+          const groupName = group ? group.name.toLowerCase() : '';
+        
+        return [device.name, device.uniqueId, device.phone, device.model, device.contact, groupName].some((s) => s && s.toLowerCase().includes(lowerCaseKeyword));
       });
     switch (filterSort) {
       case 'name':

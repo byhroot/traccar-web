@@ -9,8 +9,8 @@ import {
   Paper,
   Slider,
   Toolbar,
-  Typography,
-  useTheme,CircularProgress
+  Typography,Stack,
+  useTheme,CircularProgress,Backdrop,Box
 } from '@mui/material';
 import { useSelector } from 'react-redux';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
@@ -115,6 +115,8 @@ const TripReportPage = () => {
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingRow, setLoadingRow] = useState(false);
+
   const [selectedItem, setSelectedItem] = useState(null);
   const [route, setRoute] = useState(null);
 
@@ -127,13 +129,13 @@ const TripReportPage = () => {
 
   const createMarkers = () => [
     {
-      latitude: selectedItem.startLat,
-      longitude: selectedItem.startLon,
+      latitude: selectedItem?.startLat,
+      longitude: selectedItem?.startLon,
       image: 'default-neutral',
     },
     {
-      latitude: selectedItem.endLat,
-      longitude: selectedItem.endLon,
+      latitude: selectedItem?.endLat,
+      longitude: selectedItem?.endLon,
       image: 'default-success',
     },
   ];
@@ -145,6 +147,7 @@ const TripReportPage = () => {
         from: selectedItem.startTime,
         to: selectedItem.endTime,
       });
+      setLoadingRow(true);
       const response = await fetch(`/api/reports/route?${query.toString()}`, {
         headers: {
           Accept: 'application/json',
@@ -152,7 +155,9 @@ const TripReportPage = () => {
       });
       if (response.ok) {
         setRoute(await response.json());
+        setLoadingRow(false);
       } else {
+        setLoadingRow(false);
         throw Error(await response.text());
       }
     } else {
@@ -330,10 +335,8 @@ const getMarkers = () => {
           <MapView>
             <MapGeofence />
             <MapRoutePath positions={positions} />
-
             <MapMarkers markers={getMarkers()} />
-
-            <MapCamera latitude={positions[index].latitude} longitude={positions[index].longitude} />
+            <MapCamera positions={positions} />
           </MapView>
           <MapScale />
 
@@ -352,73 +355,102 @@ const getMarkers = () => {
             elevation={6}
             sx={{
               position: 'absolute',
-              top: 10,
-              left: 10,
+              top: 2,
+              left: 2,
               right: 50,
-              padding: 2,
+              padding: 0.5,
               bgcolor: theme.palette.background.paper, // ✅ dark/light uyumlu
-              borderRadius: 2,
-              display: 'flex',
+              borderRadius: 3,
+              display: 'auto',
               flexDirection: 'column',
               gap: 1,
               boxShadow: 3,
             }}
           >
-            <Toolbar sx={{ padding: 0, gap: 1 }}>
-              {/* ArrowBack animasyonlu */}
-              <IconButton
-                onClick={() => setReplayMode(false)}
-                sx={{
-                  width: 50,
-                  height: 50,
-                  bgcolor: 'primary.main',
-                  '&:hover': { bgcolor: 'primary.dark' },
-                  borderRadius: 2,
-                  animation: 'pulse 2s infinite',
-                  '@keyframes pulse': {
-                    '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(25,118,210,0.7)' },
-                    '50%': { transform: 'scale(1.1)', boxShadow: '0 0 20px 10px rgba(25,118,210,0.3)' },
-                    '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(25,118,210,0)' },
-                  },
-                }}
-              >
-                <ArrowBackIcon sx={{ fontSize: 36, color: '#fff' }} />
-              </IconButton>
+            <Toolbar sx={{ padding: '0px', gap: 0.5, minHeight: '30px', alignItems: 'center' }}>
+            {/* Geri butonu */}
+            <IconButton
+              onClick={() => setReplayMode(false)}
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: 'primary.main',
+                '&:hover': { bgcolor: 'primary.dark' },
+                borderRadius: 1,
+              }}
+            >
+              <ArrowBackIcon sx={{ fontSize: 24, color: '#fff' }} />
+            </IconButton>
 
-              <Typography variant="subtitle1" sx={{ flexGrow: 1, textAlign: 'center' }}>
-               {deviceName} {`${index + 1}/${positions.length}`}
+            {/* Tarih ve Hız */}
+            <Box sx={{ flexGrow: 1, textAlign: 'center' }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }} // xs: alt alta, sm+: yan yana
+                spacing={{ xs: 0.5, sm: 1 }}
+                justifyContent="center"
+                alignItems="center"
+                sx={{ flexWrap: 'wrap' }}
+              >
+                <Typography variant="body2" noWrap={false}>
+                  {deviceName}
+                </Typography>
+
+                <Typography variant="body2" noWrap={false}>
+                  {new Date(positions[index].fixTime).toLocaleString('tr-TR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                  })}
+                </Typography>
+              </Stack>
+
+              <Typography variant="caption" sx={{ display: 'block', mt: 0 }}>
+                {t('positionSpeed')}: {positions[index].speed ? Math.round(positions[index].speed * 1.87) : 0} km/h
               </Typography>
+            </Box>
+
 
               {/* Replay kontrolleri */}
               <IconButton
                 onClick={() => setIndex((i) => i - 1)}
                 disabled={playing || index <= 0}
-                sx={{ width: 40, height: 40 }}
+                sx={{ width: 28, height: 28 }}
               >
-                <FastRewindIcon fontSize="medium" />
+                <FastRewindIcon fontSize="small" />
               </IconButton>
 
               <IconButton
                 onClick={() => setPlaying(!playing)}
                 disabled={index >= positions.length - 1}
                 sx={{
-                  width: 50,
-                  height: 50,
-                  bgcolor: 'secondary.main',
-                  '&:hover': { bgcolor: 'secondary.dark' },
+                  width: 36,
+                  height: 36,
+                  bgcolor: 'green',
+                  '&:hover': { bgcolor: 'secondary.light' },
+                  animation: 'pulse 2s infinite',
+                  '@keyframes pulse': {
+                    '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(25,118,210,0.7)' },
+                    '50%': { transform: 'scale(1.1)', boxShadow: '0 0 12px 6px rgba(25,118,210,0.3)' },
+                    '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(25,118,210,0)' },
+                  },
                 }}
               >
-                {playing ? <PauseIcon fontSize="large" /> : <PlayArrowIcon fontSize="large" />}
+                {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
               </IconButton>
 
               <IconButton
                 onClick={() => setIndex((i) => i + 1)}
                 disabled={playing || index >= positions.length - 1}
-                sx={{ width: 40, height: 40 }}
+                sx={{ width: 28, height: 28 }}
               >
-                <FastForwardIcon fontSize="medium" />
+                <FastForwardIcon fontSize="small" />
               </IconButton>
             </Toolbar>
+
+
 
             <Slider
               max={positions.length - 1}
@@ -427,8 +459,6 @@ const getMarkers = () => {
               onChange={(_, val) => setIndex(val)}
               sx={{
                 color: 'primary.main',
-                '& .MuiSlider-thumb': { width: 14, height: 14 },
-                '& .MuiSlider-rail': { opacity: 0.3 },
               }}
             />
           </Paper>
@@ -536,6 +566,16 @@ const getMarkers = () => {
                     {columns.map((key) => (
                       <TableCell key={key}>{formatValue(item, key)}</TableCell>
                     ))}
+
+<Backdrop
+        sx={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', // %30 opaklık
+        color: '#', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={loadingRow}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
+
+
                   </TableRow>
                 ))
               ) : (

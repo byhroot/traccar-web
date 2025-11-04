@@ -129,19 +129,10 @@ const DeviceBakimCard = ({ deviceId , deviceData }) => {
         <Card>
           <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-
-              <Typography variant="h6" gutterBottom>
-                <EditNoteIcon sx={{ mr: 1 }} /> {t("eventMaintenance")}  {t("notes")}
-              </Typography>
-              <Button  disabled={deviceReadonly} variant="outlined" startIcon={<AddIcon/>} onClick={() => handleAddBakim()}>
+            <Button  disabled={deviceReadonly} variant="outlined" startIcon={<AddIcon/>} onClick={() => handleAddBakim()}>
               {t("sharedAdd")}
               </Button>
             </Box>
-
-            {Object.entries(bakimlar).length === 0 && (
-              <Typography ></Typography>
-              
-            )}
             {Object.entries(bakimlar).map(([key, bakim]) => (
                 <div key={key}>
                   <Divider sx={{ my: 0 }} />

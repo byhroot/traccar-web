@@ -49,6 +49,7 @@ import PreferencesPage from './settings/PreferencesPage';
 import AccumulatorsPage from './settings/AccumulatorsPage';
 import CommandDevicePage from './settings/CommandDevicePage';
 import CommandDevicePageUsers from './settings/CommandDevicePageUsers';
+import DeviceSettingsNew from './settings/DeviceSettingsNew';
 import CommandGroupPage from './settings/CommandGroupPage';
 import App from './App';
 import ChangeServerPage from './login/ChangeServerPage';
@@ -64,8 +65,10 @@ import AnnouncementPage from './settings/AnnouncementPage';
 import EmulatorPage from './other/EmulatorPage';
 import Loader from './common/components/Loader';
 import UserlogsPage from './reports/UserlogsPage';
+import UserlogsActionsPage from './reports/userlogsActionsPage';
 import Paymentpage from './settings/PaymentPage';
 import ReportsMenuNew from './reports/components/ReportsMenuNew';
+import NotificationCard from './common/components/NotificationCard';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -139,6 +142,8 @@ const Navigation = () => {
           <Route path="devicesuser" element={<DevicesPage2 />} />
           <Route path="device/:id/command" element={<CommandDevicePage />} />
           <Route path="device/:id/commandnew" element={<CommandDevicePageUsers />} />
+          <Route path="device/notify" element={<NotificationCard />} />
+          <Route path="device/:id/devsettings" element={<DeviceSettingsNew />} />
           <Route path="device/:id/share" element={<SharePage />} />
           <Route path="device/:id" element={<DevicePage />} />
           <Route path="device" element={<DevicePage />} />
@@ -181,6 +186,7 @@ const Navigation = () => {
           <Route path="scheduled" element={<ScheduledPage />} />
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="userlogs" element={<UserlogsPage />} />
+          <Route path="actions" element={<UserlogsActionsPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="reports" element={<ReportsMenuNew />} />
 

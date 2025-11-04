@@ -14,7 +14,7 @@ import CreditCardIcon from '@mui/icons-material/CreditCard';
 import PhoneIcon from '@mui/icons-material/Phone';
 import NotesIcon from '@mui/icons-material/Notes';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { useManager, useRestriction } from '../util/permissions';
+import { useDeviceReadonly, useManager, useRestriction } from '../util/permissions';
 
 export default function DriverCard({ deviceId, deviceName , position}) {
   const [drivers, setDrivers] = useState([]);
@@ -25,7 +25,7 @@ export default function DriverCard({ deviceId, deviceName , position}) {
   const [unregisteredDriver, setUnregisteredDriver] = useState(false);
   const userReadonly = useRestriction('readonly');
   const manager = useManager();
-  
+  const deviceReadonly = useDeviceReadonly();
   const t = useTranslation();
   // Yeni sürücü formu
   const [newDriver, setNewDriver] = useState({
@@ -162,19 +162,12 @@ export default function DriverCard({ deviceId, deviceName , position}) {
   
   return (
 <Card sx={{ borderRadius: 2, boxShadow: 3, p: 2, position: 'relative' }}>
-  <IconButton
-    size="small"
-    sx={{ position: 'absolute', top: 8, right: 8, color: 'text.secondary', zIndex: 1 }}
-    onClick={() => handleSnackbarInfo('driver')}
-  >
-    <HelpOutlineIcon fontSize="small" />
-  </IconButton>
       <CardHeader
         title={
           <Stack direction="row" alignItems="center" spacing={1}>
             <SentimentSatisfiedAltIcon color="primary" />
             <Typography variant="h6">
-              {deviceName || 'Araç'} – {t("positionDriverUniqueId")}
+              {deviceName || 'Araç'}  {t("sharedSaved")} {t("sharedDriver")}
             </Typography>
           </Stack>
         }
@@ -186,7 +179,13 @@ export default function DriverCard({ deviceId, deviceName , position}) {
           </Tooltip>
         }
       />
-
+      <IconButton
+        size="small"
+        sx={{ position: 'absolute', top: 8, left: 8, color: 'text.secondary', zIndex: 1 }}
+        onClick={() => handleSnackbarInfo('driver')}
+      >
+        <HelpOutlineIcon fontSize="medium" />
+      </IconButton>
       <CardContent>
         
         {/* Mevcut sürücü */}
@@ -223,7 +222,7 @@ export default function DriverCard({ deviceId, deviceName , position}) {
     }
     </Typography>
     <Typography variant="body2" color="text.secondary">
-      Mevcut Sürücü ID: {position.attributes.driverUniqueId}
+      ID: {position?.attributes?.driverUniqueId}
     </Typography>
   </Box>
 ) : (
@@ -235,7 +234,7 @@ export default function DriverCard({ deviceId, deviceName , position}) {
         {/* Sürücü seçimi */}
         <Autocomplete
           options={drivers}
-          disabled={!manager && (unregisteredDriver || userReadonly)} // 🔹 position driver kayıtlı değilse değişiklik devre dışı
+          disabled={deviceReadonly || userReadonly } // 🔹 position driver kayıtlı değilse değişiklik devre dışı
           getOptionLabel={(opt) => opt.name || ''}
           value={assignedDriver || null}
           onChange={(e, newVal) => assignDriver(newVal)}
@@ -265,7 +264,7 @@ export default function DriverCard({ deviceId, deviceName , position}) {
       {/* 👁️ Sürücü detay dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="xs" fullWidth>
         <DialogTitle>
-          {t("sharedDriver")} – {t("positionDriverUniqueId")}
+          {t("sharedSaved")} – {t("positionDriverUniqueId")}
         </DialogTitle>
         <DialogContent dividers>
           {assignedDriver && (

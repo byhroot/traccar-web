@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, Typography, TextField, Button, MenuItem, InputAdornment } from '@mui/material';
+import { Card, CardContent, Typography, TextField, Button, MenuItem, InputAdornment,Snackbar } from '@mui/material';
 import { useTranslation } from './LocalizationProvider';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -7,6 +7,7 @@ import ContactPhoneIcon from '@mui/icons-material/ContactPhone';
 import deviceCategories from '../util/deviceCategories';
 import StreetviewIcon from '@mui/icons-material/Streetview';
 import { useNavigate } from 'react-router-dom';
+import { useDeviceReadonly } from '../util/permissions';
 
 const InsuranceCard = ({ deviceId, deviceData }) => {
   const t = useTranslation();
@@ -16,6 +17,7 @@ const InsuranceCard = ({ deviceId, deviceData }) => {
   const [category, setCategory] = useState('default');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const navigate = useNavigate();
+  const deviceReadonly = useDeviceReadonly();
 
   // ⚡ Props geldiğinde state'leri güncelle
   useEffect(() => {
@@ -60,7 +62,6 @@ const InsuranceCard = ({ deviceId, deviceData }) => {
 
       if (updateResponse.ok) {
         setSnackbarOpen(true);
-        navigate(-1); // bir önceki sayfaya dön
       } else {
         console.error('Error saving data');
       }
@@ -132,18 +133,28 @@ const InsuranceCard = ({ deviceId, deviceData }) => {
             </MenuItem>
           ))}
         </TextField>
-
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={3000}
+          onClose={() => setSnackbarOpen(false)}
+        >
+          <Typography>
+            {t("eventCommandResult")}
+          </Typography>
+        </Snackbar>
         <Button
           variant="contained"
           color="primary"
           size="large"
           onClick={handleSave}
           sx={{ marginTop: '1rem' }}
+          disabled={deviceReadonly}
         >
           {t('sharedSave')}
         </Button>
       </CardContent>
     </Card>
+    
   );
 };
 

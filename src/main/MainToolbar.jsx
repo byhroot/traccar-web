@@ -147,9 +147,9 @@ const MainToolbar = ({
       selected
         .map((val) =>
           val === true
-            ? t('alarmMovement')
+            ? t('eventDeviceMoving')
             : val === false
-            ? t('alarmParking')
+            ? t('eventDeviceStopped')
             : val
         )
         .join(', ')
@@ -159,7 +159,7 @@ const MainToolbar = ({
       {`${t('alarmMovement')} (${deviceMotionesCount(true)})`}
     </MenuItem>
     <MenuItem value={false}>
-      {`${t('alarmParking')} (${deviceMotionesCount(false)})`}
+      {`${t('eventDeviceStopped')} (${deviceMotionesCount(false)})`}
     </MenuItem>
   </Select>
 </FormControl>

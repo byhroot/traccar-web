@@ -23,6 +23,7 @@ import {
   TableSortLabel,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import EditIcon from '@mui/icons-material/Edit';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import OnlinePredictionIcon from '@mui/icons-material/OnlinePrediction';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -240,7 +241,7 @@ const DevicesPage = () => {
                   direction={orderBy === 'packageEnd' ? order : 'asc'}
                   onClick={() => handleSort('packageEnd')}
                 >
-                  Paket {t("userExpirationTime")}
+                  TakipOn {t("userExpirationTime")}
                 </TableSortLabel>
               </TableCell>
               {admin && <TableCell>{t("settingsUsers")}</TableCell>}
@@ -319,12 +320,12 @@ const DevicesPage = () => {
                             color: 'error.dark',
                             '&:hover': { backgroundColor: 'primary.light' },
                           }}
-                          variant="title3"
+                          variant="body2"
                         >
-                          Paket  : {formatDate(device.expirationTime)}
+                          {t("userExpirationTime")} : {formatDate(device.expirationTime)}
                         </Typography>
                         :
-                        <Typography variant="body2">Paket Bitiş: {formatDate(device.expirationTime)}</Typography>
+                        <Typography variant="body2"> {t("userExpirationTime")} : {formatDate(device.expirationTime)}</Typography>
                       }
                       {showPaymentButton && (
                         <Button
@@ -343,11 +344,23 @@ const DevicesPage = () => {
                     </Box>
                     <Box mt={1} display="flex" alignItems="center" gap={1}>
 
-                    {admin && <Box mt={1}><DeviceUsersValue deviceId={device.id} /></Box>}
+                    {admin && 
+                    <Box mt={1}><DeviceUsersValue deviceId={device.id} /></Box>
+                    }
+                    {admin && 
                     <IconButton onClick={() => navigate(`/settings/device/${device.id}/connections`)}>
-                    <LinkIcon />
-                      </IconButton>
+                      <LinkIcon />
+                    </IconButton>
+                    }
+                    {admin && 
+                    <Box mt={1}>
+                    <IconButton onClick={() => navigate(`/settings/device/${device.id}`)}>
+                      <EditIcon />
+                    </IconButton>
                     </Box>
+                    }
+                    </Box>
+
 
                   </CardContent>
                 </Card>

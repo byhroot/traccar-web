@@ -516,7 +516,7 @@
     "alarmTampering": "Kurcalama",
     "alarmRemoving": "Çıkarma",
     "notificationType": "Bildirim tipi",
-    "notificationAlways": "Tüm Cihazlar",
+    "notificationAlways": "Tüm Araçlar",
     "notificationNotificators": "Kanallar",
     "notificatorCommand": "Emir",
     "notificatorWeb": "Web",

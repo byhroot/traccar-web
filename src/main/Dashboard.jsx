@@ -147,219 +147,192 @@ useEffect(() => {
 
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle','mainpageTitle']}>
-      <Box position="relative" pt={1}>
-        {/* Üst sağ simgeler */}
-        <Box position="absolute" top={10} right={16} zIndex={10} display="flex" gap={1}>
-        {!statuscarddisabled && 
-        <Badge color="success" variant="dot">
-          <AccountBoxIcon sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}
-            onClick={()=>setPackageDialogOpen(true)} />
-        </Badge>
-        }
-        {!statuscarddisabled && 
-          <ShoppingCartIcon sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}
-            onClick={()=>navigate('/settings/paymentpage')} />
-          }
-        </Box>
-      <Grid item xs={12} container spacing={2} mt={3} mb={2} justifyContent="center">
-          <Grid item xs={12}>
+      <Grid item mt={1}  sx={{ px: 0.5}} xs={12} container justifyContent="center">
+        <Grid item xs={12}>
           {/* Alerts */}
           {!statuscarddisabled && 
-              <CardContent sx={{
-                borderRadius: 3,
-                background: theme.palette.background.paper,
-                boxShadow: 3,
-              }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Badge onClick={()=>setExpandedAlert(!expandedAlert)} color="error" variant="dot" invisible={events.length===0}>
-                  <AnnouncementIcon sx={{fontSize:32, color:theme.palette.primary.main}}/>
-                </Badge>
-                <Typography onClick={()=>setExpandedAlert(!expandedAlert)} variant="h6">
-                  {`${t("reportCustom")} ${t("sharedNotifications")}`}
-                </Typography>
-                {expandedAlert ? <ExpandLessIcon onClick={()=>setExpandedAlert(!expandedAlert)}/> 
-                              : <ExpandMoreIcon onClick={()=>setExpandedAlert(!expandedAlert)}/>}
-              </Box>
-              {expandedAlert && <AlertListCard deviceDetails={deviceDetails} />}
-              </CardContent>
-
-            }
-            </Grid>
+            <CardContent sx={{
+              borderRadius: 3,
+              background: theme.palette.background.paper,
+              boxShadow: 3,
+            }}>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <Badge onClick={()=>setExpandedAlert(!expandedAlert)} color="error" variant="dot" invisible={events.length===0}>
+                <AnnouncementIcon sx={{fontSize:32, color:theme.palette.primary.main}}/>
+              </Badge>
+              <Typography onClick={()=>setExpandedAlert(!expandedAlert)} variant="h6">
+                {`${t("reportCustom")} ${t("sharedNotifications")}`}
+              </Typography>
+              {expandedAlert ? <ExpandLessIcon onClick={()=>setExpandedAlert(!expandedAlert)}/> 
+                            : <ExpandMoreIcon onClick={()=>setExpandedAlert(!expandedAlert)}/>}
+            </Box>
+            {expandedAlert && <AlertListCard deviceDetails={deviceDetails} />}
+            </CardContent>
+          }
+        </Grid>
             { /* KPI Kartları - Modern Tema */}
-          <Grid  mt={0} container spacing={1.5}>
-            {KPIData.map((kpi, index) => (
-              <Grid item xs={6} sm={4} md={3} lg={2.4} xl={2} key={kpi.title}>
-                  <Card
-                    onClick={() => handleKpiClick(kpi.title, kpi.data)}
-                    sx={{
-                      height: 140,
-                      borderRadius: 4,
-                      overflow: 'hidden',
-                      textDecoration: 'none',
-                      color: 'inherit',
-                      background: theme.palette.background.paper,
-                      boxShadow: 3,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'transform 0.2s',
-                      '&:hover': { transform: 'scale(1.05)', boxShadow: 6 },
-                    }}
-                  >
-                    <CardActionArea sx={{ height: '100%' }}>
-                      <CardContent
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          textAlign: 'center',
-                          gap: 1,
-                        }}
+        <Grid  mt={1} container spacing={1}>
+          {KPIData.map((kpi, index) => (
+            <Grid item xs={6} sm={4} md={3} lg={2.4} xl={2} key={kpi.title}>
+                <Card
+                  onClick={() => handleKpiClick(kpi.title, kpi.data)}
+                  sx={{
+                    height: 140,
+                    borderRadius: 4,
+                    overflow: 'hidden',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    background: theme.palette.background.paper,
+                    boxShadow: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'scale(1.05)', boxShadow: 6 },
+                  }}
+                >
+                  <CardActionArea sx={{ height: '100%' }}>
+                    <CardContent
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        gap: 1,
+                      }}
+                    >
+                      {/* KPI Icon */}
+                      <Grid
+                        container
+                        alignItems="center"
+                        justifyContent="center"
+                        spacing={1} // 🔹 ikon ve değer arasında boşluk
                       >
-                        {/* KPI Icon */}
-                        <Grid
-                          container
-                          alignItems="center"
-                          justifyContent="center"
-                          spacing={1} // 🔹 ikon ve değer arasında boşluk
-                        >
-                          <Grid item>
-                            <Tooltip title={kpi.title}>
-                              <kpi.icon sx={{ fontSize: 35, color: kpi.color }} />
-                            </Tooltip>
-                          </Grid>
-
-                          <Grid item>
-                            <Typography variant="h5" fontWeight="bold">
-                              {kpi.value || 0}
-                            </Typography>
-                          </Grid>
+                        <Grid item>
+                          <Tooltip title={kpi.title}>
+                            <kpi.icon sx={{ fontSize: 35, color: kpi.color }} />
+                          </Tooltip>
                         </Grid>
 
-                        {/* KPI Title */}
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            fontWeight: 'bold',
-                            color: '#fff',
-                            px: 1.5,
-                            py: 0.5,
-                            borderRadius: 2,
-                            backgroundColor: kpi.color,
-                          }}
-                        >
-                          {kpi.title}
-                        </Typography>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-              </Grid>
-            ))}
-          </Grid>
+                        <Grid item>
+                          <Typography variant="h5" fontWeight="bold">
+                            {kpi.value || 0}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+
+                      {/* KPI Title */}
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 'bold',
+                          color: '#fff',
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: 2,
+                          backgroundColor: kpi.color,
+                        }}
+                      >
+                        {kpi.title}
+                      </Typography>
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+            </Grid>
+          ))}
+        </Grid>
 
 
-          <Grid item xs={12} sm={12} md={12} lg={12}>
-            <DashboardChartsCard devices={deviceDetails} />
-          </Grid>
+        <Grid  mt={2} mb={2} item xs={12} sm={12} md={12} lg={12}>
+          <DashboardChartsCard devices={deviceDetails} />
+        </Grid>
 
-<Grid container spacing={1} mt={5} justifyContent="center">
-  <Grid item xs={6} sm={6} md={5} lg={4}>
-    <CardWrapper onClick={() => handleKpiClick(t("eventDeviceOverspeed"), eventsSpeed)}>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <WifiTetheringErrorIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
-        <Typography
-          variant="h6"
-          sx={{
-            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' }, // 👈 mobilde küçük, desktopta normal
-            fontWeight: 600,
-          }}
-        >
-          {t("eventDeviceOverspeed")}
-        </Typography>
-      </Box>
-      <SpeedListCard deviceDetails={deviceDetails} eventsSpeed={eventsSpeed} />
-    </CardWrapper>
-  </Grid>
-
-  <Grid item xs={6} sm={6} md={5} lg={4}>
-    <CardWrapper onClick={() => handleKpiClick(t("eventGeofenceExit"), eventsGeofenceExit)}>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <MapIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
-        <Typography
-          variant="h6"
-          sx={{
-            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-            fontWeight: 600,
-          }}
-        >
-          {t("eventGeofenceExit")}
-        </Typography>
-      </Box>
-      <GeofenceListCard deviceDetails={deviceDetails} eventsGeofenceExit={eventsGeofenceExit} />
-    </CardWrapper>
-  </Grid>
-</Grid>
-
-
-
-
-          {/* Son 10 Event */}
-          <Grid item xs={12} sm={12} md={8} lg={6}>
-            <CardWrapper onClick={()=>setExpandedEvents(!expandedEvents)}>
+        <Grid container spacing={1} mt={0} justifyContent="center">
+          <Grid item xs={6} sm={6} md={5} lg={4}>
+            <CardWrapper onClick={() => handleKpiClick(t("eventDeviceOverspeed"), eventsSpeed)}>
               <Box display="flex" justifyContent="space-between" alignItems="center">
-                <NotificationsActiveIcon sx={{fontSize:32, color:theme.palette.primary.main}}/>
-                <Typography variant="h6">{t("last10event")}</Typography>
-                {expandedEvents ? <ExpandLessIcon/> : <ExpandMoreIcon/>}
+                <WifiTetheringErrorIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' }, // 👈 mobilde küçük, desktopta normal
+                    fontWeight: 600,
+                  }}
+                >
+                  {t("eventDeviceOverspeed")}
+                </Typography>
               </Box>
-              {expandedEvents && <EventListCard events={events} deviceDetails={deviceDetails}/>}
+              <SpeedListCard deviceDetails={deviceDetails} eventsSpeed={eventsSpeed} />
+            </CardWrapper>
+          </Grid>
+
+          <Grid item xs={6} sm={6} md={5} lg={4}>
+            <CardWrapper onClick={() => handleKpiClick(t("eventGeofenceExit"), eventsGeofenceExit)}>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <MapIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+                    fontWeight: 600,
+                  }}
+                >
+                  {t("eventGeofenceExit")}
+                </Typography>
+              </Box>
+              <GeofenceListCard deviceDetails={deviceDetails} eventsGeofenceExit={eventsGeofenceExit} />
             </CardWrapper>
           </Grid>
 
         </Grid>
 
-        {/* Dialoglar */}
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth>
-  <DialogTitle sx={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-    {dialogTitle}
-    <IconButton
-      aria-label="close"
-      onClick={() => setDialogOpen(false)}
-      sx={{ color: theme.palette.grey[500] }}
-    >
-      <CloseIcon />
-    </IconButton>
-  </DialogTitle>
-          <DialogContent>
-            {dialogDevices.length > 0 ? (
-              <List>
-                {dialogDevices.map(device => (
-                  <ListItem key={device.id}>
-                    <ListItemText
-                      primary={device.name}
-                      secondary={
-                        device.count 
-                          ? `İhlal Sayısı: ${device.count}` 
-                          : `Durum: ${device.status || "-"}`
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography align="center">Cihaz bulunamadı</Typography>
-            )}
-          </DialogContent>
-        </Dialog>
+          {/* Son 10 Event */}
+        <Grid item xs={12} sm={12} md={8} lg={6}>
+          <CardWrapper onClick={()=>setExpandedEvents(!expandedEvents)}>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <NotificationsActiveIcon sx={{fontSize:32, color:theme.palette.primary.main}}/>
+              <Typography variant="h6">{t("last10event")}</Typography>
+              {expandedEvents ? <ExpandLessIcon/> : <ExpandMoreIcon/>}
+            </Box>
+            {expandedEvents && <EventListCard events={events} deviceDetails={deviceDetails}/>}
+          </CardWrapper>
+        </Grid>
+      </Grid>
 
-        <Dialog open={packageDialogOpen} onClose={()=>setPackageDialogOpen(false)} fullWidth maxWidth="sm">
-          <DialogTitle>{t("settingsUser")} {t("positionStatus")}</DialogTitle>
-          <DialogContent>
-            <PackageStatusCard />
-          </DialogContent>
-        </Dialog>
-
-      </Box>
+      {/* Dialoglar */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth>
+      <DialogTitle sx={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        {dialogTitle}
+        <IconButton
+          aria-label="close"
+          onClick={() => setDialogOpen(false)}
+          sx={{ color: theme.palette.grey[500] }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+        <DialogContent>
+          {dialogDevices.length > 0 ? (
+            <List>
+              {dialogDevices.map(device => (
+                <ListItem key={device.id}>
+                  <ListItemText
+                    primary={device.name}
+                    secondary={
+                      device.count 
+                        ? `İhlal Sayısı: ${device.count}` 
+                        : `Durum: ${device.status || "-"}`
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography align="center">Cihaz bulunamadı</Typography>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 };

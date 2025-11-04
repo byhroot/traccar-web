@@ -113,6 +113,7 @@ const MAINTENANCE_TYPES = [
   useEffect(() => {
     if (deviceId) {
       fetchMaintenances();
+      checkMaintenanceNotification(); // ✅ yeni eklendi
     }
   }, [deviceId]);
 
@@ -120,7 +121,31 @@ const MAINTENANCE_TYPES = [
     setForm({ name: '', type: 'totalDistance', start: '', period: '' });
     setEditingItem(null);
   };
+  const [maintenanceNotifActive, setMaintenanceNotifActive] = useState(false);
 
+  const checkMaintenanceNotification = async () => {
+    try {
+      // hem global hem cihaz bildirimlerini çekiyoruz
+      const [globalRes, deviceRes] = await Promise.all([
+        fetch('/api/notifications'),
+        fetch(`/api/notifications?deviceId=${deviceId}`)
+      ]);
+  
+      const globalData = await globalRes.json();
+      const deviceData = await deviceRes.json();
+  
+      // "maintenance" tipli bildirim global veya cihaz bazında var mı?
+      const found = [...globalData, ...deviceData].some(
+        n => n.type === 'maintenance' && (n.always || true)
+      );
+  
+      setMaintenanceNotifActive(found);
+    } catch (err) {
+      console.error('Bakım bildirimi kontrolü başarısız:', err);
+    }
+  };
+  
+  
   const convertToRaw = (formData) => {
     let startRaw = formData.start;
     let periodRaw = formData.period;
@@ -253,17 +278,72 @@ const MAINTENANCE_TYPES = [
     <Grid item xs={12}>
     <Card>
     <CardContent>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6" gutterBottom>
-        <NotificationsActiveIcon sx={{ mr: 1, color: 'red' }} /> {t("sharedMaintenance")}
-        </Typography>
-        <Button disabled={deviceReadonly} variant="outlined" startIcon={<AddIcon />} onClick={openCreateDialog}>
-        {t("sharedAdd")}
-        </Button>
-      </Box>
-
-
       <TableContainer sx={{ overflowX: 'auto' }}>
+      <Box
+  sx={{
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    alignItems: 'center',
+    gap: 1,
+    width: '70%', // 🔹 ekranın yarısı kadar yer kaplar
+  }}
+>
+  <Box display="flex" alignItems="center" gap={1}>
+    {maintenanceNotifActive ? (
+      <>
+        <Typography variant="body2" color="success.main" fontWeight={600}>
+          ✅{t("sharedNotification")} {t("alarmPowerOn")}
+        </Typography>
+      </>
+    ) : (
+      <>
+        <Typography variant="body2" color="warning.main" fontWeight={600}>
+          ⚠️ {t("eventMaintenance")} {t("alarmPowerOff")} — {t("sharedNotification")} {t("sharedAdd")}
+        </Typography>
+      </>
+    )}
+  </Box>
+
+  {!maintenanceNotifActive && (
+    <Button
+      variant="outlined"
+      size="small"
+      startIcon={<AddIcon />}
+      onClick={async () => {
+        try {
+          // Yeni eventMaintenance bildirimi oluştur
+          const res = await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'maintenance',
+              notificators: 'firebase,web,mail', // varsayılan
+            }),
+          });
+
+          if (res.ok) {
+            const notif = await res.json();
+            // araca bağla
+            await fetch('/api/permissions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                deviceId,
+                notificationId: notif.id,
+              }),
+            });
+
+            setMaintenanceNotifActive(true);
+          }
+        } catch (err) {
+          console.error('Bakım bildirimi ekleme hatası:', err);
+        }
+      }}
+    >
+      {t("sharedAdd")}
+    </Button>
+  )}
+</Box>
         <Table sx={{ width: '100%', maxWidth: 800 }}>
           <TableHead>
             <TableRow>
@@ -275,7 +355,11 @@ const MAINTENANCE_TYPES = [
                   <TableCell>{t("maintenancePeriod")}</TableCell>
                 </>
               )}
-              <TableCell align="right"></TableCell>
+              <TableCell align="right">
+              <Button disabled={deviceReadonly} variant="outlined" startIcon={<AddIcon />} onClick={openCreateDialog}>
+              {t("sharedAdd")}
+              </Button>
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

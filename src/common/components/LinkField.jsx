@@ -1,6 +1,7 @@
 import { Autocomplete, TextField } from '@mui/material';
 import React, { useState } from 'react';
 import { useEffectAsync } from '../../reactHelper';
+import { useDeviceReadonly, useRestriction } from '../util/permissions';
 
 const LinkField = ({
   label,
@@ -16,6 +17,8 @@ const LinkField = ({
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState();
   const [linked, setLinked] = useState();
+  const userReadonly = useRestriction('readonly');
+  const deviceReadonly = useDeviceReadonly();
 
   useEffectAsync(async () => {
     if (active) {
@@ -86,6 +89,7 @@ const LinkField = ({
       }}
       onClose={() => setOpen(false)}
       multiple
+      disabled={deviceReadonly || userReadonly}
     />
   );
 };

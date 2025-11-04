@@ -139,12 +139,12 @@ const GeofencePage = () => {
 
   /** 🎨 Renk seçenekleri */
   const colorOptions = [
-    { value: 'yellow', label: '🟡 Sarı' },
-    { value: 'red', label: '🔴 Kırmızı' },
-    { value: 'green', label: '🟢 Yeşil' },
-    { value: 'blue', label: '🔵 Mavi' },
-    { value: 'orange', label: '🟠 Turuncu' },
-    { value: 'purple', label: '🟣 Mor' },
+    { value: 'yellow', label: '🟡' },
+    { value: 'red', label: '🔴' },
+    { value: 'green', label: '🟢' },
+    { value: 'blue', label: '🔵' },
+    { value: 'orange', label: '🟠' },
+    { value: 'purple', label: '🟣' },
   ];
 
   /** 🚙 Tek araç seçimi */
@@ -207,20 +207,20 @@ const GeofencePage = () => {
                 <TextField
                   value={item.name || ''}
                   onChange={(e) => setItem({ ...item, name: e.target.value })}
-                  label="😊 Bölge Adı"
+                  label={`${t("stateTitle")} ${t("sharedName")}`}
                   fullWidth
                 />
               </AccordionDetails>
             </Accordion>
 
             {/* 🎨 Görsel Ayarlar */}
-            <Accordion defaultExpanded>
+            <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography
                   variant="subtitle1"
                   sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                 >
-                  <PaletteIcon color="primary" /> Görsel Ayarlar
+                  <PaletteIcon color="primary" /> {t("settingsTitle")}
                 </Typography>
               </AccordionSummary>
               <AccordionDetails className={classes.details}>
@@ -268,72 +268,86 @@ const GeofencePage = () => {
               </AccordionDetails>
             </Accordion>
             <Accordion defaultExpanded>
-  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-    <Typography
-      variant="subtitle1"
-      sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-    >
-      <DirectionsCarIcon color="primary" /> {t("positionValid")} {t("deviceTitle")}
-    </Typography>
-  </AccordionSummary>
-  <AccordionDetails
-    sx={{
-      overflowY: 'auto', // taşınca scroll
-      px: 1,
-      py: 1,
-    }}
-  >
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      {/* 🔍 Arama kutusu */}
-      <TextField
-        size="small"
-        placeholder={t("sharedSearch")}
-        onChange={(e) => setSearchKeyword(e.target.value)}
-        fullWidth
-      />
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                >
+                  <DirectionsCarIcon color="primary" /> {t("positionValid")} {t("deviceTitle")}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails
+                sx={{
+                  overflowY: 'auto', // taşınca scroll
+                  px: 1,
+                  py: 1,
+                }}
+              >
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {/* 🔍 Arama kutusu */}
+                  <TextField
+                    size="small"
+                    placeholder={t("sharedSearch")}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    fullWidth
+                  />
 
-      {/* ✅ Tüm araçlar checkbox */}
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={selectAll}
-            onChange={(e) => handleSelectAll(e.target.checked)}
-          />
-        }
-        label={t("eventAll")}
-      />
+                  {/* ✅ Tüm araçlar checkbox */}
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={selectAll}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                      />
+                    }
+                    label={t("eventAll")}
+                  />
 
-      {/* 🚘 Araç listesi grid */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr', // küçük ekran 1 sütun
-            sm: '1fr 1fr', // orta ekran 2 sütun
-          },
-          gap: 1,
-        }}
-      >
-        {devices
-          .filter((dev) =>
-            dev.name.toLowerCase().includes(searchKeyword.toLowerCase())
-          )
-          .map((dev) => (
-            <FormControlLabel
-              key={dev.id}
-              control={
-                <Checkbox
-                  checked={selectedDevices.includes(dev.id)}
-                  onChange={() => handleDeviceSelect(dev.id)}
-                />
-              }
-              label={`${dev.name}${dev.linked ? ' ✅' : ''}`}
-            />
-          ))}
-      </Box>
-    </Box>
-  </AccordionDetails>
-</Accordion>
+                  {/* 🚘 Araç listesi grid */}
+{/* 🚘 Araç listesi grid */}
+<Box
+  sx={{
+    display: 'grid',
+    gridTemplateColumns: {
+      xs: '1fr 1fr', // küçük ekran: 2 sütun
+      sm: '1fr 1fr', // orta ekran: 2 sütun
+    },
+    gap: 1,
+    maxHeight: 300, // yüksekliği sabitle (örneğin 300px)
+    overflowY: 'auto', // dikey kaydırma aktif
+    pr: 1, // sağ tarafa biraz padding (scroll çubuğu için)
+    '&::-webkit-scrollbar': {
+      width: 6,
+    },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: '#aaa',
+      borderRadius: 3,
+    },
+    '&::-webkit-scrollbar-thumb:hover': {
+      backgroundColor: '#888',
+    },
+  }}
+>
+                    {devices
+                      .filter((dev) =>
+                        dev.name.toLowerCase().includes(searchKeyword.toLowerCase())
+                      )
+                      .map((dev) => (
+                        <FormControlLabel
+                          key={dev.id}
+                          control={
+                            <Checkbox
+                              checked={selectedDevices.includes(dev.id)}
+                              onChange={() => handleDeviceSelect(dev.id)}
+                            />
+                          }
+                          label={`${dev.name}${dev.linked ? ' ✅' : ''}`}
+                        />
+                      ))}
+                  </Box>
+                </Box>
+              </AccordionDetails>
+            </Accordion>
 
           </>
         )}

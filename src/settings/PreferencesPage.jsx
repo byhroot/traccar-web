@@ -38,20 +38,23 @@ import sound4 from '../../src/resources/sound4.mp3';
 import sound5 from '../../src/resources/sound5.mp3';
 import sound6 from '../../src/resources/sound6.mp3';
 import DarkmodeSwicth from '../main/DarkmodeSwicth';
-
+import LanguageSwitch from '../main/LanguageSwitch';
 
 const ua = navigator.userAgent || "";
-const platform = navigator.userAgentData?.platform || navigator.platform || "";
+const uaData = navigator.userAgentData || {};
+const platform = uaData.platform || navigator.platform || "";
 
-// Apple cihazlarını algıla (iPhone, iPad, iPod, dokunmatik Mac)
-const isAppleDevice = /iPhone|iPad|iPod/.test(ua) || (/Mac/i.test(platform) && 'ontouchend' in document);
+// Apple cihazlarını algıla (iPhone, iPad, iPod veya dokunmatik Mac)
+const isAppleDevice =
+  /iPhone|iPad|iPod/i.test(ua) ||
+  (/Mac/i.test(platform) && navigator.maxTouchPoints > 1);
 
-// Android cihazlarını algıla
-const isAndroidDevice = /Android/.test(ua);
+// Android cihazlarını algıla (yeni userAgentData desteğiyle)
+const isAndroidDevice =
+  uaData.mobile && /Android/i.test(ua);
 
-// Masaüstü tarayıcıları (Mac, Windows, Linux) algıla
+// Web masaüstü cihazlarını algıla (Windows, macOS, Linux)
 const isWebDevice = !isAppleDevice && !isAndroidDevice;
-
 
 const deviceFields = [
   { id: 'name', name: 'sharedName' },
@@ -273,6 +276,8 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
             />
           }
         />
+        <LanguageSwitch />
+
       </div>
 
 
@@ -455,7 +460,7 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
             }
             </>
           )}
-            { isAppleDevice &&
+            {isAppleDevice &&
               <Accordion defaultExpanded>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography variant="subtitle1">

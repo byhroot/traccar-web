@@ -254,7 +254,22 @@ const BottomMenu = () => {
         ))}
       </BottomNavigation>
 
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+      <Menu     slotProps={{
+    paper: {
+      elevation: 6,
+      sx: {
+        borderRadius: 3,
+        minWidth: 220,
+        paddingY: 0.5,
+        backgroundColor: theme.palette.background.paper,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        backdropFilter: 'blur(8px)',
+      },
+    },
+  }}
+  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+   anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={handleSettings}>
           <ListItemIcon>
             <PhonelinkSetup fontSize="small" color="second" />

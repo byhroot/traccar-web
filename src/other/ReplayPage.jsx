@@ -2,7 +2,7 @@ import React, {
   useState, useEffect, useRef, useCallback,
 } from 'react';
 import {
-  IconButton, Paper, Slider, Toolbar, Typography,Tooltip
+  IconButton, Paper, Slider, Toolbar, Typography,Tooltip,Backdrop,CircularProgress
 } from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -84,6 +84,7 @@ const ReplayPage = () => {
   const timerRef = useRef();
   
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
+  const [loading, setLoading] = useState(false);
 
   const [positions, setPositions] = useState([]);
   const [index, setIndex] = useState(0);
@@ -140,25 +141,29 @@ const ReplayPage = () => {
   }, [setShowCard]);
 
   const handleSubmit = useCatch(async ({ deviceId, from, to }) => {
-    setSelectedDeviceId(deviceId);
-    setFrom(from);
-    setTo(to);
-    const query = new URLSearchParams({ deviceId, from, to });
-    const response = await fetch(`/api/positions?${query.toString()}`);
-    if (response.ok) {
-      setIndex(0);
-      const positions = await response.json();
-      setPositions(positions);
-      if (positions.length) {
-        setExpanded(false);
+    try {
+      setLoading(true); // Loading başlat
+      setSelectedDeviceId(deviceId);
+      setFrom(from);
+      setTo(to);
+      const query = new URLSearchParams({ deviceId, from, to });
+      const response = await fetch(`/api/positions?${query.toString()}`);
+      if (response.ok) {
+        setIndex(0);
+        const positions = await response.json();
+        setPositions(positions);
+        if (positions.length) {
+          setExpanded(false);
+        } else {
+          throw Error(t('sharedNoData'));
+        }
       } else {
-        throw Error(t('sharedNoData'));
+        throw Error(await response.text());
       }
-    } else {
-      throw Error(await response.text());
+    } finally {
+      setLoading(false); // Loading bitir
     }
   });
-
   const handleDownload = () => {
     const query = new URLSearchParams({ deviceId: selectedDeviceId, from, to });
     window.location.assign(`/api/positions/kml?${query.toString()}`);
@@ -166,6 +171,12 @@ const ReplayPage = () => {
 
   return (
     <div className={classes.root}>
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={loading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
       <MapView>
         <MapGeofence />
         <MapRoutePath positions={positions} />
