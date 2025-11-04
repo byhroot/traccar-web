@@ -2081,11 +2081,9 @@ public final class Keys {
       * 
      /**
         If there is no movement while the vehicle is on, or if there is no movement for a certain period when the speed drops to 0, the alarm_parking status is triggered based on the idle time.
-
-        Must be used together; processing.copyAttributes.enable true and processing.copyAttributes "idleStartTime,idleAlarmStatus" must be added.
-        Default Value: 20 Minutes
-
+        ****NOTICE****: Must be used together; processing.copyAttributes.enable true and processing.copyAttributes "idleStartTime,idleAlarmStatus" must be added.
         A time period longer than the device's heart rate/period data upload time must be selected.
+        Default Value: 20 Minutes
      */
     public static final ConfigKey<Long> EVENT_IDLE_MINIMUM_DURATION = new LongConfigKey(
         "processing.event.idle.duration",
