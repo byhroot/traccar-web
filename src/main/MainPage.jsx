@@ -14,6 +14,7 @@ import useFilter from './useFilter';
 import MainToolbar from './MainToolbar';
 import MainMap from './MainMap';
 import { useAttributePreference } from '../common/util/preferences';
+import StatusCardNew from '../common/components/StatusCardNew';
 
 const useStyles = makeStyles()((theme) => ({
   root: {
@@ -28,7 +29,7 @@ const useStyles = makeStyles()((theme) => ({
       left: 0,
       top: 0,
       height: `calc(100% - ${theme.spacing(3)})`,
-      width: theme.dimensions.drawerWidthDesktop,
+      width: "400px", // theme.dimensions.drawerWidthDesktop ||
       margin: theme.spacing(1.5),
       zIndex: 3,
     },
@@ -71,7 +72,7 @@ const MainPage = () => {
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const mapOnSelect = useAttributePreference('mapOnSelect', true);
-
+  const oldmenu = useAttributePreference('oldStatusCard', false);
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
   const positions = useSelector((state) => state.session.positions);
   const [filteredPositions, setFilteredPositions] = useState([]);
@@ -85,6 +86,7 @@ const MainPage = () => {
   const [filter, setFilter] = usePersistedState('filter', {
     statuses: [],
     groups: [],
+    motiones: [],
   });
   const [filterSort, setFilterSort] = usePersistedState('filterSort', '');
   const [filterMap, setFilterMap] = usePersistedState('filterMap', false);
@@ -161,12 +163,21 @@ const MainPage = () => {
       </div>
       <EventsDrawer open={eventsOpen} onClose={() => setEventsOpen(false)} />
       {selectedDeviceId && (
-        <StatusCard
-          deviceId={selectedDeviceId}
-          position={selectedPosition}
-          onClose={() => dispatch(devicesActions.selectId(null))}
-          desktopPadding={theme.dimensions.drawerWidthDesktop}
-        />
+        oldmenu ? (
+          <StatusCard
+            deviceId={selectedDeviceId}
+            position={selectedPosition}
+            onClose={() => dispatch(devicesActions.selectId(null))}
+            desktopPadding={theme.dimensions.drawerWidthDesktop}
+          />
+        ) : (
+          <StatusCardNew
+            deviceId={selectedDeviceId}
+            position={selectedPosition}
+            onClose={() => dispatch(devicesActions.selectId(null))}
+            desktopPadding={theme.dimensions.drawerWidthDesktop}
+          />
+        )
       )}
     </div>
   );

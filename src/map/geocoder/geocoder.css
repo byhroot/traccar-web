@@ -27,7 +27,8 @@
   background-color: transparent;
   margin: 0;
   height: 29px;
-  color: #404040; /* fallback */
+  color: #404040;
+  /* fallback */
   color: rgba(0, 0, 0, 0.75);
   padding: 6px 30px;
   text-overflow: ellipsis;
@@ -36,14 +37,15 @@
 }
 
 .maplibregl-ctrl-geocoder--input:focus {
-  color: #404040; /* fallback */
+  color: #404040;
+  /* fallback */
   color: rgba(0, 0, 0, 0.75);
   outline: 0;
   box-shadow: none;
   outline: thin dotted;
 }
 
-.maplibregl-ctrl-geocoder .maplibregl-ctrl-geocoder--pin-right > * {
+.maplibregl-ctrl-geocoder .maplibregl-ctrl-geocoder--pin-right>* {
   z-index: 2;
   position: absolute;
   right: 5px;
@@ -58,10 +60,42 @@
 
 /* Collapsed */
 .maplibregl-ctrl-geocoder.maplibregl-ctrl-geocoder--collapsed {
-  width: 29px;
-  min-width: 29px;
+  width: 30px;
+  min-width: 30px;
   transition: width 0.25s, min-width 0.25s;
 }
+
+/* Güvenli Bölge Butonlar takipon */
+
+
+.maplibregl-ctrl-group button {
+  width: 30px;
+  height: 30px;
+}
+
+/* Tekil Buton Ayarları */
+.maplibregl-ctrl-top-left .maplibregl-ctrl-group button {
+  width: 40px;
+  /* Standart boyut */
+  height: 40px;
+}
+
+/* Güvenli Bölge Butonlar takipon */
+
+.mapbox-gl-draw_polygon {
+  width: 40px;
+  height: 40px;
+  background-size: 30px !important;
+}
+
+/* Güvenli Bölge Butonlar takipon */
+
+.mapbox-gl-draw_trash {
+  width: 40px;
+  height: 40px;
+  background-size: 30px !important;
+}
+
 
 /* Suggestions */
 .maplibregl-ctrl-geocoder .suggestions {
@@ -73,28 +107,35 @@
   padding: 0;
   position: absolute;
   width: 100%;
-  top: 110%; /* fallback */
+  top: 110%;
+  /* fallback */
   top: calc(100% + 6px);
   z-index: 1000;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 16px;
 }
 
-.maplibregl-ctrl-bottom-left .suggestions,
+/*Güvenli Bölge Butonları takipon */
+.maplibregl-ctrl-bottom-left .suggestions {
+  width: 60px;
+  height: 60px;
+
+}
+
 .maplibregl-ctrl-bottom-right .suggestions {
   top: auto;
   bottom: 100%;
 }
 
-.maplibregl-ctrl-geocoder .suggestions > li > a {
+.maplibregl-ctrl-geocoder .suggestions>li>a {
   cursor: default;
   display: block;
   padding: 6px 12px;
   color: #404040;
 }
 
-.maplibregl-ctrl-geocoder .suggestions > .active > a,
-.maplibregl-ctrl-geocoder .suggestions > li > a:hover {
+.maplibregl-ctrl-geocoder .suggestions>.active>a,
+.maplibregl-ctrl-geocoder .suggestions>li>a:hover {
   color: #404040;
   background-color: #f3f3f3;
   text-decoration: none;
@@ -108,11 +149,11 @@
 }
 
 .maplibre-ctrl-geocoder--suggestion-icon {
-  min-width: 30px;
-  min-height: 24px;
-  max-width: 30px;
-  max-height: 24px;
-  padding-right: 12px;
+  min-width: 60px;
+  min-height: 28px;
+  max-width: 60px;
+  max-height: 28px;
+  padding-right: 14px;
 }
 
 .maplibregl-ctrl-geocoder--suggestion-info {
@@ -198,6 +239,7 @@
     -webkit-transform: rotate(0);
     transform: rotate(0);
   }
+
   to {
     -webkit-transform: rotate(360deg);
     transform: rotate(360deg);
@@ -209,6 +251,7 @@
     -webkit-transform: rotate(0);
     transform: rotate(0);
   }
+
   to {
     -webkit-transform: rotate(360deg);
     transform: rotate(360deg);

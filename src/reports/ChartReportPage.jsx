@@ -44,7 +44,7 @@ const ChartReportPage = () => {
   const [items, setItems] = useState([]);
   const [types, setTypes] = useState(['speed']);
   const [selectedTypes, setSelectedTypes] = useState(['speed']);
-  const [timeType, setTimeType] = useState('fixTime');
+  const [timeType, setTimeType] = useState('serverTime');
 
   const values = items.map((it) =>
     selectedTypes.map((type) => it[type]).filter((value) => value != null),

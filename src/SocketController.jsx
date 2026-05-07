@@ -77,11 +77,13 @@ const SocketController = () => {
 
     socket.onopen = () => {
       dispatch(sessionActions.updateSocket(true));
+      nativePostMessage('socket_connected'); // Bağlantı geldi!
     };
 
     socket.onclose = async (event) => {
       dispatch(sessionActions.updateSocket(false));
       if (event.code !== logoutCode) {
+        nativePostMessage('socket_error'); // Bağlantı koptu!
         try {
           const devicesResponse = await fetch('/api/devices');
           if (devicesResponse.ok) {
@@ -101,7 +103,7 @@ const SocketController = () => {
         reconnectTimeoutRef.current = setTimeout(() => {
           reconnectTimeoutRef.current = null;
           connectSocket();
-        }, 60000);
+        }, 5000);
       }
     };
 

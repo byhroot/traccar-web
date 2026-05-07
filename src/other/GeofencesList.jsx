@@ -1,22 +1,48 @@
 import { Fragment } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { makeStyles } from 'tss-react/mui';
-import { Divider, List, ListItemButton, ListItemText } from '@mui/material';
+import { Divider, List, ListItemButton, ListItemText, Typography } from '@mui/material';
 
 import { geofencesActions } from '../store';
 import CollectionActions from '../settings/components/CollectionActions';
 import { useCatchCallback } from '../reactHelper';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 
-const useStyles = makeStyles()(() => ({
+const useStyles = makeStyles()((theme) => ({
   list: {
     flexGrow: 1,
     overflow: 'auto',
+    padding: 0,
   },
-  icon: {
-    width: '25px',
-    height: '25px',
-    filter: 'brightness(0) invert(1)',
+
+  item: {
+    paddingTop: 6,
+    paddingBottom: 6,
+    paddingLeft: 12,
+    paddingRight: 8,
+    minHeight: 'auto',
+    transition: 'background 0.15s ease',
+
+    '&:hover': {
+      background: theme.palette.action.hover,
+    },
+  },
+
+  primary: {
+    fontSize: '0.85rem',
+    fontWeight: 500,
+    lineHeight: 1.2,
+  },
+
+  secondary: {
+    fontSize: '0.7rem',
+    color: theme.palette.text.secondary,
+  },
+
+  divider: {
+    opacity: 0.25,
+    marginLeft: 12,
+    marginRight: 12,
   },
 }));
 
@@ -35,8 +61,24 @@ const GeofencesList = ({ onGeofenceSelected }) => {
     <List className={classes.list}>
       {Object.values(items).map((item, index, list) => (
         <Fragment key={item.id}>
-          <ListItemButton key={item.id} onClick={() => onGeofenceSelected(item.id)}>
-            <ListItemText primary={item.name} />
+          <ListItemButton
+            className={classes.item}
+            onClick={() => onGeofenceSelected(item.id)}
+          >
+            <ListItemText
+              disableTypography
+              primary={
+                <Typography className={classes.primary}>
+                  {item.name}
+                </Typography>
+              }
+              secondary={
+                <Typography className={classes.secondary}>
+                  ID: {item.id}
+                </Typography>
+              }
+            />
+
             <CollectionActions
               itemId={item.id}
               editPath="/settings/geofence"
@@ -44,7 +86,10 @@ const GeofencesList = ({ onGeofenceSelected }) => {
               setTimestamp={refreshGeofences}
             />
           </ListItemButton>
-          {index < list.length - 1 ? <Divider /> : null}
+
+          {index < list.length - 1 && (
+            <Divider className={classes.divider} />
+          )}
         </Fragment>
       ))}
     </List>

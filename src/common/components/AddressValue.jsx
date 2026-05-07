@@ -5,8 +5,12 @@ import { useCatch } from '../../reactHelper';
 import { formatAddress } from '../util/formatter';
 import { usePreference } from '../util/preferences';
 import fetchOrThrow from '../util/fetchOrThrow';
+import { useTranslation } from './LocalizationProvider';
+
 
 const AddressValue = ({ latitude, longitude, originalAddress }) => {
+  const t = useTranslation();
+
   const addressEnabled = useSelector((state) => state.session.server.geocoderEnabled);
   const coordinateFormat = usePreference('coordinateFormat');
 
@@ -30,7 +34,7 @@ const AddressValue = ({ latitude, longitude, originalAddress }) => {
   if (addressEnabled) {
     return (
       <Link href="#" onClick={showAddress}>
-        {coordinates}
+        {t('sharedShowAddress')}
       </Link>
     );
   }

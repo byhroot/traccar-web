@@ -48,12 +48,16 @@ const MapRoutePath = ({ positions }) => {
       },
       paint: {
         'line-color': ['get', 'color'],
-        'line-width': ['get', 'width'],
+        'line-width': 5,
+
         'line-opacity': ['get', 'opacity'],
       },
     });
 
     return () => {
+      if (map.getLayer(`${id}-title`)) {
+        map.removeLayer(`${id}-title`);
+      }
       if (map.getLayer(`${id}-line`)) {
         map.removeLayer(`${id}-line`);
       }

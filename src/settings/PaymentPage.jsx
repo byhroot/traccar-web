@@ -1,0 +1,467 @@
+import React, { useState, useEffect } from "react";
+import {
+  Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle,
+  IconButton, Typography, Paper, useMediaQuery, useTheme, TextField,
+  InputAdornment, Fab, Accordion, AccordionSummary, AccordionDetails,
+  Badge, Stack, Divider, Fade, Zoom, Card, CardContent, CircularProgress, Collapse
+} from "@mui/material";
+
+// Icons
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SearchIcon from "@mui/icons-material/Search";
+import ShoppingCartCheckoutIcon from "@mui/icons-material/ShoppingCartCheckout";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import SelectAllIcon from "@mui/icons-material/SelectAll";
+import { Add, Remove, CheckCircle, TimeToLeave, Cancel, InfoOutlined, Visibility, VisibilityOff } from "@mui/icons-material";
+import StarIcon from '@mui/icons-material/Star';
+
+// ... (Category Icons aynı kalıyor)
+import PetsIcon from "@mui/icons-material/Pets";
+import DirectionsBikeIcon from "@mui/icons-material/DirectionsBike";
+import DirectionsBoatIcon from "@mui/icons-material/DirectionsBoat";
+import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import RvHookupIcon from "@mui/icons-material/RvHookup";
+import AirportShuttleIcon from "@mui/icons-material/AirportShuttle";
+import ConstructionIcon from "@mui/icons-material/Construction";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import FlightIcon from "@mui/icons-material/Flight";
+import TwoWheelerIcon from "@mui/icons-material/TwoWheeler";
+import HikingIcon from "@mui/icons-material/Hiking";
+import PersonIcon from "@mui/icons-material/Person";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import AirplanemodeActiveIcon from "@mui/icons-material/AirplanemodeActive";
+import MopedIcon from "@mui/icons-material/Moped";
+import AgricultureIcon from "@mui/icons-material/Agriculture";
+import TrainIcon from "@mui/icons-material/Train";
+import TramIcon from "@mui/icons-material/Tram";
+import DirectionsTransitFilledIcon from "@mui/icons-material/DirectionsTransitFilled";
+
+import PageLayout from "../common/components/PageLayout";
+import { useManager } from "../common/util/permissions";
+import PaymentStatusCard from "./PaymentStatusCard";
+import PaymentPricesCard from "./PaymentPricesCard";
+
+const PaymentPage = () => {
+  const [devices, setDevices] = useState([]);
+  const [selectedDevices, setSelectedDevices] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [search, setSearch] = useState("");
+  const [showDeviceList, setShowDeviceList] = useState(false); // Özet ekranı için
+  const theme = useTheme();
+
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [packageType, setPackageType] = useState("standard");
+  const [proCount, setProCount] = useState(1);
+  const [step, setStep] = useState(1);
+  const [packagePrices, setPackagePrices] = useState({ standard: 0, pro: 490, yillik: 1440 });
+  const [resultDialog, setResultDialog] = useState({ open: false, success: false });
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [loyalty, setLoyalty] = useState({ points: 0, discountTL: 0 });
+
+  const manager = useManager();
+
+  const categoryIcons = {
+    animal: <PetsIcon />, bicycle: <DirectionsBikeIcon />, boat: <DirectionsBoatIcon />,
+    bus: <DirectionsBusIcon />, car: <DirectionsCarIcon />, camper: <RvHookupIcon />,
+    crane: <ConstructionIcon />, default: <HelpOutlineIcon />, helicopter: <FlightIcon />,
+    motorcycle: <TwoWheelerIcon />, offroad: <HikingIcon />, person: <PersonIcon />,
+    pickup: <LocalShippingIcon />, plane: <AirplanemodeActiveIcon />, scooter: <MopedIcon />,
+    ship: <DirectionsBoatIcon />, tractor: <AgricultureIcon />, train: <TrainIcon />,
+    tram: <TramIcon />, trolleybus: <DirectionsTransitFilledIcon />, truck: <TimeToLeave />,
+    van: <AirportShuttleIcon />,
+  };
+
+  // fetchPrices useEffect'ine loyalty çağrısını ekle
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const pricesRes = await fetch("/api/paylinks/prices");
+        if (pricesRes.ok) {
+          const data = await pricesRes.json();
+          setPackagePrices({ standard: data.standard ?? 0, pro: data.proPrice ?? 490, yillik: data.yillikPrice ?? 1440 });
+        }
+      } catch (err) {
+        console.error("Fiyat hatası:", err);
+      }
+
+      try {
+        const loyaltyRes = await fetch("/api/paylinks/loyalty");
+        if (loyaltyRes.ok) {
+          const lData = await loyaltyRes.json();
+          setLoyalty({ points: lData.points ?? 0, discountTL: lData.discountTL ?? 0 });
+        }
+      } catch (err) {
+        console.error("Loyalty hatası:", err);
+        setLoyalty({ points: 0, discountTL: 0 });
+      }
+    };
+    fetchData();
+  }, [refreshKey]);
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const response = await fetch("/api/devices");
+        if (response.ok) {
+          const data = await response.json();
+          const thirtyDaysLater = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
+          setDevices(data.filter(device => device.expirationTime && new Date(device.expirationTime) < thirtyDaysLater));
+        }
+      } catch (error) { console.error("Cihaz hatası", error); }
+    };
+    fetchDevices();
+  }, []);
+
+  const filteredDevices = devices.filter((d) => d.name.toLowerCase().includes(search.toLowerCase()));
+
+  const handleSelectDevice = (id) => {
+    setSelectedDevices((prev) => prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]);
+  };
+
+  const handleToggleAll = () => {
+    if (selectedDevices.length === filteredDevices.length) {
+      setSelectedDevices([]);
+    } else {
+      setSelectedDevices(filteredDevices.map((d) => d.id));
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    setLoading(true);
+    const payload = {
+      deviceIds: selectedDevices,
+      paket: { standard: packageType === "standard" ? 1 : 0, pro: packageType === "pro" ? proCount : 0 },
+    };
+    try {
+      const response = await fetch("/api/paylinks/create", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      setResultDialog({ open: true, success: response.ok });
+      if (response.ok)
+        setRefreshKey(prev => prev + 1);
+    } catch (err) {
+      setResultDialog({ open: true, success: false });
+    } finally {
+      setLoading(false);
+      setOpenDialog(false);
+    }
+  };
+
+  const totalPrice = (selectedDevices.length * packagePrices.yillik) + (packageType === "pro" ? packagePrices.pro * proCount : 0);
+
+  // totalPrice hesabını güncelle (mevcut satırın yerine)
+  const discountedPrice = Math.max(0, totalPrice - loyalty.discountTL);
+
+  // --- Yardımcı Paket Kartı ---
+  const PackageOption = ({ type, title, price, features, icon: Icon, isPro, badge }) => {
+    const selected = packageType === type;
+    const color = isPro ? theme.palette.warning.main : theme.palette.primary.main;
+    return (
+      <Paper
+        onClick={() => setPackageType(type)}
+        sx={{
+          p: 2.5, borderRadius: 4, cursor: 'pointer', flex: 1, position: 'relative',
+          border: `2.5px solid ${selected ? color : theme.palette.divider}`,
+          bgcolor: selected ? (theme.palette.mode === 'dark' ? `${color}15` : `${color}05`) : 'background.paper',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: selected ? 'scale(1.02)' : 'scale(1)',
+          '&:hover': { borderColor: color }
+        }}
+      >
+        {badge && (
+          <Box sx={{ position: 'absolute', top: -12, right: 20, bgcolor: color, color: '#fff', px: 1.5, py: 0.5, borderRadius: 2, fontSize: '0.65rem', fontWeight: '900', boxShadow: 3 }}>
+            {badge}
+          </Box>
+        )}
+        <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+          <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${color}20`, display: 'flex' }}>
+            <Icon sx={{ color: color, fontSize: 32 }} />
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" fontWeight="900" sx={{ opacity: 0.8 }}>{title}</Typography>
+            <Typography variant="h5" fontWeight="900" color={color}> {type === "pro" ? `+${price}₺` : `${price}₺`} <Typography component="span" variant="caption" color="text.secondary">/ {isPro ? 'Fiyata Ek Hizmet Bedeli' : 'Araç - Adet Yıllık'}</Typography></Typography>
+          </Box>
+        </Stack>
+        <Stack spacing={1.2}>
+          {features.map((f, i) => (
+            <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
+              <CheckCircle sx={{ fontSize: 16, color: color, mt: 0.2 }} />
+              <Typography variant="caption" fontWeight="600" color="text.primary" sx={{ lineHeight: 1.2 }}>{f}</Typography>
+            </Stack>
+          ))}
+        </Stack>
+      </Paper>
+    );
+  };
+
+  return (
+    <PageLayout breadcrumbs={["sharedSettings", "records"]}>
+      <Box sx={{ width: '100%', maxWidth: 1200, mx: 'auto', px: { xs: 1.5, md: 3 }, pb: 12, overflowX: 'hidden' }}>
+
+        <PaymentPricesCard refreshKey={refreshKey} />
+        <PaymentStatusCard devices={devices} refreshKey={refreshKey} />
+
+        {/* Arama Barı */}
+        <Paper elevation={0} sx={{ p: 2, borderRadius: 4, mb: 3, border: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper' }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
+            <TextField
+              placeholder="Araç veya Plaka Ara..."
+              variant="outlined" size="small" fullWidth
+              value={search} onChange={(e) => setSearch(e.target.value)}
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+            />
+            <Button
+              variant={selectedDevices.length === filteredDevices.length ? "contained" : "outlined"}
+              startIcon={<SelectAllIcon />}
+              onClick={handleToggleAll}
+              sx={{ borderRadius: 3, whiteSpace: 'nowrap', minWidth: { sm: 180 }, fontWeight: 'bold' }}
+            >
+              {selectedDevices.length === filteredDevices.length ? "Seçimi Temizle" : "Tümünü Seç"}
+            </Button>
+          </Stack>
+        </Paper>
+
+        {/* Araç Kartları Grid */}
+        <Box
+          display="grid"
+          gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr", lg: "repeat(4, 1fr)" }}
+          gap={2}
+        >
+          {filteredDevices.map((device) => {
+            const isSelected = selectedDevices.includes(device.id);
+            return (
+              <Card
+                key={device.id}
+                onClick={() => handleSelectDevice(device.id)}
+                sx={{
+                  borderRadius: 4, cursor: 'pointer', transition: '0.2s',
+                  border: `2px solid ${isSelected ? theme.palette.primary.main : 'transparent'}`,
+                  bgcolor: isSelected ? (theme.palette.mode === 'dark' ? 'rgba(0,149,158,0.1)' : 'rgba(0,149,158,0.05)') : 'background.paper',
+                  '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 }
+                }}
+              >
+                <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Box sx={{
+                      width: 44, height: 44, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      bgcolor: isSelected ? 'primary.main' : 'action.hover', color: isSelected ? '#fff' : 'primary.main'
+                    }}>
+                      {React.cloneElement(categoryIcons[device.category] || categoryIcons.default, { sx: { fontSize: 24 } })}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="subtitle2" fontWeight="800" noWrap>{device.name}</Typography>
+                      <Typography variant="caption" color={isSelected ? 'primary.main' : 'text.secondary'} fontWeight="600">
+                        Bitiş: {new Date(device.expirationTime).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                    <Checkbox checked={isSelected} sx={{ p: 0 }} />
+                  </Stack>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </Box>
+
+        {/* FAB */}
+        <Zoom in={selectedDevices.length > 0}>
+          <Fab
+            color="primary"
+            variant="extended"
+            onClick={() => { setStep(1); setOpenDialog(true); }}
+            sx={{
+              position: "fixed",
+              bottom: { xs: 60, md: 30 },
+              // left: "50%" yerine sadece 50 yazmak yeterlidir
+              left: 50 + "%",
+              // En kritik kısım: transform'un tam değerini korumak
+              transform: "translateX(-50%) !important",
+              zIndex: 1000,
+              px: 5,
+              py: 3,
+              borderRadius: '20px',
+              boxShadow: '0 8px 32px rgba(0,149,158,0.4)',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              // Mobilde butonun genişliğini kısıtlayarak taşmayı önleyelim
+              width: { xs: 'max-content', sm: 'auto' },
+              // Badge'in buton genişliğini bozmaması için:
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <Badge badgeContent={selectedDevices.length} color="error" sx={{ mr: 2 }}>
+              <ShoppingCartCheckoutIcon />
+            </Badge>
+            Ödeme
+          </Fab>
+        </Zoom>
+
+        {/* --- CHECKOUT DIALOG --- */}
+        <Dialog
+          open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth
+          PaperProps={{ sx: { borderRadius: 5, mx: 1 } }}
+        >
+          {step === 1 ? (
+            <>
+              <DialogTitle sx={{ textAlign: 'center', pt: 4 }}>
+                <StarIcon color="warning" sx={{ fontSize: 40, mb: 1 }} />
+                <Typography variant="h5" fontWeight="900">Hesabınızı Güçlendirin</Typography>
+                <Typography variant="caption" color="text.secondary">Tüm araçlarınız için geçerli ek avantajları keşfedin (Opsiyonel)</Typography>
+              </DialogTitle>
+              <DialogContent sx={{ px: { xs: 2, md: 4 } }}>
+                <Stack direction={{ xs: 'column', md: 'column' }} spacing={1} sx={{ mt: 1 }}>
+                  <PackageOption
+                    type="standard" title="STANDART PAKET" price={packagePrices.yillik} icon={DirectionsCarIcon} isPro={false}
+                    features={["Sınırsız Mobil & Web Takip", "Uygulama Anlık Bildirimler", "E-Posta Bildirimleri", "Tüm Sistem Özellikleri"]}
+                  />
+                  {/* Pro Paket Miktar Seçici */}
+                  <Collapse in={packageType === "pro" && manager}>
+                    <Paper sx={{ mt: 1, p: 2, borderRadius: 3, bgcolor: 'warning.light', color: 'warning.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0 }}>
+                        <InfoOutlined fontSize="small" />
+                        <Typography sx={{ fontSize: 13 }} fontWeight="bold">Kaç adet Pro paket lisansı istiyorsunuz? Alt Kullanıcılarınız için de Pro Paket Satın alabilirsiniz.</Typography>
+                      </Box>
+                      <Stack direction="row" alignItems="center" sx={{ bgcolor: 'background.paper', borderRadius: 2, p: 0.5 }}>
+                        <IconButton size="small" onClick={() => setProCount(Math.max(1, proCount - 1))}><Remove /></IconButton>
+                        <Typography sx={{ px: 2, fontWeight: '900', color: 'text.primary' }}>{proCount}</Typography>
+                        <IconButton size="small" onClick={() => setProCount(proCount + 1)}><Add /></IconButton>
+                      </Stack>
+                    </Paper>
+                  </Collapse>
+                  <PackageOption
+                    type="pro" title="PRO PLUS PAKET" price={packagePrices.pro} icon={AutoAwesomeIcon} isPro={true} badge="EN POPÜLER"
+                    features={["+3000 Adet SMS Bildirimi", "+750 Yapay Zeka Sesli Arama", "Bildirimlerinizi ayarlardan Özelleştirebilirsiniz.", "Bildirimlerinizi belirli saatlerde veya günlerde çalışacak şekilde zamanlayabilirsiniz.", "Yapay Zeka Sesli Arama bildirimleri sayesinde hiçbir önemli olayı kaçırmayın"]}
+                  />
+                </Stack>
+
+
+              </DialogContent>
+              <DialogActions sx={{ p: 4, pt: 0 }}>
+                <Button onClick={() => setOpenDialog(false)} sx={{ fontWeight: 'bold' }}>Vazgeç</Button>
+                <Button variant="contained" size="large" fullWidth sx={{ borderRadius: 3, fontWeight: '900' }} onClick={() => setStep(2)}>Özete Devam Et</Button>
+              </DialogActions>
+            </>
+          ) : (
+            <>
+              <DialogTitle sx={{ textAlign: 'center', pt: 4 }}>
+                <ReceiptLongIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
+                <Typography variant="h5" fontWeight="900">Sipariş Özeti</Typography>
+              </DialogTitle>
+              <DialogContent sx={{ px: { xs: 2, md: 5 } }}>
+                <Paper variant="outlined" sx={{ p: 3, borderRadius: 4, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#fcfcfc' }}>
+                  <Stack spacing={2}>
+                    {/* Seçili Araçlar Bölümü */}
+                    <Box>
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2" fontWeight="800">Araç Yıllık Paket Yenileme (x{selectedDevices.length})</Typography>
+                        <Typography variant="subtitle1" fontWeight="900">{selectedDevices.length * packagePrices.yillik} ₺</Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        startIcon={showDeviceList ? <VisibilityOff /> : <Visibility />}
+                        onClick={() => setShowDeviceList(!showDeviceList)}
+                        sx={{ textTransform: 'none', mt: 0.5, fontWeight: 'bold' }}
+                      >
+                        {showDeviceList ? "Araçları Gizle" : "Seçilen Araçları Gör"}
+                      </Button>
+                      <Collapse in={showDeviceList}>
+                        <Box sx={{ mt: 1, p: 1.5, borderRadius: 2, bgcolor: 'action.hover', maxHeight: 150, overflowY: 'auto' }}>
+                          {selectedDevices.map(id => (
+                            <Typography key={id} variant="caption" sx={{ display: 'block', py: 0.2, borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                              • {devices.find(d => d.id === id)?.name}
+                            </Typography>
+                          ))}
+                        </Box>
+                      </Collapse>
+                    </Box>
+
+                    <Divider />
+
+                    {/* Paket Bölümü */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="body2" fontWeight="800">Paket: {packageType === 'pro' ? 'Pro Plus (Yıllık)' : 'Standart (Ek Ücret Yok)'}</Typography>
+                        {packageType === 'pro' && <Typography variant="caption" color="text.secondary">{proCount} Adet Hesap İçin</Typography>}
+                      </Box>
+                      <Typography variant="subtitle1" fontWeight="900">{packageType === "pro" ? packagePrices.pro * proCount : 0} ₺</Typography>
+                    </Box>
+
+                    {/* Genel Toplam kutusunu bul ve şununla değiştir */}
+                    <Box sx={{ p: 2, borderRadius: 3, bgcolor: 'primary.main', color: '#fff', mt: 1 }}>
+                      {loyalty.discountTL > 0 && (
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                          <Typography variant="caption" fontWeight="700">
+                            🎉 {loyalty.points} Puan İndirimi
+                          </Typography>
+                          <Typography variant="caption" fontWeight="700">
+                            -{loyalty.discountTL} ₺
+                          </Typography>
+                        </Stack>
+                      )}
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="h6" fontWeight="900">Genel Toplam</Typography>
+                        <Stack alignItems="flex-end">
+                          {loyalty.discountTL > 0 && (
+                            <Typography
+                              variant="caption"
+                              sx={{ textDecoration: 'line-through', fontSize: '0.85rem' }}
+                            >
+                              {totalPrice} ₺
+                            </Typography>
+                          )}
+                          <Typography variant="h5" fontWeight="1000">{discountedPrice} ₺</Typography>
+                        </Stack>
+                      </Stack>
+                    </Box>
+                  </Stack>
+                </Paper>
+
+                <Stack direction="row" spacing={1} sx={{ mt: 3, p: 1.5, borderRadius: 2, border: '1px dashed #ccc' }}>
+                  <InfoOutlined sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                    Sistemde kayıtlı GSM numaranıza SMS olarak veya E-posta adresinize Ödeme Linki gönderilecektir. Ödeme sonrası 24 saat içinde aktivasyon tamamlanır.
+                  </Typography>
+                </Stack>
+              </DialogContent>
+              <DialogActions sx={{ p: 4, pt: 2 }}>
+                <Button onClick={() => setStep(1)} sx={{ fontWeight: 'bold' }}>Paket Değiştir</Button>
+                <Button variant="contained" size="large" fullWidth sx={{ borderRadius: 3, fontWeight: '900' }} onClick={handleConfirmPayment}>
+                  Güvenli Ödeme Linki Oluştur
+                </Button>
+              </DialogActions>
+            </>
+          )}
+        </Dialog>
+
+        {/* Sonuç Modalı */}
+        <Dialog open={resultDialog.open} onClose={() => setResultDialog({ ...resultDialog, open: false })} PaperProps={{ sx: { borderRadius: 5 } }}>
+          <Box sx={{ p: 5, textAlign: 'center' }}>
+            {resultDialog.success ? <CheckCircle color="success" sx={{ fontSize: 80, mb: 2 }} /> : <Cancel color="error" sx={{ fontSize: 80, mb: 2 }} />}
+            <Typography variant="h5" fontWeight="900">{resultDialog.success ? "İşlem Başarılı!" : "Bir Sorun Oluştu"}</Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
+              {resultDialog.success ? "Ödeme linkiniz hazır! Lütfen cep telefonunuzu ve e-posta adresinizi kontrol edin." : "Sipariş oluşturulurken bir hata meydana geldi. Lütfen destek ekibiyle iletişime geçin."}
+            </Typography>
+            <Button variant="contained" size="large" onClick={() => setResultDialog({ ...resultDialog, open: false })} sx={{ borderRadius: 3, px: 6 }}>Anladım</Button>
+          </Box>
+        </Dialog>
+
+        {/* Loading */}
+        <Dialog open={loading} PaperProps={{ sx: { bgcolor: 'transparent', boxShadow: 'none' } }}>
+          <Box sx={{ p: 5, bgcolor: 'background.paper', borderRadius: 4, textAlign: 'center' }}>
+            <CircularProgress color="primary" size={60} thickness={4} />
+            <Typography sx={{ mt: 2, fontWeight: 'bold' }}>İşleminiz Yapılıyor...</Typography>
+          </Box>
+        </Dialog>
+
+      </Box>
+    </PageLayout>
+  );
+};
+
+export default PaymentPage;

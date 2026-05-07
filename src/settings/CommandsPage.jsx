@@ -10,7 +10,7 @@ import CollectionFab from './components/CollectionFab';
 import CollectionActions from './components/CollectionActions';
 import TableShimmer from '../common/components/TableShimmer';
 import SearchHeader, { filterByKeyword } from './components/SearchHeader';
-import { useRestriction } from '../common/util/permissions';
+import { useAdministrator, useRestriction } from '../common/util/permissions';
 import useSettingsStyles from './common/useSettingsStyles';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 
@@ -23,6 +23,8 @@ const CommandsPage = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const limitCommands = useRestriction('limitCommands');
+  const admin = useAdministrator();
+
 
   useEffectAsync(async () => {
     setLoading(true);
@@ -42,7 +44,9 @@ const CommandsPage = () => {
           <TableRow>
             <TableCell>{t('sharedDescription')}</TableCell>
             <TableCell>{t('sharedType')}</TableCell>
-            <TableCell>{t('commandSendSms')}</TableCell>
+            {admin &&
+              <TableCell>{t('commandSendSms')}</TableCell>
+            }
             {!limitCommands && <TableCell className={classes.columnAction} />}
           </TableRow>
         </TableHead>

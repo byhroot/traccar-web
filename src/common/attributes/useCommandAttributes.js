@@ -212,6 +212,13 @@ export default (t) =>
           type: 'string',
         },
       ],
+      alarmVibrationlevel: [
+        {
+          key: 'alarmSensorlevel',
+          name: t('commandAlarmSensorlevel'),
+          type: 'string',
+        },
+      ],
     }),
     [t],
   );

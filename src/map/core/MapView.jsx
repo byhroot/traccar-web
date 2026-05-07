@@ -22,7 +22,7 @@ export const map = new maplibregl.Map({
   attributionControl: false,
 });
 
-let ready = false;
+let ready = true;
 const readyListeners = new Set();
 
 const addReadyListener = (listener) => {
@@ -60,11 +60,11 @@ const MapView = ({ children }) => {
   const mapStyles = useMapStyles();
   const activeMapStyles = useAttributePreference(
     'activeMapStyles',
-    'locationIqStreets,locationIqDark,openFreeMap',
+    'custom,darkCarto,googleRoad,googleHybrid,googleSatellite,carto,openTopoMap,locationIqStreets,locationIqDark,osm,yandexMap,openFreeMap',
   );
   const [defaultMapStyle] = usePersistedState(
     'selectedMapStyle',
-    usePreference('map', 'locationIqStreets'),
+    usePreference('map', 'custom'),
   );
   const mapboxAccessToken = useAttributePreference('mapboxAccessToken');
   const maxZoom = useAttributePreference('web.maxZoom');

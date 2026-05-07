@@ -20,6 +20,10 @@ import { useTranslation } from '../../common/components/LocalizationProvider';
 import { useAdministrator, useManager, useRestriction } from '../../common/util/permissions';
 import useFeatures from '../../common/util/useFeatures';
 import MenuItem from '../../common/components/MenuItem';
+import { Card, CardContent, Typography, Slide, Box } from '@mui/material';
+import AssessmentIcon from '@mui/icons-material/Assessment'; // ikon ekleyelim
+import DarkModeSwitch from './DarkmodeSwicth';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 
 const SettingsMenu = () => {
   const t = useTranslation();
@@ -36,7 +40,30 @@ const SettingsMenu = () => {
 
   return (
     <>
+      <Slide in direction="down" timeout={700}>
+        <Box sx={{ px: 2, py: 1 }}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #00959E 30%, #42d7f5 90%)',
+              color: '#fffFFf',
+              borderRadius: 3,
+              boxShadow: 3,
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 3 }}>
+              <AssessmentIcon sx={{ fontSize: 32, mr: 1 }} />
+              <Typography variant="h5" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
+                {t('settingsTitle')}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+      </Slide>
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <DarkModeSwitch />
+      </Box>
       <List>
+
         <MenuItem
           title={t('sharedPreferences')}
           link="/settings/preferences"
@@ -47,7 +74,7 @@ const SettingsMenu = () => {
           <>
             <MenuItem
               title={t('sharedNotifications')}
-              link="/settings/notifications"
+              link="/settings/notificationsnew"
               icon={<NotificationsIcon />}
               selected={location.pathname.startsWith('/settings/notification')}
             />
@@ -59,7 +86,7 @@ const SettingsMenu = () => {
             />
             <MenuItem
               title={t('deviceTitle')}
-              link="/settings/devices"
+              link={admin ? "/settings/devices" : "/settings/devicesuser"}
               icon={<DnsIcon />}
               selected={location.pathname.startsWith('/settings/device')}
             />
@@ -109,7 +136,7 @@ const SettingsMenu = () => {
                 selected={location.pathname.startsWith('/settings/maintenance')}
               />
             )}
-            {!features.disableSavedCommands && (
+            {!features.disableSavedCommands && admin && (
               <MenuItem
                 title={t('sharedSavedCommands')}
                 link="/settings/commands"
@@ -117,8 +144,16 @@ const SettingsMenu = () => {
                 selected={location.pathname.startsWith('/settings/command')}
               />
             )}
+            <MenuItem
+              title={t('settingsSupport')}
+              link={"/settings/supportpage"}
+              icon={<SupportAgentIcon color="primary" />}
+              selected={location.pathname.startsWith('/settings/device')}
+            />
           </>
         )}
+
+
         {billingLink && (
           <MenuItem title={t('userBilling')} link={billingLink} icon={<PaymentIcon />} />
         )}
@@ -130,12 +165,13 @@ const SettingsMenu = () => {
         <>
           <Divider />
           <List>
-            <MenuItem
-              title={t('serverAnnouncement')}
-              link="/settings/announcement"
-              icon={<CampaignIcon />}
-              selected={location.pathname === '/settings/announcement'}
-            />
+            {admin && (
+              <MenuItem
+                title={t('serverAnnouncement')}
+                link="/settings/announcement"
+                icon={<CampaignIcon />}
+                selected={location.pathname === '/settings/announcement'}
+              />)}
             {admin && (
               <MenuItem
                 title={t('settingsServer')}

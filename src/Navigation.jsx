@@ -1,6 +1,8 @@
 import { Route, Routes, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import MainPage from './main/MainPage';
+import Dashboard from './main/Dashboard';
+import ServicePage from './main/ServicePage';
 import CombinedReportPage from './reports/CombinedReportPage';
 import PositionsReportPage from './reports/PositionsReportPage';
 import ServerPage from './settings/ServerPage';
@@ -8,6 +10,7 @@ import UsersPage from './settings/UsersPage';
 import DevicePage from './settings/DevicePage';
 import UserPage from './settings/UserPage';
 import NotificationsPage from './settings/NotificationsPage';
+import NotificationsPageNew from './settings/NotificationsPageNew';
 import NotificationPage from './settings/NotificationPage';
 import GroupsPage from './settings/GroupsPage';
 import GroupPage from './settings/GroupPage';
@@ -30,6 +33,8 @@ import MaintenancesPage from './settings/MaintenancesPage';
 import MaintenancePage from './settings/MaintenancePage';
 import CommandsPage from './settings/CommandsPage';
 import CommandPage from './settings/CommandPage';
+import SupportPage from './settings/SupportPage';
+import ModernSettingsMenu from './settings/components/SettingsMenuBottom';
 import StatisticsPage from './reports/StatisticsPage';
 import LoginPage from './login/LoginPage';
 import RegisterPage from './login/RegisterPage';
@@ -42,11 +47,14 @@ import EventPage from './other/EventPage';
 import PreferencesPage from './settings/PreferencesPage';
 import AccumulatorsPage from './settings/AccumulatorsPage';
 import CommandDevicePage from './settings/CommandDevicePage';
+import DeviceDetails from './settings/DeviceDetails';
+import DeviceSettingsNew from './settings/DeviceSettingsNew';
 import CommandGroupPage from './settings/CommandGroupPage';
 import App from './App';
 import ChangeServerPage from './login/ChangeServerPage';
 import DevicesPage from './settings/DevicesPage';
 import ScheduledPage from './reports/ScheduledPage';
+import DevicesPage2 from './settings/DevicesPage2';
 import DeviceConnectionsPage from './settings/DeviceConnectionsPage';
 import GroupConnectionsPage from './settings/GroupConnectionsPage';
 import UserConnectionsPage from './settings/UserConnectionsPage';
@@ -59,7 +67,12 @@ import { generateLoginToken } from './common/components/NativeInterface';
 import { useLocalization } from './common/components/LocalizationProvider';
 import fetchOrThrow from './common/util/fetchOrThrow';
 import AuditPage from './reports/AuditPage';
-
+import UserlogsPage from './reports/UserlogsPage';
+import UserlogsActionsPage from './reports/userlogsActionsPage';
+import Paymentpage from './settings/PaymentPage';
+import ReportsMenuNew from './reports/components/ReportsMenuNew';
+import NotificationCard from './common/components/NotificationCard';
+import ReportsMenuNewAIDetails from './reports/components/ReportsMenuNewAIDetails';
 const Navigation = () => {
   const dispatch = useDispatch();
   const { setLocalLanguage } = useLocalization();
@@ -125,8 +138,11 @@ const Navigation = () => {
         <Route path="replay" element={<ReplayPage />} />
         <Route path="geofences" element={<GeofencesPage />} />
         <Route path="emulator" element={<EmulatorPage />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="servis" element={<ServicePage />} />
 
         <Route path="settings">
+          <Route path="settingsmenumodern" element={<ModernSettingsMenu />} />
           <Route path="accumulators/:deviceId" element={<AccumulatorsPage />} />
           <Route path="announcement" element={<AnnouncementPage />} />
           <Route path="calendars" element={<CalendarsPage />} />
@@ -140,7 +156,11 @@ const Navigation = () => {
           <Route path="attribute" element={<ComputedAttributePage />} />
           <Route path="devices" element={<DevicesPage />} />
           <Route path="device/:id/connections" element={<DeviceConnectionsPage />} />
+          <Route path="devicesuser" element={<DevicesPage2 />} />
           <Route path="device/:id/command" element={<CommandDevicePage />} />
+          <Route path="device/:id/details" element={<DeviceDetails />} />
+          <Route path="device/notify/:id" element={<NotificationCard />} />
+          <Route path="device/:id/devsettings" element={<DeviceSettingsNew />} />
           <Route path="device/:id/share" element={<SharePage />} />
           <Route path="device/:id" element={<DevicePage />} />
           <Route path="device" element={<DevicePage />} />
@@ -157,15 +177,19 @@ const Navigation = () => {
           <Route path="maintenances" element={<MaintenancesPage />} />
           <Route path="maintenance/:id" element={<MaintenancePage />} />
           <Route path="maintenance" element={<MaintenancePage />} />
+          <Route path="notificationsnew" element={<NotificationsPageNew />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="notification/:id" element={<NotificationPage />} />
           <Route path="notification" element={<NotificationPage />} />
+          <Route path="paymentpage" element={<Paymentpage />} />
           <Route path="preferences" element={<PreferencesPage />} />
           <Route path="server" element={<ServerPage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="user/:id/connections" element={<UserConnectionsPage />} />
           <Route path="user/:id" element={<UserPage />} />
           <Route path="user" element={<UserPage />} />
+          <Route path="supportpage" element={<SupportPage />} />
+
         </Route>
 
         <Route path="reports">
@@ -181,6 +205,13 @@ const Navigation = () => {
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="audit" element={<AuditPage />} />
           <Route path="logs" element={<LogsPage />} />
+          <Route path="userlogs" element={<UserlogsPage />} />
+          <Route path="actions" element={<UserlogsActionsPage />} />
+          <Route path="logs" element={<LogsPage />} />
+          <Route path="reports" element={<ReportsMenuNew />} />
+          <Route path="ai-details" element={<ReportsMenuNewAIDetails />} />
+
+
         </Route>
       </Route>
     </Routes>

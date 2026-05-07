@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { IconButton, Menu, MenuItem, useMediaQuery, useTheme } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { makeStyles } from 'tss-react/mui';
 import RemoveDialog from '../../common/components/RemoveDialog';
 import { useTranslation } from '../../common/components/LocalizationProvider';
+import { useAdministrator, useManager } from '../../common/util/permissions';
+import UserWizardDialog from './UserWizardDialog';
 
 const useStyles = makeStyles()(() => ({
   row: {
@@ -28,14 +30,25 @@ const CollectionActions = ({
   const navigate = useNavigate();
   const t = useTranslation();
 
+  const admin = useAdministrator();
+  const manager = useManager();
+  const currentPath = window.location.pathname;
+  const showRemove = admin || currentPath !== '/settings/users';
+  const [wizardId, setWizardId] = useState(null); // ← eklendi
+
   const phone = useMediaQuery(theme.breakpoints.down('sm'));
+  const isUserPath = editPath === '/settings/user';
 
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [removing, setRemoving] = useState(false);
 
   const handleEdit = () => {
-    navigate(`${editPath}/${itemId}`);
     setMenuAnchorEl(null);
+    if (isUserPath && !admin) {
+      setWizardId(itemId); // ← admin değilse wizard aç
+    } else {
+      navigate(`${editPath}/${itemId}`); // ← admin ise normal sayfa
+    }
   };
 
   const handleRemove = () => {
@@ -69,11 +82,12 @@ const CollectionActions = ({
                   {action.title}
                 </MenuItem>
               ))}
-            {!readonly && (
-              <>
-                {editPath && <MenuItem onClick={handleEdit}>{t('sharedEdit')}</MenuItem>}
-                <MenuItem onClick={handleRemove}>{t('sharedRemove')}</MenuItem>
-              </>
+            {!readonly && editPath && (
+              <MenuItem onClick={handleEdit}>{t('sharedEdit')}</MenuItem>
+            )}
+
+            {!readonly && showRemove && (
+              <MenuItem onClick={handleRemove}>{t('sharedRemove')}</MenuItem>
             )}
           </Menu>
         </>
@@ -96,11 +110,13 @@ const CollectionActions = ({
                   </IconButton>
                 </Tooltip>
               )}
-              <Tooltip title={t('sharedRemove')}>
-                <IconButton size="small" onClick={handleRemove}>
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+              {showRemove &&
+                <Tooltip title={t('sharedRemove')}>
+                  <IconButton size="small" onClick={handleRemove}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              }
             </>
           )}
         </div>
@@ -112,6 +128,18 @@ const CollectionActions = ({
         itemId={itemId}
         onResult={handleRemoveResult}
       />
+      {/* Wizard — sadece user path'inde ve admin değilse */}
+      {isUserPath && (
+        <UserWizardDialog
+          open={Boolean(wizardId)}
+          id={wizardId}
+          onClose={() => setWizardId(null)}
+          onSaved={() => {
+            setWizardId(null);
+            setTimestamp(Date.now()); // listeyi refresh et
+          }}
+        />
+      )}
     </>
   );
 };

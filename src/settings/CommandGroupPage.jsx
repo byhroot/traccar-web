@@ -23,6 +23,8 @@ import SettingsMenu from './components/SettingsMenu';
 import { useCatch } from '../reactHelper';
 import useSettingsStyles from './common/useSettingsStyles';
 import fetchOrThrow from '../common/util/fetchOrThrow';
+import { useAdministrator } from '../common/util/permissions';
+
 
 const CommandDevicePage = () => {
   const navigate = useNavigate();
@@ -30,6 +32,8 @@ const CommandDevicePage = () => {
   const t = useTranslation();
 
   const { id } = useParams();
+  const admin = useAdministrator();
+
 
   const textEnabled = useSelector((state) => state.session.server.textEnabled);
 
@@ -66,7 +70,7 @@ const CommandDevicePage = () => {
               }
               label={t('commandData')}
             />
-            {textEnabled && (
+            {textEnabled && admin && (
               <FormControlLabel
                 control={
                   <Checkbox

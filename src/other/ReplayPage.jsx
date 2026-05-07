@@ -24,6 +24,8 @@ import MapScale from '../map/MapScale';
 import BackIcon from '../common/components/BackIcon';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 import MapOverlay from '../map/overlay/MapOverlay';
+import StatusCardNew from '../common/components/StatusCardNew';
+import { useAttributePreference } from '../common/util/preferences';
 
 const useStyles = makeStyles()((theme) => ({
   root: {
@@ -48,6 +50,9 @@ const useStyles = makeStyles()((theme) => ({
   },
   slider: {
     width: '100%',
+    padding: '10px 0', // Slider'ın kendi iç padding'ini azalttık (tıklama alanını öldürmeden)
+    marginTop: theme.spacing(-1), // Üstteki yazıya yaklaşması için
+    marginBottom: theme.spacing(-1), // Alttaki butonlara yaklaşması için
   },
   controls: {
     display: 'flex',
@@ -64,9 +69,10 @@ const useStyles = makeStyles()((theme) => ({
   content: {
     display: 'flex',
     flexDirection: 'column',
-    padding: theme.spacing(2),
+    padding: theme.spacing(1, 2), // Üst-alt 1 birim (8px), sağ-sol 2 birim (16px) yaptık
     [theme.breakpoints.down('md')]: {
       margin: theme.spacing(1),
+      padding: theme.spacing(1), // Mobilde daha da daraltabiliriz
     },
     [theme.breakpoints.up('md')]: {
       marginTop: theme.spacing(1),
@@ -83,6 +89,7 @@ const ReplayPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
+  const oldMenu = useAttributePreference('oldStatusCard', false);
 
   const [positions, setPositions] = useState([]);
   const [index, setIndex] = useState(0);
@@ -178,7 +185,7 @@ const ReplayPage = () => {
           <MapPositions
             positions={[positions[index]]}
             onMarkerClick={onMarkerClick}
-            titleField="fixTime"
+            titleField="serverTime"
           />
         )}
       </MapView>
@@ -242,7 +249,10 @@ const ReplayPage = () => {
                 >
                   <FastForwardIcon />
                 </IconButton>
-                {formatTime(positions[index].fixTime, 'seconds')}
+                {/* positions[index] varsa formatla, yoksa '-' veya boşluk koy */}
+                {positions && positions[index]
+                  ? formatTime(positions[index].serverTime, 'seconds')
+                  : '--:--'}
               </div>
             </>
           )}
@@ -252,12 +262,24 @@ const ReplayPage = () => {
         </Paper>
       </div>
       {showCard && index < positions.length && (
-        <StatusCard
-          deviceId={selectedDeviceId}
-          position={positions[index]}
-          onClose={() => setShowCard(false)}
-          disableActions
-        />
+
+        oldMenu ? (
+          <StatusCard
+            deviceId={selectedDeviceId}
+            position={positions[index]}
+            onClose={() => setShowCard(false)}
+            disableActions
+          />
+        ) : (
+          <StatusCardNew
+            deviceId={selectedDeviceId}
+            position={positions[index]}
+            onClose={() => setShowCard(false)}
+            disableActions
+          />
+        )
+
+
       )}
     </div>
   );

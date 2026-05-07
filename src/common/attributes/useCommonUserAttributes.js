@@ -159,6 +159,10 @@ export default (t) =>
         name: t('attributeNavigationAppTitle'),
         type: 'string',
       },
+      'smsLimit': {
+        name: t('notificatorSms'),
+        type: 'number',
+      },
     }),
     [t],
   );

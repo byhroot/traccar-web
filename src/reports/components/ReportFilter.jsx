@@ -262,6 +262,15 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
               fullWidth
             />
           </div>
+          {selectedOption === 'schedule' && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 1, fontStyle: 'italic' }}
+            >
+              ⏰ {t('reportScheduleInfo') || ''}
+            </Typography>
+          )}
         </>
       )}
       {children}

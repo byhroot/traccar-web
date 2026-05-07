@@ -66,6 +66,8 @@ const SummaryReportPage = () => {
     'startTime',
     'distance',
     'averageSpeed',
+    'maxSpeed',
+    'engineHours'
   ]);
   const daily = searchParams.get('daily') === 'true';
   const [items, setItems] = useState([]);

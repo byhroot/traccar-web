@@ -26,6 +26,7 @@ import trainSvg from '../../resources/images/icon/train.svg';
 import tramSvg from '../../resources/images/icon/tram.svg';
 import truckSvg from '../../resources/images/icon/truck.svg';
 import vanSvg from '../../resources/images/icon/van.svg';
+import lockedSvg from '../../resources/images/icon/locked.svg';
 
 export const mapIcons = {
   animal: animalSvg,
@@ -50,7 +51,10 @@ export const mapIcons = {
   tram: tramSvg,
   truck: truckSvg,
   van: vanSvg,
+  locked: lockedSvg,
+
 };
+{/*locked eklendi*takion locked kilit güncelleme blocked */ }
 
 export const mapIconKey = (category) => {
   switch (category) {
@@ -69,6 +73,7 @@ export const mapImages = {};
 const theme = createTheme({
   palette: {
     neutral: { main: grey[500] },
+    greyy: { main: "#81c784" },
   },
 });
 
@@ -79,7 +84,7 @@ export default async () => {
   await Promise.all(
     Object.keys(mapIcons).map(async (category) => {
       const results = [];
-      ['info', 'success', 'error', 'neutral'].forEach((color) => {
+      ['info', 'success', 'error', 'neutral', 'greyy'].forEach((color) => {
         results.push(
           loadImage(mapIcons[category]).then((icon) => {
             mapImages[`${category}-${color}`] = prepareIcon(

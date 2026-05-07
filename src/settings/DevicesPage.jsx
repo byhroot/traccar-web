@@ -96,6 +96,8 @@ const DevicesPage = () => {
       <Table className={classes.table}>
         <TableHead>
           <TableRow>
+            <TableCell>ID</TableCell>
+
             <TableCell>{t('sharedName')}</TableCell>
             <TableCell>{t('deviceIdentifier')}</TableCell>
             <TableCell>{t('groupParent')}</TableCell>
@@ -112,6 +114,8 @@ const DevicesPage = () => {
           {!loading ? (
             items.filter(filterByKeyword(searchKeyword)).map((item) => (
               <TableRow key={item.id}>
+                <TableCell>{item.id}</TableCell>
+
                 <TableCell>{item.name}</TableCell>
                 <TableCell>{item.uniqueId}</TableCell>
                 <TableCell>{item.groupId ? groups[item.groupId]?.name : null}</TableCell>

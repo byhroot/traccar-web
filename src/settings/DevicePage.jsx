@@ -25,6 +25,8 @@ import { useCatch } from '../reactHelper';
 import useSettingsStyles from './common/useSettingsStyles';
 import QrCodeDialog from '../common/components/QrCodeDialog';
 import fetchOrThrow from '../common/util/fetchOrThrow';
+import EditAttributesAccordionUser from './components/EditAttributesAccordionUser';
+
 
 const DevicePage = () => {
   const { classes } = useSettingsStyles();
@@ -79,13 +81,15 @@ const DevicePage = () => {
                 value={item.name || ''}
                 onChange={(event) => setItem({ ...item, name: event.target.value })}
                 label={t('sharedName')}
+                disabled={!admin}
+
               />
               <TextField
                 value={item.uniqueId || ''}
                 onChange={(event) => setItem({ ...item, uniqueId: event.target.value })}
                 label={t('deviceIdentifier')}
                 helperText={t('deviceIdentifierHelp')}
-                disabled={Boolean(uniqueId)}
+                disabled={Boolean(uniqueId) || !admin}
               />
             </AccordionDetails>
           </Accordion>
@@ -99,11 +103,15 @@ const DevicePage = () => {
                 onChange={(event) => setItem({ ...item, groupId: Number(event.target.value) })}
                 endpoint="/api/groups"
                 label={t('groupParent')}
+                disabled={!admin}
+
               />
               <TextField
                 value={item.phone || ''}
                 onChange={(event) => setItem({ ...item, phone: event.target.value })}
                 label={t('sharedPhone')}
+                disabled={!admin}
+
               />
               <TextField
                 value={item.model || ''}

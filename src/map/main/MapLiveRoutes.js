@@ -43,6 +43,8 @@ const MapLiveRoutes = ({ deviceIds }) => {
           'line-color': ['get', 'color'],
           'line-width': ['get', 'width'],
           'line-opacity': ['get', 'opacity'],
+          'line-width': 8,
+
         },
       });
 
@@ -55,7 +57,7 @@ const MapLiveRoutes = ({ deviceIds }) => {
         }
       };
     }
-    return () => {};
+    return () => { };
   }, [type]);
 
   useEffect(() => {

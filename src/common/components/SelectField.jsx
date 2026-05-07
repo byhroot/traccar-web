@@ -61,6 +61,17 @@ const SelectField = ({
     }
   }, []);
 
+  const ITEM_HEIGHT = 70;
+  const ITEM_PADDING_TOP = 8;
+  const MenuProps = {
+    PaperProps: {
+      style: {
+        maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+        width: 180,
+      },
+    },
+  };
+
   if (items) {
     const autocompleteValue = multiple
       ? (value || []).map((it) => findOption(it)).filter((it) => it != null)
@@ -92,24 +103,24 @@ const SelectField = ({
         renderValue={
           multiple && singleLine
             ? (tagValue, getItemProps) => {
-                if (!tagValue.length) {
-                  return null;
-                }
-                return (
-                  <>
-                    <Chip
-                      {...getItemProps({ index: 0 })}
-                      key={keyGetter(tagValue[0])}
-                      label={titleGetter(tagValue[0])}
-                      size="small"
-                      sx={{ minWidth: 0 }}
-                    />
-                    {tagValue.length > 1 && (
-                      <Chip label={`${tagValue.length - 1}`} size="small" sx={{ flexShrink: 0 }} />
-                    )}
-                  </>
-                );
+              if (!tagValue.length) {
+                return null;
               }
+              return (
+                <>
+                  <Chip
+                    {...getItemProps({ index: 0 })}
+                    key={keyGetter(tagValue[0])}
+                    label={titleGetter(tagValue[0])}
+                    size="small"
+                    sx={{ minWidth: 0 }}
+                  />
+                  {tagValue.length > 1 && (
+                    <Chip label={`${tagValue.length - 1}`} size="small" sx={{ flexShrink: 0 }} />
+                  )}
+                </>
+              );
+            }
             : undefined
         }
         fullWidth={fullWidth}

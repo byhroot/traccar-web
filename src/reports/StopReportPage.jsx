@@ -57,8 +57,8 @@ const StopReportPage = () => {
 
   const [columns, setColumns] = usePersistedState('stopColumns', [
     'startTime',
-    'endTime',
-    'startOdometer',
+    'duration',
+    'engineHours',
     'address',
   ]);
   const [items, setItems] = useState([]);

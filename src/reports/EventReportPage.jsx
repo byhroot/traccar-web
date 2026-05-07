@@ -76,6 +76,9 @@ const EventReportPage = () => {
     'type',
     'address',
     'attributes',
+    'geofenceId',
+    'maintenanceId'
+
   ]);
   const eventTypes = useMemo(() => searchParams.getAll('eventType'), [searchParams]);
   const alarmTypes = useMemo(() => searchParams.getAll('alarmType'), [searchParams]);

@@ -20,13 +20,18 @@ const cache = {
 
 const AppThemeProvider = ({ children }) => {
   const server = useSelector((state) => state.session.server);
+  const user = useSelector((state) => state.session.user);
+
+  const userDarkMode = user?.attributes?.darkModeuser; // Kullanıcı giriş yapmadıysa undefined döner
   const { direction } = useLocalization();
 
-  const serverDarkMode = server?.attributes?.darkMode;
+  const serverDarkMode = server?.attributes?.darkMode; // Server ayarlarını kullanmak için
   const preferDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  const darkMode = serverDarkMode !== undefined ? serverDarkMode : preferDarkMode;
 
-  const themeInstance = theme(server, darkMode, direction);
+  // Eğer userDarkMode tanımlı değilse serverDarkMode kullan, o da yoksa sistem tercihini kullan
+  const darkMode = userDarkMode !== undefined ? userDarkMode : (serverDarkMode !== undefined ? serverDarkMode : preferDarkMode);
+
+  const themeInstance = theme(userDarkMode, darkMode, direction);
 
   return (
     <CacheProvider value={cache[direction]}>

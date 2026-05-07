@@ -1,10 +1,16 @@
 import { useEffect } from 'react';
+import svgRaw from '../../resources/images/TakiponLoader.svg?raw';
 
 const Loader = () => {
   useEffect(() => {
     const loader = document.querySelector('.loader');
-    loader.style.display = '';
-    return () => (loader.style.display = 'none');
+    if (loader) {
+      loader.innerHTML = svgRaw; // SVG yerleştir
+      loader.style.display = '';
+    }
+    return () => {
+      if (loader) loader.style.display = 'none';
+    };
   }, []);
   return null;
 };

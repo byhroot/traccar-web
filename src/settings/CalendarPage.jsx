@@ -23,6 +23,7 @@ import { calendarsActions } from '../store';
 import { useCatch } from '../reactHelper';
 import useSettingsStyles from './common/useSettingsStyles';
 import fetchOrThrow from '../common/util/fetchOrThrow';
+import { useAdministrator } from '../common/util/permissions';
 
 const formatCalendarTime = (time) => {
   const tzid = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -80,7 +81,7 @@ const CalendarPage = () => {
 
   const [item, setItem] = useState();
   const [file, setFile] = useState(null);
-
+  const admin = useAdministrator
   const decoded = item && item.data && window.atob(item.data);
 
   const simple = decoded && decoded.indexOf('//Traccar//') > 0;
@@ -206,23 +207,23 @@ const CalendarPage = () => {
                       >
                         {rule.frequency === 'WEEKLY'
                           ? [
-                              'sunday',
-                              'monday',
-                              'tuesday',
-                              'wednesday',
-                              'thursday',
-                              'friday',
-                              'saturday',
-                            ].map((it) => (
-                              <MenuItem key={it} value={it.substring(0, 2).toUpperCase()}>
-                                {t(prefixString('calendar', it))}
-                              </MenuItem>
-                            ))
+                            'sunday',
+                            'monday',
+                            'tuesday',
+                            'wednesday',
+                            'thursday',
+                            'friday',
+                            'saturday',
+                          ].map((it) => (
+                            <MenuItem key={it} value={it.substring(0, 2).toUpperCase()}>
+                              {t(prefixString('calendar', it))}
+                            </MenuItem>
+                          ))
                           : Array.from({ length: 31 }, (_, i) => i + 1).map((it) => (
-                              <MenuItem key={it} value={String(it)}>
-                                {it}
-                              </MenuItem>
-                            ))}
+                            <MenuItem key={it} value={String(it)}>
+                              {it}
+                            </MenuItem>
+                          ))}
                       </Select>
                     </FormControl>
                   )}
@@ -236,11 +237,14 @@ const CalendarPage = () => {
               )}
             </AccordionDetails>
           </Accordion>
-          <EditAttributesAccordion
-            attributes={item.attributes}
-            setAttributes={(attributes) => setItem({ ...item, attributes })}
-            definitions={{}}
-          />
+          {admin &&
+
+            <EditAttributesAccordion
+              attributes={item.attributes}
+              setAttributes={(attributes) => setItem({ ...item, attributes })}
+              definitions={{}}
+            />
+          }
         </>
       )}
     </EditItemView>

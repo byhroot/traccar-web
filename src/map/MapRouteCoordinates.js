@@ -45,8 +45,11 @@ const MapRouteCoordinates = ({ name, coordinates, deviceId }) => {
       },
       paint: {
         'line-color': ['get', 'color'],
+        'line-width': 4,
+
         'line-width': ['get', 'width'],
         'line-opacity': ['get', 'opacity'],
+
       },
     });
     map.addLayer({

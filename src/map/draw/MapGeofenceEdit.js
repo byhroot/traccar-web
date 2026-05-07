@@ -24,36 +24,29 @@ const MapGeofenceEdit = ({ selectedGeofenceId }) => {
   const navigate = useNavigate();
   const t = useTranslation();
 
-  const draw = useMemo(
-    () =>
-      new MapboxDraw({
-        displayControlsDefault: false,
-        controls: {
-          polygon: true,
-          line_string: true,
-          trash: true,
-        },
-        userProperties: true,
-        styles: [
-          ...drawTheme,
-          {
-            id: 'gl-draw-title',
-            type: 'symbol',
-            filter: ['all'],
-            layout: {
-              'text-field': '{user_name}',
-              'text-font': findFonts(map),
-              'text-size': 12,
-            },
-            paint: {
-              'text-halo-color': 'white',
-              'text-halo-width': 1,
-            },
-          },
-        ],
-      }),
-    [],
-  );
+  const draw = useMemo(() => new MapboxDraw({
+    displayControlsDefault: false,
+    controls: {
+      polygon: true,
+      line_string: false,
+      trash: true,
+    },
+    userProperties: true,
+    styles: [...drawTheme, {
+      id: 'gl-draw-title',
+      type: 'symbol',
+      filter: ['all'],
+      layout: {
+        'text-field': '{user_name}',
+        'text-font': findFonts(map),
+        'text-size': 16,
+      },
+      paint: {
+        'text-halo-color': 'white',
+        'text-halo-width': 1,
+      },
+    }],
+  }), []);
 
   const geofences = useSelector((state) => state.geofences.items);
 
@@ -72,7 +65,7 @@ const MapGeofenceEdit = ({ selectedGeofenceId }) => {
   useEffect(() => {
     const listener = async (event) => {
       const feature = event.features[0];
-      const newItem = { name: t('sharedGeofence'), area: geometryToArea(feature.geometry) };
+      const newItem = { name: 'Bölgeye bir isim veriniz.', area: geometryToArea(feature.geometry) };
       draw.delete(feature.id);
       try {
         const response = await fetchOrThrow('/api/geofences', {
@@ -151,7 +144,69 @@ const MapGeofenceEdit = ({ selectedGeofenceId }) => {
       map.fitBounds(bounds, { padding: Math.min(canvas.width, canvas.height) * 0.1 });
     }
   }, [selectedGeofenceId]);
+  useEffect(() => {
+    const modeListener = (e) => {
+      if (e.mode === 'draw_polygon') {
+        console.log("🟢 Polygon seçildi");
+        window.dispatchEvent(new Event("tutorial_polygon"));
+      }
+    };
 
+    map.on('draw.modechange', modeListener);
+
+    return () => {
+      map.off('draw.modechange', modeListener);
+    };
+  }, []);
+  useEffect(() => {
+    let lastCount = 0;
+
+    const renderListener = () => {
+      const data = draw.getAll();
+      if (!data.features.length) return;
+
+      const feature = data.features[data.features.length - 1];
+      if (!feature || feature.geometry.type !== 'Polygon') return;
+
+      const coords = feature.geometry.coordinates[0];
+
+      // 🔥 gerçek vertex
+      const count = Math.max(coords.length - 1, 0);
+
+      // 🔥 dedupe (EN KRİTİK)
+      if (count === lastCount) return;
+
+      lastCount = count;
+
+      console.log("🔥 CLEAN vertex:", count);
+
+      // limit
+      if (count > 5) return;
+
+      window.dispatchEvent(
+        new CustomEvent("tutorial_vertex", {
+          detail: count,
+        })
+      );
+    };
+
+    map.on('draw.render', renderListener);
+
+    return () => {
+      map.off('draw.render', renderListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    const createListener = () => {
+      console.log("✅ Polygon tamamlandı");
+      window.dispatchEvent(new Event("tutorial_finish"));
+    };
+
+    map.on('draw.create', createListener);
+
+    return () => map.off('draw.create', createListener);
+  }, []);
   return null;
 };
 

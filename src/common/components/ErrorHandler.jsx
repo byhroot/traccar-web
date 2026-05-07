@@ -14,11 +14,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { usePrevious } from '../../reactHelper';
 import { errorsActions } from '../../store';
 import { useTranslation } from './LocalizationProvider';
+import { useAdministrator } from '../util/permissions';
 
 const ErrorHandler = () => {
   const dispatch = useDispatch();
   const t = useTranslation();
-
+  const admin = useAdministrator();
   const error = useSelector((state) => state.errors.errors.find(() => true));
   const cachedError = usePrevious(error);
 
@@ -40,7 +41,7 @@ const ErrorHandler = () => {
           variant="filled"
         >
           {displayMessage}
-          {multiline && (
+          {multiline && admin && (
             <>
               {' | '}
               <Link color="inherit" href="#" onClick={() => setExpanded(true)}>

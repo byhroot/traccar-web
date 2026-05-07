@@ -29,7 +29,7 @@ const SharePage = () => {
   const device = useSelector((state) => state.devices.items[id]);
 
   const [expiration, setExpiration] = useState(
-    dayjs().add(1, 'week').locale('en').format('YYYY-MM-DD'),
+    dayjs().add(2, 'hour').locale('en').format('YYYY-MM-DDTHH:mm'),
   );
   const [link, setLink] = useState();
 
@@ -48,13 +48,13 @@ const SharePage = () => {
       <Container maxWidth="xs" className={classes.container}>
         <Accordion defaultExpanded>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle1">{t('sharedRequired')}</Typography>
+            <Typography variant="subtitle1">{t('deviceShare')}</Typography>
           </AccordionSummary>
           <AccordionDetails className={classes.details}>
-            <TextField value={device.name} label={t('sharedDevice')} disabled />
+            <TextField value={device?.name} label={t('sharedDevice')} disabled />
             <TextField
-              label={t('userExpirationTime')}
-              type="date"
+              label={`(${t('userExpirationTime')}) (${t('sharedHour')})`}
+              type="datetime-local"
               value={expiration}
               onChange={(e) => setExpiration(e.target.value)}
             />

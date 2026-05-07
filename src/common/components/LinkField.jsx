@@ -4,6 +4,7 @@ import { useCatchCallback, useEffectAsync } from '../../reactHelper';
 import { snackBarDurationShortMs } from '../util/duration';
 import { useTranslation } from './LocalizationProvider';
 import fetchOrThrow from '../util/fetchOrThrow';
+import { useDeviceReadonly, useRestriction } from '../util/permissions';
 
 const LinkField = ({
   label,
@@ -16,10 +17,12 @@ const LinkField = ({
   titleGetter = (item) => item.name,
 }) => {
   const t = useTranslation();
-  const [active, setActive] = useState(false);
+  const [active, setActive] = useState(true);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState();
   const [linked, setLinked] = useState();
+  const userReadonly = useRestriction('readonly');
+  const deviceReadonly = useDeviceReadonly();
   const [updated, setUpdated] = useState(false);
 
   useEffectAsync(async () => {
@@ -103,6 +106,8 @@ const LinkField = ({
         }}
         onClose={() => setOpen(false)}
         multiple
+        disabled={deviceReadonly || userReadonly}
+
       />
       <Snackbar
         open={Boolean(updated)}

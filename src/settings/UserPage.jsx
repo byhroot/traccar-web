@@ -20,7 +20,18 @@ import {
   Dialog,
   DialogContent,
   DialogActions,
+  Tooltip,
+  Grid,
+  Card,
+  CardContent, Switch,
 } from '@mui/material';
+
+import VisibilityIcon from '@mui/icons-material/Visibility';// İmport satırını ekledim
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';// İmport 
+import CopyAllIcon from '@mui/icons-material/CopyAll';
+import InfoIcon from '@mui/icons-material/Info';
+import { makeStyles } from 'tss-react/mui';
+
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import CachedIcon from '@mui/icons-material/Cached';
@@ -35,11 +46,18 @@ import SelectField from '../common/components/SelectField';
 import SettingsMenu from './components/SettingsMenu';
 import useCommonUserAttributes from '../common/attributes/useCommonUserAttributes';
 import { useAdministrator, useRestriction, useManager } from '../common/util/permissions';
+
 import { useCatch } from '../reactHelper';
 import useMapStyles from '../map/core/useMapStyles';
 import { map } from '../map/core/MapView';
 import useSettingsStyles from './common/useSettingsStyles';
 import fetchOrThrow from '../common/util/fetchOrThrow';
+import PackageStatusCard from '../main/PackageStatusCard';
+import AccountBoxIcon from '@mui/icons-material/AccountBox';
+import LinkField from '../common/components/LinkField';
+import { Box, Alert, AlertTitle } from '@mui/material';
+import QRCode from 'react-qr-code'; // Elindeki mevcut kütüphane bu
+
 
 const UserPage = () => {
   const { classes } = useSettingsStyles();
@@ -60,7 +78,8 @@ const UserPage = () => {
   const mapStyles = useMapStyles();
   const commonUserAttributes = useCommonUserAttributes(t);
   const userAttributes = useUserAttributes(t);
-
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [confirmStep, setConfirmStep] = useState(false); // Kaydet dedikten sonraki onay sorusu için
   const { id } = useParams();
   const [item, setItem] = useState(id === currentUser.id.toString() ? currentUser : null);
 
@@ -79,6 +98,48 @@ const UserPage = () => {
       setDeleteFailed(true);
     }
   });
+  const handleOtpSwitchChange = async (e) => {
+    if (e.target.checked) {
+      // Switch açılıyorsa: Önce anahtar üret, sonra dialogu aç
+      const response = await fetchOrThrow('/api/users/totp', { method: 'POST' });
+      const secret = await response.text();
+      setItem({ ...item, totpKey: secret });
+      setOtpDialogOpen(true);
+    } else {
+      // Switch kapatılıyorsa: Direkt temizle
+      setItem({ ...item, totpKey: null });
+    }
+  };
+
+  const handleOtpCancel = () => {
+    setItem({ ...item, totpKey: null }); // İptal edilirse key'i temizle
+    setOtpDialogOpen(false);
+    setConfirmStep(false);
+  };
+
+  const handleOtpSaveClick = () => {
+    setConfirmStep(true); // İkinci onay aşamasına geç
+  };
+
+  const handleOtpFinalConfirm = () => {
+    setOtpDialogOpen(false);
+    setConfirmStep(false);
+    // Burada otomatik kaydetme istersen onSubmit() çağırabilirsin 
+    // ya da kullanıcının sayfanın altındaki ana kaydet butonuna basmasını beklersin.
+  };
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
+  // Tooltip'in tıklama ile açılıp kapanmasını sağlamak için
+  const handleTooltipClick = () => {
+    setTooltipOpen(prevOpen => !prevOpen);  // Mevcut durumu tersine çevir
+  };
+
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleTogglePassword = () => {
+    setShowPassword(!showPassword);
+  };
 
   const handleGenerateTotp = useCatch(async () => {
     const response = await fetchOrThrow('/api/users/totp', { method: 'POST' });
@@ -140,15 +201,34 @@ const UserPage = () => {
     >
       {item && (
         <>
+
+          {/* User Account List Kartı */}
+          {id &&
+            <Grid item xs={12} sm={10} md={10} lg={10} xl={8}>
+              <Card sx={{ width: '100%', maxWidth: '1000px', height: '100%', }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <AccountBoxIcon style={{ color: '#26aeb5', fontSize: 30 }} sx={{ justifyContent: 'flex-start' }} />
+                    <Typography variant="h6" > {`${t("settingsUser")} ${t("positionStatus")}`} </Typography>
+                  </Box>
+                  <PackageStatusCard />
+                </CardContent>
+              </Card>
+            </Grid>
+          }
           <Accordion defaultExpanded={!attribute}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1">{t('sharedRequired')}</Typography>
+              <Typography variant="subtitle1">
+                {t('settingsUser')}
+              </Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
               <TextField
                 value={item.name || ''}
                 onChange={(e) => setItem({ ...item, name: e.target.value })}
                 label={t('sharedName')}
+                disabled={fixedEmail && item.id === currentUser.id}
+
               />
               <TextField
                 value={item.email || ''}
@@ -158,34 +238,102 @@ const UserPage = () => {
               />
               {!openIdForced && (
                 <TextField
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   onChange={(e) => setItem({ ...item, password: e.target.value })}
                   label={t('userPassword')}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={handleTogglePassword} edge="end">
+                          {showPassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               )}
               {totpEnable && (
-                <FormControl>
-                  <InputLabel>{t('loginTotpKey')}</InputLabel>
-                  <OutlinedInput
-                    readOnly
-                    label={t('loginTotpKey')}
-                    value={item.totpKey || ''}
-                    endAdornment={
-                      <InputAdornment position="end">
-                        <IconButton size="small" edge="end" onClick={handleGenerateTotp}>
-                          <CachedIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          edge="end"
-                          onClick={() => setItem({ ...item, totpKey: null })}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
+                <Box sx={{ mt: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 5, bgcolor: 'background.neutral' }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={Boolean(item.totpKey)}
+                        onChange={handleOtpSwitchChange}
+                        color="success"
+                      />
+                    }
+                    label={
+                      <Box sx={{ ml: 1 }}>
+                        <Typography variant="body1" fontWeight="bold">{t('settingsTotpEnable')}</Typography>
+                        <Typography variant="caption" color="text.secondary">{t('otpInfo')}</Typography>
+                      </Box>
                     }
                   />
-                </FormControl>
+
+                  <Dialog
+                    open={otpDialogOpen}
+                    // Boşluğa tıklayınca kapanmaması için onClose kontrolü
+                    onClose={(event, reason) => {
+                      if (reason !== 'backdropClick') {
+                        setOtpDialogOpen(false);
+                        setConfirmStep(false);
+                        // Eğer iptal sayılmasını istiyorsan setItem({ ...item, totpKey: null }) buraya da eklenebilir
+                      }
+                    }}
+                    disableEscapeKeyDown // ESC tuşu ile kapanmayı engeller
+                    maxWidth="xs"
+                    fullWidth
+                  >
+                    <DialogContent sx={{ textAlign: 'center', p: 4 }}>
+                      {!confirmStep ? (
+                        <>
+                          <Typography variant="h6" fontWeight="bold" gutterBottom>2FA</Typography>
+                          <Typography variant="body2" sx={{ mb: 3 }}> {t('otpInfo2')}</Typography>
+
+                          <Box sx={{ p: 2, bgcolor: 'white', display: 'inline-block', borderRadius: 3, border: '4px solid #f4f4f4' }}>
+                            <QRCode
+                              value={`otpauth://totp/TakipOn:${item.email}?secret=${item.totpKey}&issuer=TakipOn`}
+                              size={200}
+                            />
+                          </Box>
+
+                          <Box sx={{ mt: 3, p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
+                            <Typography variant="caption" display="block" color="text.secondary">Auth KEY:</Typography>
+                            <Typography variant="mono" sx={{ fontWeight: 'bold', letterSpacing: 1, fontSize: '0.7rem' }}>
+                              {item.totpKey}
+                            </Typography>
+                            <IconButton size="small" sx={{ ml: 1 }} onClick={() => navigator.clipboard.writeText(item.totpKey)}>
+                              <CopyAllIcon fontSize="small" color="primary" />
+                            </IconButton>
+                          </Box>
+                        </>
+                      ) : (
+                        <Box sx={{ py: 2 }}>
+                          <InfoIcon color="warning" sx={{ fontSize: 60, mb: 2 }} />
+                          <Typography variant="h6" fontWeight="bold" gutterBottom>!!!</Typography>
+                          <Typography variant="body1">
+                            {t('otpQuestion')}
+                          </Typography>
+                        </Box>
+                      )}
+                    </DialogContent>
+                    <DialogActions sx={{ p: 3, justifyContent: 'space-between' }}>
+                      <Button
+                        onClick={() => { setOtpDialogOpen(false); setConfirmStep(false); setItem({ ...item, totpKey: null }); }}
+                        color="inherit"
+                      >
+                        {t('sharedCancel')}
+                      </Button>
+                      {!confirmStep ? (
+                        <Button variant="contained" onClick={() => setConfirmStep(true)}>Kodu Kaydettim</Button>
+                      ) : (
+                        <Button variant="contained" color="success" onClick={() => { setOtpDialogOpen(false); setConfirmStep(false); }}>
+                          Evet, Hazırım
+                        </Button>
+                      )}
+                    </DialogActions>
+                  </Dialog>
+                </Box>
               )}
             </AccordionDetails>
           </Accordion>
@@ -198,12 +346,14 @@ const UserPage = () => {
                 value={item.phone || ''}
                 onChange={(e) => setItem({ ...item, phone: e.target.value })}
                 label={t('sharedPhone')}
+                disabled={fixedEmail}
+
               />
               <FormControl>
                 <InputLabel>{t('mapDefault')}</InputLabel>
                 <Select
                   label={t('mapDefault')}
-                  value={item.map || 'locationIqStreets'}
+                  value={item.map || 'custom'}
                   onChange={(e) => setItem({ ...item, map: e.target.value })}
                 >
                   {mapStyles
@@ -231,7 +381,7 @@ const UserPage = () => {
                 <InputLabel>{t('settingsSpeedUnit')}</InputLabel>
                 <Select
                   label={t('settingsSpeedUnit')}
-                  value={(item.attributes && item.attributes.speedUnit) || 'kn'}
+                  value={(item.attributes && item.attributes.speedUnit) || 'kmh'}
                   onChange={(e) =>
                     setItem({
                       ...item,
@@ -295,7 +445,7 @@ const UserPage = () => {
                 </Select>
               </FormControl>
               <SelectField
-                value={item.attributes && item.attributes.timezone}
+                value={(item.attributes && item.attributes.timezone) || 'Europe/Istanbul'}
                 onChange={(e) =>
                   setItem({ ...item, attributes: { ...item.attributes, timezone: e.target.value } })
                 }
@@ -308,12 +458,15 @@ const UserPage = () => {
                 value={item.poiLayer || ''}
                 onChange={(e) => setItem({ ...item, poiLayer: e.target.value })}
                 label={t('mapPoiLayer')}
+                disabled={fixedEmail}
               />
             </AccordionDetails>
           </Accordion>
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1">{t('sharedLocation')}</Typography>
+              <Typography variant="subtitle1">
+                {t('mapDefault')} {t('sharedLocation')}
+              </Typography>
             </AccordionSummary>
             <AccordionDetails className={classes.details}>
               <TextField
@@ -351,120 +504,126 @@ const UserPage = () => {
               </Button>
             </AccordionDetails>
           </Accordion>
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1">{t('sharedPermissions')}</Typography>
-            </AccordionSummary>
-            <AccordionDetails className={classes.details}>
-              <TextField
-                label={t('userExpirationTime')}
-                type="date"
-                value={item.expirationTime ? item.expirationTime.split('T')[0] : '2099-01-01'}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setItem({ ...item, expirationTime: new Date(e.target.value).toISOString() });
-                  }
-                }}
-                disabled={!manager}
-              />
-              <TextField
-                type="number"
-                value={item.deviceLimit || 0}
-                onChange={(e) => setItem({ ...item, deviceLimit: Number(e.target.value) })}
-                label={t('userDeviceLimit')}
-                disabled={!admin}
-              />
-              <TextField
-                type="number"
-                value={item.userLimit || 0}
-                onChange={(e) => setItem({ ...item, userLimit: Number(e.target.value) })}
-                label={t('userUserLimit')}
-                disabled={!admin}
-              />
-              <Button variant="outlined" color="primary" onClick={() => setRevokeDialogOpen(true)}>
-                {t('userRevokeToken')}
-              </Button>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={item.disabled}
-                      onChange={(e) => setItem({ ...item, disabled: e.target.checked })}
-                    />
-                  }
-                  label={t('sharedDisabled')}
+          {manager && (
+
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle1">{t('sharedPermissions')}</Typography>
+              </AccordionSummary>
+              <AccordionDetails className={classes.details}>
+                <TextField
+                  label={t('userExpirationTime')}
+                  type="date"
+                  value={item.expirationTime ? item.expirationTime.split('T')[0] : '2099-01-01'}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setItem({ ...item, expirationTime: new Date(e.target.value).toISOString() });
+                    }
+                  }}
                   disabled={!manager}
                 />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={item.administrator}
-                      onChange={(e) => setItem({ ...item, administrator: e.target.checked })}
-                    />
-                  }
-                  label={t('userAdmin')}
+                <TextField
+                  type="number"
+                  value={item.deviceLimit || 0}
+                  onChange={(e) => setItem({ ...item, deviceLimit: Number(e.target.value) })}
+                  label={t('userDeviceLimit')}
                   disabled={!admin}
                 />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={item.readonly}
-                      onChange={(e) => setItem({ ...item, readonly: e.target.checked })}
-                    />
-                  }
-                  label={t('serverReadonly')}
-                  disabled={!manager}
+                <TextField
+                  type="number"
+                  value={item.userLimit || 0}
+                  onChange={(e) => setItem({ ...item, userLimit: Number(e.target.value) })}
+                  label={t('userUserLimit')}
+                  disabled={!admin}
                 />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={item.deviceReadonly}
-                      onChange={(e) => setItem({ ...item, deviceReadonly: e.target.checked })}
-                    />
-                  }
-                  label={t('userDeviceReadonly')}
-                  disabled={!manager}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={item.limitCommands}
-                      onChange={(e) => setItem({ ...item, limitCommands: e.target.checked })}
-                    />
-                  }
-                  label={t('userLimitCommands')}
-                  disabled={!manager}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={item.disableReports}
-                      onChange={(e) => setItem({ ...item, disableReports: e.target.checked })}
-                    />
-                  }
-                  label={t('userDisableReports')}
-                  disabled={!manager}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={item.fixedEmail}
-                      onChange={(e) => setItem({ ...item, fixedEmail: e.target.checked })}
-                    />
-                  }
-                  label={t('userFixedEmail')}
-                  disabled={!manager}
-                />
-              </FormGroup>
-            </AccordionDetails>
-          </Accordion>
-          <EditAttributesAccordion
-            attribute={attribute}
-            attributes={item.attributes}
-            setAttributes={(attributes) => setItem({ ...item, attributes })}
-            definitions={{ ...commonUserAttributes, ...userAttributes }}
-            focusAttribute={attribute}
-          />
+                <Button variant="outlined" color="primary" onClick={() => setRevokeDialogOpen(true)}>
+                  {t('userRevokeToken')}
+                </Button>
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={item.disabled}
+                        onChange={(e) => setItem({ ...item, disabled: e.target.checked })}
+                      />
+                    }
+                    label={t('sharedDisabled')}
+                    disabled={!manager}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={item.administrator}
+                        onChange={(e) => setItem({ ...item, administrator: e.target.checked })}
+                      />
+                    }
+                    label={t('userAdmin')}
+                    disabled={!admin}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={item.readonly}
+                        onChange={(e) => setItem({ ...item, readonly: e.target.checked })}
+                      />
+                    }
+                    label={t('serverReadonly')}
+                    disabled={!manager}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={item.deviceReadonly}
+                        onChange={(e) => setItem({ ...item, deviceReadonly: e.target.checked })}
+                      />
+                    }
+                    label={t('userDeviceReadonly')}
+                    disabled={!manager}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={item.limitCommands}
+                        onChange={(e) => setItem({ ...item, limitCommands: e.target.checked })}
+                      />
+                    }
+                    label={t('userLimitCommands')}
+                    disabled={!manager}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={item.disableReports}
+                        onChange={(e) => setItem({ ...item, disableReports: e.target.checked })}
+                      />
+                    }
+                    label={t('userDisableReports')}
+                    disabled={!manager}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={item.fixedEmail}
+                        onChange={(e) => setItem({ ...item, fixedEmail: e.target.checked })}
+                      />
+                    }
+                    label={t('userFixedEmail')}
+                    disabled={!manager}
+                  />
+                </FormGroup>
+              </AccordionDetails>
+            </Accordion>
+          )}
+          {admin &&
+            <EditAttributesAccordion
+              attribute={attribute}
+              attributes={item.attributes}
+              setAttributes={(attributes) => setItem({ ...item, attributes })}
+              definitions={{ ...commonUserAttributes, ...userAttributes }}
+              focusAttribute={attribute}
+            />
+          }
+
           {registrationEnabled && item.id === currentUser.id && !manager && (
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>

@@ -8,6 +8,8 @@ import { mapIconKey } from './core/preloadImages';
 import { useAttributePreference } from '../common/util/preferences';
 import { useCatchCallback } from '../reactHelper';
 import { findFonts } from './core/mapUtil';
+import { useTranslation } from '../common/components/LocalizationProvider';
+
 
 const MapPositions = ({
   positions,
@@ -24,15 +26,18 @@ const MapPositions = ({
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up('md'));
   const iconScale = useAttributePreference('iconScale', desktop ? 0.75 : 1);
-
+  const t = useTranslation();
   const devices = useSelector((state) => state.devices.items);
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
+  const drivers = useSelector((state) => state.drivers.items);
 
-  const mapCluster = useAttributePreference('mapCluster', true);
+  const mapCluster = useAttributePreference('mapCluster', false);
   const directionType = useAttributePreference('mapDirection', 'selected');
 
   const createFeature = (devices, position, selectedPositionId) => {
     const device = devices[position.deviceId];
+    {/*category tanımı yaptık locked ekledikten sonra */ }
+    const blocked = position && position.attributes && position.attributes.blocked;
     let showDirection;
     switch (directionType) {
       case 'none':
@@ -45,13 +50,26 @@ const MapPositions = ({
         showDirection = selectedPositionId === position.id && position.course > 0;
         break;
     }
+    const alarmText = position?.attributes?.alarm
+      ? ` (${t('alarm' + position?.attributes?.alarm[0].toUpperCase() + position?.attributes?.alarm.slice(1))})`
+      : '';
+    const driverName = position?.attributes?.driverUniqueId
+      ? ` (${drivers[position?.attributes?.driverUniqueId]?.name || position?.attributes?.driverUniqueId})`
+      : '';
+
     return {
       id: position.id,
       deviceId: position.deviceId,
-      name: device.name,
-      fixTime: formatTime(position.fixTime, 'seconds'),
-      category: mapIconKey(device.category),
-      color: showStatus ? position.attributes.color || getStatusColor(device.status) : 'neutral',
+      name: `${device.name}${alarmText}${driverName}`,
+      fixTime: formatTime(position?.deviceTime, 'seconds'),
+      category: mapIconKey(blocked ? 'locked' : device.category),
+      color: showStatus
+        ? device?.status === 'online'
+          ? position?.attributes?.blocked ? 'error' : position?.attributes?.ignition
+            ? 'success'
+            : 'greyy'
+          : getStatusColor(device?.status)
+        : (position?.attributes?.blocked ? 'error' : getStatusColor(device.status)),
       rotation: position.course,
       direction: showDirection,
     };
@@ -127,14 +145,14 @@ const MapPositions = ({
           'text-field': `{${titleField || 'name'}}`,
           'text-allow-overlap': true,
           'text-anchor': 'bottom',
-          'text-offset': [0, -2 * iconScale],
+          'text-offset': [0, -1.7 * iconScale],
           'text-font': findFonts(map),
-          'text-size': 12,
+          'text-size': 14,
           'symbol-sort-key': ['get', 'id'],
         },
         paint: {
           'text-halo-color': 'white',
-          'text-halo-width': 2,
+          'text-halo-width': 1.3,
         },
       });
       map.addLayer({

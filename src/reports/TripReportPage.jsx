@@ -4,9 +4,8 @@ import { useSelector } from 'react-redux';
 import { useTheme } from '@mui/material/styles';
 import { IconButton, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
-import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
-import RouteIcon from '@mui/icons-material/Route';
-import {
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'; import {
   formatAddress,
   formatDistance,
   formatSpeed,
@@ -66,9 +65,15 @@ const TripReportPage = () => {
 
   const [columns, setColumns] = usePersistedState('tripColumns', [
     'startTime',
-    'endTime',
+    'duration',
     'distance',
     'averageSpeed',
+    'startAddress',
+    'endTime',
+    'endAddress',
+    'driverName',
+    'maxSpeed',
+
   ]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -260,12 +265,37 @@ const TripReportPage = () => {
                             <GpsFixedIcon fontSize="small" />
                           </IconButton>
                         ) : (
-                          <IconButton size="small" onClick={() => setSelectedItem(item)}>
-                            <LocationSearchingIcon fontSize="small" />
+                          <IconButton size="large" onClick={() => setSelectedItem(item)}>
+                            <ZoomInIcon
+                              fontSize="large"
+                              sx={{
+                                // Renk Ayarı
+
+                                // Yanıp Sönme Animasyonu
+                                animation: 'blink 2s infinite ease-in-out',
+                                '@keyframes blink': {
+                                  '0%': { opacity: 1 },
+                                  '50%': { opacity: 0.3 },
+                                  '100%': { opacity: 1 },
+                                },
+                              }}
+                            />
                           </IconButton>
                         )}
-                        <IconButton size="small" onClick={() => navigateToReplay(item)}>
-                          <RouteIcon fontSize="small" />
+                        <IconButton size="large" onClick={() => navigateToReplay(item)}>
+                          <PlayCircleOutlineIcon fontSize="medium"
+                            sx={{
+                              // Renk Ayarı
+                              color: 'secondary.main', // veya 'red', '#ff0000' gibi direkt renk
+
+                              // Yanıp Sönme Animasyonu
+                              animation: 'blink 3s infinite ease-in-out',
+                              '@keyframes blink': {
+                                '0%': { opacity: 1 },
+                                '50%': { opacity: 0.3 },
+                                '100%': { opacity: 1 },
+                              },
+                            }} />
                         </IconButton>
                       </div>
                     </TableCell>

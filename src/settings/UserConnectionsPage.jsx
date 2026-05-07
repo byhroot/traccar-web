@@ -13,12 +13,15 @@ import SettingsMenu from './components/SettingsMenu';
 import { formatNotificationTitle } from '../common/util/formatter';
 import PageLayout from '../common/components/PageLayout';
 import useSettingsStyles from './common/useSettingsStyles';
+import { useAdministrator, useManager } from '../common/util/permissions';
 
 const UserConnectionsPage = () => {
   const { classes } = useSettingsStyles();
   const t = useTranslation();
 
   const { id } = useParams();
+  const manager = useManager();
+  const admin = useAdministrator();
 
   return (
     <PageLayout
@@ -56,15 +59,17 @@ const UserConnectionsPage = () => {
               keyLink="geofenceId"
               label={t('sharedGeofences')}
             />
-            <LinkField
-              endpointAll="/api/notifications?all=true"
-              endpointLinked={`/api/notifications?userId=${id}`}
-              baseId={id}
-              keyBase="userId"
-              keyLink="notificationId"
-              titleGetter={(it) => formatNotificationTitle(t, it, true)}
-              label={t('sharedNotifications')}
-            />
+            {admin &&
+              <LinkField
+                endpointAll="/api/notifications?all=true"
+                endpointLinked={`/api/notifications?userId=${id}`}
+                baseId={id}
+                keyBase="userId"
+                keyLink="notificationId"
+                titleGetter={(it) => formatNotificationTitle(t, it, true)}
+                label={t('sharedNotifications')}
+              />
+            }
             <LinkField
               endpointAll="/api/calendars?all=true"
               endpointLinked={`/api/calendars?userId=${id}`}
@@ -73,23 +78,27 @@ const UserConnectionsPage = () => {
               keyLink="calendarId"
               label={t('sharedCalendars')}
             />
-            <LinkField
-              endpointAll="/api/users?all=true&excludeAttributes=true"
-              endpointLinked={`/api/users?userId=${id}&excludeAttributes=true`}
-              baseId={id}
-              keyBase="userId"
-              keyLink="managedUserId"
-              label={t('settingsUsers')}
-            />
-            <LinkField
-              endpointAll="/api/attributes/computed?all=true"
-              endpointLinked={`/api/attributes/computed?userId=${id}`}
-              baseId={id}
-              keyBase="userId"
-              keyLink="attributeId"
-              titleGetter={(it) => it.description}
-              label={t('sharedComputedAttributes')}
-            />
+            {admin &&
+              <LinkField
+                endpointAll="/api/users?all=true&excludeAttributes=true"
+                endpointLinked={`/api/users?userId=${id}&excludeAttributes=true`}
+                baseId={id}
+                keyBase="userId"
+                keyLink="managedUserId"
+                label={t('settingsUsers')}
+              />
+            }
+            {admin &&
+              <LinkField
+                endpointAll="/api/attributes/computed?all=true"
+                endpointLinked={`/api/attributes/computed?userId=${id}`}
+                baseId={id}
+                keyBase="userId"
+                keyLink="attributeId"
+                titleGetter={(it) => it.description}
+                label={t('sharedComputedAttributes')}
+              />
+            }
             <LinkField
               endpointAll="/api/drivers?all=true"
               endpointLinked={`/api/drivers?userId=${id}`}
@@ -99,15 +108,17 @@ const UserConnectionsPage = () => {
               titleGetter={(it) => `${it.name} (${it.uniqueId})`}
               label={t('sharedDrivers')}
             />
-            <LinkField
-              endpointAll="/api/commands?all=true"
-              endpointLinked={`/api/commands?userId=${id}`}
-              baseId={id}
-              keyBase="userId"
-              keyLink="commandId"
-              titleGetter={(it) => it.description}
-              label={t('sharedSavedCommands')}
-            />
+            {admin &&
+              <LinkField
+                endpointAll="/api/commands?all=true"
+                endpointLinked={`/api/commands?userId=${id}`}
+                baseId={id}
+                keyBase="userId"
+                keyLink="commandId"
+                titleGetter={(it) => it.description}
+                label={t('sharedSavedCommands')}
+              />
+            }
             <LinkField
               endpointAll="/api/maintenance?all=true"
               endpointLinked={`/api/maintenance?userId=${id}`}

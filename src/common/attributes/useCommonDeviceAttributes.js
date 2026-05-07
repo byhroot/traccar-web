@@ -32,6 +32,14 @@ export default (t) =>
         name: t('attributeNotificationTokens'),
         type: 'string',
       },
+      blokajkiti: {//takipon//
+        name: t('positionBlocked'),
+        type: 'boolean',
+      },
+      insuranceExpiration: {//takipon//
+        name: t('sigortaTarih') + "" + t('userExpirationTime'),
+        type: 'string',
+      },
     }),
     [t],
   );

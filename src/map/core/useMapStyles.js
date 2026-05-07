@@ -69,7 +69,7 @@ export default () => {
           tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
           maxZoom: 19,
           attribution:
-            '© <a target="_top" rel="noopener" href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            '© OpenStreetMap',
         }),
         available: true,
       },
@@ -91,7 +91,19 @@ export default () => {
           ),
           maxZoom: 22,
           attribution:
-            '© <a target="_top" rel="noopener" href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a target="_top" rel="noopener" href="https://carto.com/attribution">CARTO</a>',
+            '© OpenStreetMap',
+        }),
+        available: true,
+      },
+      {
+        id: 'darkCarto',
+        title: t('mapCarto') + " Dark", // Dil dosyasına eklemeyi unutmayın
+        style: styleCustom({
+          tiles: ['a', 'b', 'c', 'd'].map(
+            (i) => `https://${i}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png`,
+          ),
+          maxZoom: 22,
+          attribution: '© OpenStreetMap',
         }),
         available: true,
       },
@@ -102,8 +114,8 @@ export default () => {
           tiles: googleKey
             ? [`google://roadmap/{z}/{x}/{y}?key=${googleKey}`]
             : [0, 1, 2, 3].map(
-                (i) => `https://mt${i}.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga`,
-              ),
+              (i) => `https://mt${i}.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga`,
+            ),
           maxZoom: 20,
           attribution: '© Google',
         }),
@@ -117,8 +129,8 @@ export default () => {
           tiles: googleKey
             ? [`google://satellite/{z}/{x}/{y}?key=${googleKey}`]
             : [0, 1, 2, 3].map(
-                (i) => `https://mt${i}.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga`,
-              ),
+              (i) => `https://mt${i}.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga`,
+            ),
           maxZoom: 20,
           attribution: '© Google',
         }),
@@ -132,8 +144,8 @@ export default () => {
           tiles: googleKey
             ? [`google://satellite/{z}/{x}/{y}?key=${googleKey}&layerType=layerRoadmap`]
             : [0, 1, 2, 3].map(
-                (i) => `https://mt${i}.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga`,
-              ),
+              (i) => `https://mt${i}.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga`,
+            ),
           maxZoom: 20,
           attribution: '© Google',
         }),
@@ -327,8 +339,8 @@ export default () => {
           !customMapUrl?.includes('{z}') && !customMapUrl?.includes('{quadkey}')
             ? customMapUrl
             : styleCustom({
-                tiles: [customMapUrl],
-              }),
+              tiles: [customMapUrl],
+            }),
         available: Boolean(customMapUrl),
       },
     ],

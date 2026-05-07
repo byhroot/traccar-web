@@ -22,14 +22,11 @@ const currentServer = `${window.location.protocol}//${window.location.host}`;
 
 const officialServers = [
   currentServer,
-  'https://demo.traccar.org',
-  'https://demo2.traccar.org',
-  'https://demo3.traccar.org',
-  'https://demo4.traccar.org',
-  'https://server.traccar.org',
-  'http://localhost:8082',
-  'http://localhost:3000',
-].filter((value, index, self) => self.indexOf(value) === index);
+  'https://s1.takipon.com',
+  'https://s2.takipon.com',
+  'https://giris.takipon.com',
+  'https://test.takipon.com',
+];
 
 const useStyles = makeStyles()((theme) => ({
   icon: {
@@ -95,11 +92,17 @@ const ChangeServerPage = () => {
   const handleScanResult = (codes) => {
     if (codes && codes.length) {
       const value = codes[0].rawValue || codes[0].value || '';
-      if (value) {
-        setInputValue(value);
-        setInvalid(!validateUrl(value));
+      // SADECE listede olan bir URL mi?
+      if (officialServers.includes(value)) {
         setScannerOpen(false);
+        setInputValue(value);
+        handleSubmit(value); // Listede varsa direkt yönlendir
+      } else {
+        // Listede olmayan bir QR taratılırsa hata ver ve diyalogu kapatma
+        dispatch(errorsActions.push("Bu QR kod yetkili bir sunucuya ait değil!"));
+        setInvalid(true);
       }
+
     }
   };
 
@@ -112,9 +115,9 @@ const ChangeServerPage = () => {
       <Container maxWidth="xs" className={classes.container}>
         <VpnLockIcon className={classes.icon} />
         <Autocomplete
-          freeSolo
           className={classes.field}
           options={officialServers}
+          disableClearable
           renderInput={(params) => (
             <TextField {...params} label={t('settingsServer')} error={invalid} />
           )}
@@ -144,7 +147,7 @@ const ChangeServerPage = () => {
             onClick={() =>
               inputValue && validateUrl(inputValue) ? handleSubmit(inputValue) : setInvalid(true)
             }
-            disabled={!inputValue || invalid}
+            disabled={!inputValue || invalid || !officialServers.includes(inputValue)}
           >
             {t('sharedSave')}
           </Button>

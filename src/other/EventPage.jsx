@@ -14,7 +14,9 @@ import { formatNotificationTitle } from '../common/util/formatter';
 import MapScale from '../map/MapScale';
 import BackIcon from '../common/components/BackIcon';
 import fetchOrThrow from '../common/util/fetchOrThrow';
-
+import { useAttributePreference } from '../common/util/preferences';
+import StatusCardNew
+  from '../common/components/StatusCardNew';
 const useStyles = makeStyles()(() => ({
   root: {
     height: '100%',
@@ -39,6 +41,7 @@ const EventPage = () => {
   const [event, setEvent] = useState();
   const [position, setPosition] = useState();
   const [showCard, setShowCard] = useState(false);
+  const oldMenu = useAttributePreference('oldStatusCard', false);
 
   const formatType = (event) =>
     formatNotificationTitle(t, {
@@ -96,13 +99,21 @@ const EventPage = () => {
         <MapScale />
         {position && <MapCamera latitude={position.latitude} longitude={position.longitude} />}
         {position && showCard && (
-          <StatusCard
-            deviceId={position.deviceId}
-            position={position}
-            onClose={() => setShowCard(false)}
-            disableActions
-          />
-        )}
+          oldMenu ? (
+            <StatusCard
+              deviceId={position.deviceId}
+              position={position}
+              onClose={() => setShowCard(false)}
+              disableActions
+            />
+          ) : (
+            <StatusCardNew
+              deviceId={position.deviceId}
+              position={position}
+              onClose={() => setShowCard(false)}
+              disableActions
+            />
+          ))}
       </div>
     </div>
   );
