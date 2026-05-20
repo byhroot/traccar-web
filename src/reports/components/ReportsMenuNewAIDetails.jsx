@@ -649,8 +649,8 @@ const ReportsMenuNewAIDetails = () => {
   useEffect(() => {
     const cached = localStorage.getItem('aiAnalysisCache');
     const cacheTime = localStorage.getItem('aiAnalysisCacheTime');
-    const ONE_HOUR = 1000 * 60 * 60;
-    if (cached && cacheTime && Date.now() - Number(cacheTime) < ONE_HOUR) {
+    const HOUR = 1000 * 60 * 60 * 72;
+    if (cached && cacheTime && Date.now() - Number(cacheTime) < HOUR) {
       setInsights(JSON.parse(cached));
       const summary = localStorage.getItem('aiAnalysisSummary');
       if (summary) setChatHistory([{ role: 'ai', text: summary }]);
@@ -713,12 +713,13 @@ const ReportsMenuNewAIDetails = () => {
         messages: [
           {
             role: 'system',
-            content: `Sen bir araç ve motosiklet filo takip uzmanısın. Türkçe yanıt ver. GMT+0 → GMT+3 çevir.
-trips içindeki her kayıtta category alanı vardır, hız eşiklerini buna göre belirle:
+            content: `Sen bir araç ve motosiklet filo takip uzmanısın. Türkçe yanıt ver. Ham veriler GMT+0 'a göredir. Sen yanıt üretirken türkiye zaman dilimine (GMT+3) göre yanıt ver.
+trips içindeki her kayıtta category alanı vardır, bu araç tipini gösterir (örneğin "car" veya "motorcycle")
 
-- motorcycle&scooter: max>120→uyarı, max>140→kritik
-- truck/bus: max>100→uyarı, max>120→kritik  
-- car/unknown: max>120→uyarı, max>140→kritik
+Hız limiti aşımları(deviceOverspeed), ani hızlanmalar(hardAcceleration), ani frenlemeler(hardBraking), sert virajlar(hardCornering) gibi olaylar önemlidir.
+Akü Bağlantısı Kesilmesi(Alarm>powerCut) olayı çok kritiktir.
+Akü Bağlantısı Kesilmesi(powerCut) olayından sonra seyahat veya yolculuk varsa hırsızlık girişimi veya yetkisiz kullanım olabilir, bu kritik bir durumdur.
+Olaylarda 
 Veriler:
 Trips: dist(km), avg(km/h), max(km/h), tripTime(DAKİKA), startTime, endTime
 Avg, yolculuk süresi, mesafe ve araç tipine göre verimlilik analizi yapabilirsin.

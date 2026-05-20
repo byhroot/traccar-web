@@ -38,7 +38,7 @@ const PositionsReportPage = () => {
   const readonly = useRestriction('readonly');
 
   const [available, setAvailable] = useState([]);
-  const [columns, setColumns] = useState(['fixTime', 'latitude', 'longitude', 'speed', 'address']);
+  const [columns, setColumns] = useState(['serverTime', 'latitude', 'longitude', 'speed', 'address']);
   const [items, setItems] = useState([]);
   const geofenceId = searchParams.has('geofenceId')
     ? parseInt(searchParams.get('geofenceId'))

@@ -9,6 +9,7 @@ import { makeStyles } from 'tss-react/mui';
 import RemoveDialog from '../../common/components/RemoveDialog';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import { useAdministrator, useManager } from '../../common/util/permissions';
+import GroupsManagerFab from '../GroupsManagerFab';
 
 const useStyles = makeStyles()(() => ({
   row: {
@@ -23,6 +24,8 @@ const CollectionActionsGroup = ({
   setTimestamp,
   customActions,
   readonly,
+  hasDevices = false,  // ← yeni prop
+  groups = [],        // ← yeni prop
 }) => {
   const theme = useTheme();
   const { classes } = useStyles();
@@ -36,9 +39,15 @@ const CollectionActionsGroup = ({
 
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [removing, setRemoving] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);  // ← wizard state
 
   const handleEdit = () => {
-    navigate(`${editPath}/${itemId}`);
+    if (itemId && !admin) {
+      setEditOpen(true);
+    } else {
+      navigate(`${editPath}/${itemId}`);
+    }
+
     setMenuAnchorEl(null);
   };
 
@@ -73,11 +82,19 @@ const CollectionActionsGroup = ({
                   {action.title}
                 </MenuItem>
               ))}
-            {!readonly && admin && (
-              <>
-                {editPath && <MenuItem onClick={handleEdit}>{t('sharedEdit')}</MenuItem>}
-                <MenuItem onClick={handleRemove}>{t('sharedRemove')}</MenuItem>
-              </>
+            {!readonly && manager && editPath && (
+              <MenuItem onClick={handleEdit}>
+                {t('sharedEdit')}
+              </MenuItem>
+            )}
+
+            {!readonly && manager && (
+              <MenuItem
+                onClick={handleRemove}
+                disabled={hasDevices}
+              >
+                {hasDevices ? 'Araçları taşıyın (silinemez)' : t('sharedRemove')}
+              </MenuItem>
             )}
           </Menu>
         </>
@@ -91,7 +108,7 @@ const CollectionActionsGroup = ({
                 </IconButton>
               </Tooltip>
             ))}
-          {!readonly && admin && (
+          {!readonly && manager && (
             <>
               {editPath && (
                 <Tooltip title={t('sharedEdit')}>
@@ -100,11 +117,19 @@ const CollectionActionsGroup = ({
                   </IconButton>
                 </Tooltip>
               )}
-              {admin &&
-                <Tooltip title={t('sharedRemove')}>
-                  <IconButton size="small" onClick={handleRemove}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
+              {manager &&
+                // Silme butonunda:
+                <Tooltip title={hasDevices ? 'Önce araçları grupsuz bırakın' : t('sharedRemove')}>
+                  <span>  {/* disabled IconButton için span wrapper gerekli */}
+                    <IconButton
+                      size="small"
+                      onClick={handleRemove}
+                      disabled={hasDevices}
+                      sx={{ '&.Mui-disabled': { opacity: 0.35 } }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </span>
                 </Tooltip>
               }
             </>
@@ -119,6 +144,16 @@ const CollectionActionsGroup = ({
         itemId={itemId}
         onResult={handleRemoveResult}
       />
+      {/* Edit wizard — sadece manager için açılır */}
+      {manager && !admin && (
+        <GroupsManagerFab
+          groups={groups}
+          editGroupId={itemId}
+          editOpen={editOpen}
+          onEditClose={() => setEditOpen(false)}
+          onSuccess={() => setTimestamp(Date.now())}
+        />
+      )}
     </>
   );
 };

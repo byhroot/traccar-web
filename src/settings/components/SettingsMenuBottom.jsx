@@ -29,7 +29,7 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import CalculateIcon from '@mui/icons-material/Calculate';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useTranslation } from '../../common/components/LocalizationProvider';
@@ -37,6 +37,10 @@ import { useAdministrator, useManager, useRestriction } from '../../common/util/
 import useFeatures from '../../common/util/useFeatures';
 import DarkModeSwitch from '../components/DarkmodeSwicth';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import HandymanIcon from '@mui/icons-material/Handyman';
+import { Avatar, Chip } from '@mui/material';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
   const t = useTranslation();
@@ -51,6 +55,10 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
   const billingLink = useSelector((state) => state.session.user.attributes.billingLink);
   const features = useFeatures();
   const [logoutOpen, setLogoutOpen] = useState(false);
+  // Önce selector'ları ekle (diğer useSelector'ların yanına):
+  const userName = useSelector((state) => state.session.user.name);
+  const userEmail = useSelector((state) => state.session.user.email);
+  const sms = useSelector((state) => state.session.user.attributes?.sms || 0);
 
   const go = (link) => {
     navigate(link);
@@ -95,18 +103,101 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
         {/* HEADER */}
+        {/* HEADER */}
         <Box
           sx={{
-            p: 1,
-            textAlign: 'center',
-            background: 'linear-gradient(135deg, #00959E 30%, #42d7f5 90%)',
-            color: '#fff'
+            position: 'relative',
+            pt: 3,
+            pb: 2.5,
+            px: 2.5,
+            background: 'linear-gradient(145deg, #00959E 0%, #006f75 60%, #005a60 100%)',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: -30, right: -30,
+              width: 130, height: 130,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.10)',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: -20, left: -20,
+              width: 80, height: 80,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.07)',
+            },
           }}
         >
-          <AssessmentIcon sx={{ fontSize: 32, mb: 1 }} />
-          <Typography variant="h6" fontWeight="bold">
-            {t('settingsTitle')}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, position: 'relative', zIndex: 1 }}>
+            <Avatar
+              sx={{
+                width: 46, height: 46,
+                background: 'rgba(255,255,255,0.25)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '1rem',
+                border: '2px solid rgba(255,255,255,0.4)',
+              }}
+            >
+              {userName ? userName.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() : '?'}
+            </Avatar>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ color: '#fff', fontWeight: 700, fontSize: '0.92rem', lineHeight: 1.2 }}>
+                {userName || 'Kullanıcı'}
+              </Typography>
+              {userEmail && (
+                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.7rem', display: 'block', mb: 0.5 }}>
+                  {userEmail}
+                </Typography>
+              )}
+
+              {/* Rozet — mailin hemen altında */}
+              {admin ? (
+                <Chip
+                  size="small"
+                  icon={<AdminPanelSettingsIcon sx={{ fontSize: '0.75rem !important', color: '#f0a500 !important' }} />}
+                  label="Admin"
+                  sx={{
+                    height: 20, fontSize: '0.65rem',
+                    backgroundColor: 'rgba(240,165,0,0.18)',
+                    color: '#f0d080',
+                    mb: 1.5,
+                    border: '1px solid rgba(240,165,0,0.30)',
+                    '& .MuiChip-label': { px: 0.8 },
+                  }}
+                />
+              ) : manager ? (
+                <Chip
+                  size="small"
+                  icon={<ManageAccountsIcon sx={{ fontSize: '0.75rem !important', color: '#42d7f5 !important' }} />}
+                  label="Manager"
+                  sx={{
+                    height: 20, fontSize: '0.65rem',
+                    backgroundColor: 'rgba(0,149,158,0.20)',
+                    color: '#42d7f5',
+                    border: '1px solid rgba(0,149,158,0.35)',
+                    '& .MuiChip-label': { px: 0.8 },
+                  }}
+                />
+              ) : sms > 100 ? (
+                <Chip
+                  size="small"
+                  label="PRO"
+                  sx={{
+                    height: 20, fontSize: '0.65rem',
+                    fontWeight: 700,
+                    background: 'linear-gradient(90deg, #a855f7, #6366f1)',
+                    color: '#fff',
+                    border: 'none',
+                    '& .MuiChip-label': { px: 0.8 },
+                  }}
+                />
+              ) : null}
+            </Box>
+          </Box>
         </Box>
 
         {/* MENU SCROLL AREA */}
@@ -245,6 +336,20 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
                     '/settings/server',
                     <SettingsIcon />,
                     location.pathname === '/settings/server'
+                  )}
+                {admin &&
+                  renderItem(
+                    t('sharedLogs'),
+                    '/reports/actions',
+                    <VerifiedUserIcon />,
+                    location.pathname === '/reports/actions'
+                  )}
+                {admin &&
+                  renderItem(
+                    t('sharedServiceName'),
+                    '/servis',
+                    <HandymanIcon />,
+                    location.pathname === '/reports/actions'
                   )}
 
                 {renderItem(

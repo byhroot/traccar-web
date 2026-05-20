@@ -60,13 +60,14 @@ const ReportsMenuNewAICard = () => {
   const [summary, setSummary] = useState('');
   const [insightCount, setInsightCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
+  const cacheTime = localStorage.getItem('aiAnalysisCacheTime');
 
   useEffect(() => {
     const cached = localStorage.getItem('aiAnalysisCache');
     const cacheTime = localStorage.getItem('aiAnalysisCacheTime');
-    const ONE_HOUR = 1000 * 60 * 60;
+    const CACHE_HOUR = 1000 * 60 * 60 * 72; // 72 saat
 
-    if (cached && cacheTime && Date.now() - Number(cacheTime) < ONE_HOUR) {
+    if (cached && cacheTime && Date.now() - Number(cacheTime) < CACHE_HOUR) {
       const parsed = JSON.parse(cached);
       setSummary(localStorage.getItem('aiAnalysisSummary') || 'Analiz hazır.');
       setInsightCount(parsed.length);
@@ -108,12 +109,13 @@ const ReportsMenuNewAICard = () => {
         messages: [
           {
             role: 'system',
-            content: `Sen bir araç ve motosiklet filo takip uzmanısın. Türkçe yanıt ver. GMT+0 → GMT+3 çevir.
-trips içindeki her kayıtta category alanı vardır, hız eşiklerini buna göre belirle:
+            content: `Sen bir araç ve motosiklet filo takip uzmanısın. Türkçe yanıt ver. Ham veriler GMT+0 'a göredir. Sen yanıt üretirken türkiye zaman dilimine (GMT+3) göre yanıt ver.
+trips içindeki her kayıtta category alanı vardır, bu araç tipini gösterir (örneğin "car" veya "motorcycle")
 
-- motorcycle&scooter: max>120→uyarı, max>140→kritik
-- truck/bus: max>100→uyarı, max>120→kritik  
-- car/unknown: max>120→uyarı, max>140→kritik
+Hız limiti aşımları(deviceOverspeed), ani hızlanmalar(hardAcceleration), ani frenlemeler(hardBraking), sert virajlar(hardCornering) gibi olaylar önemlidir.
+Akü Bağlantısı Kesilmesi(Alarm>powerCut) olayı çok kritiktir.
+Akü Bağlantısı Kesilmesi(powerCut) olayından sonra seyahat veya yolculuk varsa hırsızlık girişimi veya yetkisiz kullanım olabilir, bu kritik bir durumdur.
+Olaylarda 
 Veriler:
 Trips: dist(km), avg(km/h), max(km/h), tripTime(DAKİKA), startTime, endTime
 Avg, yolculuk süresi, mesafe ve araç tipine göre verimlilik analizi yapabilirsin.
@@ -259,8 +261,10 @@ SADECE JSON: {"insights":[{"deviceId":"89","title":"BAŞLIK","value":"DEĞER","d
             <Typography variant="caption" color="text.secondary">
               {isLoading && 'Filo verileri analiz ediliyor...'}
               {isError && 'Analiz için veri bulunamadı.'}
-              {isDone && `${insightCount} içgörü (bugün)${errorCount > 0 ? ` · ${errorCount} kritik uyarı` : ' · Filo durumu normal'}`}
-              {status === STATUS.idle && 'Analiz için araç seçin.'}
+              {isDone && `${insightCount} içgörü · ${Math.floor((Date.now() - Number(cacheTime)) / (1000 * 60 * 60 * 24)) > 0
+                ? `${Math.floor((Date.now() - Number(cacheTime)) / (1000 * 60 * 60 * 24))} gün önce analiz edildi`
+                : `${Math.floor((Date.now() - Number(cacheTime)) / (1000 * 60 * 60))} saat önce analiz edildi`
+                }${errorCount > 0 ? ` · ${errorCount} kritik uyarı` : ' · Filo durumu normal'}`}              {status === STATUS.idle && 'Analiz için araç seçin.'}
             </Typography>
           </Stack>
 

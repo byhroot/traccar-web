@@ -241,11 +241,12 @@ const GroupNode = ({ group, allGroups, allDevices, depth = 0 }) => {
 // ─── Accordion Content ────────────────────────────────────────────────────────
 const UserAccordionContent = ({
   item, allGroups, allDevices, userGroupIds, userDeviceIds,
-  loadingConnections, isMobile, t, onOpenLogs, admin,
+  loadingConnections, isMobile, t, onOpenLogs, admin, userSubUsers
 }) => {
   const userGroups = allGroups.filter((g) => userGroupIds.includes(g.id));
   const topLevelGroups = userGroups.filter((g) => !g.groupId || !userGroups.find((pg) => pg.id === g.groupId));
   const directDevices = allDevices.filter((d) => userDeviceIds.includes(d.id));
+
   return (
     <Box sx={{ margin: isMobile ? 1 : 2, padding: 2, bgcolor: 'background.default', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
       <Grid container spacing={2}>
@@ -334,6 +335,45 @@ const UserAccordionContent = ({
               </Stack>
             </Box>
           )}
+          {userSubUsers.length > 0 && (
+            <Box mt={2}>
+              <Typography
+                variant="caption"
+                color="textSecondary"
+                fontWeight={600}
+                sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}
+              >
+                Alt Kullanıcılar
+              </Typography>
+
+              <Stack mt={0.5} spacing={0.5}>
+                {userSubUsers.map((u) => (
+                  <Stack
+                    key={u.id}
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{ py: 0.3 }}
+                  >
+                    <VerifiedUserIcon
+                      sx={{ fontSize: 16, color: 'info.main', flexShrink: 0 }}
+                    />
+
+                    <Box>
+                      <Typography variant="body2" fontWeight={500} lineHeight={1.2}>
+                        {u.name}
+                      </Typography>
+
+                      <Typography variant="caption" color="textSecondary">
+                        #{u.id}
+                        {u.email ? ` • ${u.email}` : ''}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                ))}
+              </Stack>
+            </Box>
+          )}
         </>
       )}
     </Box>
@@ -343,7 +383,7 @@ const UserAccordionContent = ({
 // ─── User Row ─────────────────────────────────────────────────────────────────
 const UserRow = ({
   item, manager, classes, actionLogin, actionConnections,
-  setTimestamp, t, allGroups, allDevices, connectionCache, connectionsReady, admin, onConnectionFetched, // ← EKLENDİ
+  setTimestamp, t, allGroups, allDevices, connectionCache, connectionsReady, admin, onConnectionFetched, subUsersRes // ← EKLENDİ
 }) => {
   const [open, setOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
@@ -353,6 +393,7 @@ const UserRow = ({
 
   const isPro = item.attributes?.smsLimit >= 10;
   const isManager = useManager();
+  const isuserManager = item.userLimit !== 0;
   const conn = connectionCache[item.id];
   // Show spinner in accordion only while global batch is still in progress
 
@@ -363,17 +404,21 @@ const UserRow = ({
     if (lazyLoading) return;
     setLazyLoading(true);
     try {
-      const [groupsRes, devicesRes] = await Promise.all([
+      const [groupsRes, devicesRes, subUsersRes] = await Promise.all([
         fetchOrThrow(`/api/groups?userId=${item.id}`),
         fetchOrThrow(`/api/devices?userId=${item.id}`),
+        fetchOrThrow(`/api/users?userId=${item.id}&excludeAttributes=true`),
+
       ]);
-      const [groups, devices] = await Promise.all([groupsRes.json(), devicesRes.json()]);
+      const [groups, devices, subUsers] = await Promise.all([groupsRes.json(), devicesRes.json(), subUsersRes.json(),
+      ]);
       onConnectionFetched(item.id, {
         groupIds: groups.map((g) => g.id),
         deviceIds: devices.map((d) => d.id),
+        subUsers: subUsers.map((u) => ({ ...u, parentUserId: item.id }))
       });
     } catch {
-      onConnectionFetched(item.id, { groupIds: [], deviceIds: [] });
+      onConnectionFetched(item.id, { groupIds: [], deviceIds: [], subUsers: [] });
     } finally {
       setLazyLoading(false);
     }
@@ -381,27 +426,66 @@ const UserRow = ({
 
   return (
     <>
-      <TableRow sx={{ '& > *': { borderBottom: 'unset' }, bgcolor: item.disabled ? 'action.hover' : 'inherit' }}>
-        <TableCell padding="checkbox">
-          <IconButton size="small" onClick={() => {
+      <TableRow
+        sx={{
+          bgcolor: open
+            ? 'action.selected'
+            : item.disabled
+              ? 'action.hover'
+              : 'inherit',
+
+          transition: 'all 0.2s ease',
+
+          '& > *': {
+            borderBottom: open ? '0 !important' : '2px solid',
+            borderColor: 'divider',
+          },
+
+          ...(open && {
+            boxShadow: `inset 3px 0 0 ${theme.palette.primary.main}`,
+          }),
+        }}
+      >
+        <TableCell
+          padding="none"
+          sx={{
+            width: 20,
+            minWidth: 20,
+            maxWidth: 20,
+            px: 0,
+          }}
+        >         <IconButton
+          size="small"
+          onClick={() => {
             const next = !open;
             setOpen(next);
             if (next && isManager && !admin) handleFetchConnection();
-          }}>
+          }}
+          sx={{
+            p: 0.25,
+            width: 28,
+            height: 28,
+          }}
+        >
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
 
         {!isMobile && (
-          <TableCell>
+          <TableCell sx={{ py: isMobile ? 1 : 1.5 }}>
             <Typography variant="body2" color="textSecondary">#{item.id}</Typography>
           </TableCell>
         )}
 
-        <TableCell>
-          <Stack spacing={0.5}>
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              <Typography variant="body1" fontWeight={600}>{item.name}</Typography>
+        <TableCell sx={{ py: isMobile ? 1 : 1.5 }}>
+          <Stack spacing={0.75} sx={{ minWidth: 0 }}>
+            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" sx={{ minWidth: 0 }}>
+              <Typography
+                variant={isMobile ? 'body2' : 'body1'}
+                fontWeight={600}
+                noWrap
+                sx={{ maxWidth: isMobile ? 140 : 'unset' }}
+              >{item.name}</Typography>
               {isMobile && <Typography variant="caption" color="textSecondary">(#{item.id})</Typography>}
               {item.administrator && (
                 <Chip size="small" icon={<AdminPanelSettingsIcon />} label="Admin" color="error" variant="outlined" />
@@ -423,12 +507,52 @@ const UserRow = ({
               </Tooltip>
             </Stack>
             {isMobile && <Typography variant="caption" color="textSecondary">{item.email}</Typography>}
-            <Stack direction="row" spacing={1} mt={0.5}>
-              {isManager && (
-                <Chip size="small" icon={<VerifiedUserIcon />} label="Manager" color="primary" variant="outlined" />
-              )}
+            <Stack
+              direction="row"
+              spacing={0.5}
+              mt={0.5}
+              flexWrap="wrap"
+              useFlexGap
+            >              {isuserManager && (
+              <Chip size="small" icon={<VerifiedUserIcon />} label="Manager" color="primary" variant="outlined" />
+            )}
               {isPro && (
                 <Chip size="small" label="PRO" sx={{ bgcolor: 'gold', color: 'black', fontWeight: 'bold', fontSize: '10px', height: '20px' }} />
+              )}
+              {conn && (
+                <>
+                  {conn.groupIds?.length > 0 && (
+                    <Chip
+                      size="small"
+                      icon={<FolderIcon />}
+                      label={`Grup (${conn.groupIds.length})`}
+                      variant="outlined"
+                      color="warning"
+                      sx={{ height: 22, fontSize: '11px' }}
+                    />
+                  )}
+
+                  {conn.deviceIds?.length > 0 && (
+                    <Chip
+                      size="small"
+                      icon={<DirectionsCarIcon />}
+                      label={`Araç (${conn.deviceIds.length})`}
+                      variant="outlined"
+                      color="success"
+                      sx={{ height: 22, fontSize: '11px' }}
+                    />
+                  )}
+                  {conn.subUsers?.length > 0 && (
+                    <Chip
+                      size="small"
+                      icon={<FolderIcon />}
+                      label={`Kullanıcı (${conn.subUsers.length})`}
+                      variant="outlined"
+                      color="default"
+                      sx={{ height: 22, fontSize: '11px' }}
+                    />
+                  )}
+                </>
               )}
             </Stack>
           </Stack>
@@ -436,13 +560,33 @@ const UserRow = ({
 
         {!isMobile && <TableCell>{item.email}</TableCell>}
 
-        <TableCell align={isMobile ? 'right' : 'left'}>
-          <Chip
-            label={item.disabled ? t('sharedDisabled') : t('sharedEnabled')}
-            color={item.disabled ? 'default' : 'success'}
-            size="small"
-            variant={isMobile ? 'outlined' : 'filled'}
-          />
+        <TableCell
+          align="center"
+          sx={{
+            width: 50,
+            minWidth: 50,
+            maxWidth: 50,
+            px: 0.5,
+          }}
+        >
+          <Tooltip
+            title={item.disabled
+              ? t('sharedDisabled')
+              : t('sharedEnabled')}
+          >
+            <Box display="flex" justifyContent="center">
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  bgcolor: item.disabled
+                    ? 'text.disabled'
+                    : 'success.main',
+                }}
+              />
+            </Box>
+          </Tooltip>
         </TableCell>
 
         <TableCell className={classes.columnAction} padding="none">
@@ -456,7 +600,16 @@ const UserRow = ({
         </TableCell>
       </TableRow>
 
-      <TableRow>
+      <TableRow
+        sx={{
+          bgcolor: open ? 'action.selected' : 'inherit',
+
+          '& > *': {
+            borderBottom: '2px solid',
+            borderColor: 'divider',
+          },
+        }}
+      >
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={isMobile ? 4 : 6}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <UserAccordionContent
@@ -466,6 +619,7 @@ const UserRow = ({
               userGroupIds={conn?.groupIds || []}
               userDeviceIds={conn?.deviceIds || []}
               loadingConnections={loadingConnections}
+              userSubUsers={conn?.subUsers || []}
               isMobile={isMobile}
               t={t}
               onOpenLogs={() => setLogsOpen(true)}
@@ -539,14 +693,22 @@ const UsersPage = () => {
       await Promise.all(
         batch.map(async (user) => {
           try {
-            const [groupsRes, devicesRes] = await Promise.all([
+            const [groupsRes, devicesRes, subUsersRes] = await Promise.all([
               fetchOrThrow(`/api/groups?userId=${user.id}`),
               fetchOrThrow(`/api/devices?userId=${user.id}`),
+              fetchOrThrow(`/api/users?userId=${user.id}&excludeAttributes=true`),
             ]);
-            const [groups, devices] = await Promise.all([groupsRes.json(), devicesRes.json()]);
+
+            const [groups, devices, subUsers] = await Promise.all([
+              groupsRes.json(),
+              devicesRes.json(),
+              subUsersRes.json(),
+            ]);
+
             connections[user.id] = {
               groupIds: groups.map((g) => g.id),
               deviceIds: devices.map((d) => d.id),
+              subUsers,
             };
           } catch {
             connections[user.id] = { groupIds: [], deviceIds: [] };
@@ -565,7 +727,6 @@ const UsersPage = () => {
     setFetchProgress(null);
     return connections;
   }, []);
-  const ONE_HOUR = 60 * 60 * 1000;
 
   // ── Load: try cache, else fetch fresh ─────────────────────────────────────
   useEffectAsync(async () => {
@@ -792,7 +953,7 @@ const UsersPage = () => {
               {!isMobile && <TableCell sx={{ py: 0, fontWeight: 'bold' }}>ID</TableCell>}
               <TableCell sx={{ py: 0, fontWeight: 'bold' }}>{t('sharedName')}</TableCell>
               {!isMobile && <TableCell sx={{ py: 0, fontWeight: 'bold' }}>{t('userEmail')}</TableCell>}
-              <TableCell sx={{ py: 0, fontWeight: 'bold' }}>{isMobile ? 'Durum' : t('sharedDisabled')}</TableCell>
+              <TableCell sx={{ py: 0, fontWeight: 'bold' }}>{isMobile ? '' : t('sharedDisabled')}</TableCell>
               <TableCell className={classes.columnAction} sx={{ py: 0 }} />
             </TableRow>
           </TableHead>

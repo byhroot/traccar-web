@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   FormControl,
@@ -26,24 +26,55 @@ export const updateReportParams = (searchParams, setSearchParams, key, values) =
   setSearchParams(newParams, { replace: true });
 };
 
+// Device ve group seçimi ayrı memo'lu component — parent re-render'larından izole
+const DeviceGroupSelect = React.memo(({ deviceType, deviceIds, groupIds, searchParams, setSearchParams }) => {
+  const t = useTranslation();
+  const { classes } = useReportStyles();
+
+  // ARTIK REDUX'TAN BİR ŞEY ÇEKMİYORUZ! 
+  // useSelector BAĞLANTISINI KOPARDIK.
+
+  return (
+    <>
+      {deviceType !== 'none' && (
+        <div className={classes.filterItem}>
+          <SelectField
+            label={t(deviceType === 'multiple' ? 'deviceTitle' : 'reportDevice')}
+            endpoint="/api/devices" // Veriyi doğrudan API'den çeker
+            value={deviceType === 'multiple' ? deviceIds : deviceIds[0]}
+            onChange={(e) => {
+              const values = deviceType === 'multiple' ? e.target.value : [e.target.value].filter(id => id);
+              updateReportParams(searchParams, setSearchParams, 'deviceId', values);
+            }}
+            multiple={deviceType === 'multiple'}
+            singleLine={deviceType === 'multiple'}
+            fullWidth
+          />
+        </div>
+      )}
+      {deviceType === 'multiple' && (
+        <div className={classes.filterItem}>
+          <SelectField
+            label={t('settingsGroups')}
+            endpoint="/api/groups" // Veriyi doğrudan API'den çeker
+            value={groupIds}
+            onChange={(e) => updateReportParams(searchParams, setSearchParams, 'groupId', e.target.value)}
+            multiple
+            singleLine
+            fullWidth
+          />
+        </div>
+      )}
+    </>
+  );
+});
+
 const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, loading }) => {
   const { classes } = useReportStyles();
   const t = useTranslation();
 
   const [searchParams, setSearchParams] = useSearchParams();
-
   const readonly = useRestriction('readonly');
-
-  const devices = useSelector((state) => state.devices.items);
-  const groups = useSelector((state) => state.groups.items);
-  const deviceList = useMemo(
-    () => Object.values(devices).sort((a, b) => a.name.localeCompare(b.name)),
-    [devices],
-  );
-  const groupList = useMemo(
-    () => Object.values(groups).sort((a, b) => a.name.localeCompare(b.name)),
-    [groups],
-  );
 
   const deviceIds = useMemo(() => searchParams.getAll('deviceId').map(Number), [searchParams]);
   const groupIds = useMemo(() => searchParams.getAll('groupId').map(Number), [searchParams]);
@@ -55,26 +86,19 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
   );
   const [customTo, setCustomTo] = useState(dayjs().locale('en').format('YYYY-MM-DDTHH:mm'));
   const [selectedOption, setSelectedOption] = useState('json');
-
   const [description, setDescription] = useState();
   const [calendarId, setCalendarId] = useState();
 
   const evaluateDisabled = () => {
-    if (deviceType === 'single' && !deviceIds.length) {
-      return true;
-    }
-    if (selectedOption === 'schedule' && (!description || !calendarId)) {
-      return true;
-    }
+    if (deviceType === 'single' && !deviceIds.length) return true;
+    if (selectedOption === 'schedule' && (!description || !calendarId)) return true;
     return loading;
   };
   const disabled = evaluateDisabled();
   const loaded = from && to && !loading;
 
   const evaluateOptions = () => {
-    const result = {
-      json: t('reportShow'),
-    };
+    const result = { json: t('reportShow') };
     if (onExport && loaded) {
       result.export = t('reportExport');
       result.print = t('reportPrint');
@@ -125,7 +149,6 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
         selectedTo = dayjs(customTo, 'YYYY-MM-DDTHH:mm');
         break;
     }
-
     const newParams = new URLSearchParams(searchParams);
     newParams.set('from', selectedFrom.toISOString());
     newParams.set('to', selectedTo.toISOString());
@@ -149,11 +172,7 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
   const onClick = (type) => {
     switch (type) {
       case 'schedule':
-        onSchedule(deviceIds, groupIds, {
-          description,
-          calendarId,
-          attributes: {},
-        });
+        onSchedule(deviceIds, groupIds, { description, calendarId, attributes: {} });
         break;
       case 'json':
       default:
@@ -164,42 +183,13 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
 
   return (
     <div className={classes.filter}>
-      {deviceType !== 'none' && (
-        <div className={classes.filterItem}>
-          <SelectField
-            label={t(deviceType === 'multiple' ? 'deviceTitle' : 'reportDevice')}
-            data={deviceList}
-            value={deviceType === 'multiple' ? deviceIds : deviceIds.find(() => true)}
-            placeholder={
-              deviceType === 'multiple' && !groupIds.length ? t('notificationAlways') : null
-            }
-            onChange={(e) => {
-              const values =
-                deviceType === 'multiple' ? e.target.value : [e.target.value].filter((id) => id);
-              updateReportParams(searchParams, setSearchParams, 'deviceId', values);
-            }}
-            multiple={deviceType === 'multiple'}
-            singleLine={deviceType === 'multiple'}
-            fullWidth
-          />
-        </div>
-      )}
-      {deviceType === 'multiple' && (
-        <div className={classes.filterItem}>
-          <SelectField
-            label={t('settingsGroups')}
-            data={groupList}
-            value={groupIds}
-            onChange={(e) => {
-              const values = e.target.value;
-              updateReportParams(searchParams, setSearchParams, 'groupId', values);
-            }}
-            multiple
-            singleLine
-            fullWidth
-          />
-        </div>
-      )}
+      <DeviceGroupSelect
+        deviceType={deviceType}
+        deviceIds={deviceIds}
+        groupIds={groupIds}
+        searchParams={searchParams}
+        setSearchParams={setSearchParams}
+      />
       {selectedOption !== 'schedule' ? (
         <>
           <div className={classes.filterItem}>
@@ -263,11 +253,7 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
             />
           </div>
           {selectedOption === 'schedule' && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 1, fontStyle: 'italic' }}
-            >
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
               ⏰ {t('reportScheduleInfo') || ''}
             </Typography>
           )}

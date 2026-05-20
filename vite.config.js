@@ -8,8 +8,8 @@ export default defineConfig(() => ({
   server: {
     port: 3000,
     proxy: {
-      '/api/socket': 'ws://test.takipon.com:8082',
-      '/api': 'http://test.takipon.com:8082',
+      '/api/socket': 'ws://s1.takipon.com:8082',
+      '/api': 'http://s1.takipon.com:8082',
     },
   },
   build: {

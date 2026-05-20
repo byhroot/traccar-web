@@ -16,6 +16,14 @@ import {
   NotificationsActive as NotificationsActiveIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
+import BedtimeIcon from '@mui/icons-material/Bedtime';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
+import RotateRightIcon from '@mui/icons-material/RotateRight';
+import SosIcon from '@mui/icons-material/Sos';
+import CarCrashIcon from '@mui/icons-material/CarCrash';
+import AirlineSeatReclineExtraIcon from '@mui/icons-material/AirlineSeatReclineExtra';
 
 import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from '../reports/components/ReportsMenu';
@@ -25,7 +33,9 @@ import GeofenceListCard from './GeofenceListCard';
 import AlertListCard from './AlertListCard';
 import DashboardChartsCard from './DashboardChartsCard';
 import { useTranslation } from '../common/components/LocalizationProvider';
-
+import LocalParkingIcon from '@mui/icons-material/LocalParking';
+import OfflineBoltIcon from '@mui/icons-material/OfflineBolt';
+import WrongLocationIcon from '@mui/icons-material/WrongLocation';
 const Dashboard = () => {
   const theme = useTheme();
   const t = useTranslation();
@@ -69,9 +79,10 @@ const Dashboard = () => {
       const params = new URLSearchParams({ from, to });
 
       list.forEach(d => params.append('deviceId', d.id));
-      ['alarm', 'deviceInactive', 'deviceMoving', 'deviceStopped',
+      ['alarm', 'deviceMoving', 'deviceStopped',
         'deviceOverspeed', 'deviceFuelDrop', 'geofenceEnter', 'geofenceExit',
-        'ignitionOn', 'ignitionOff', 'maintenance', 'driverChanged'].forEach(type => params.append('type', type));
+        'ignitionOn', 'ignitionOff', 'maintenance', 'driverChanged',
+        'idle', 'tow', 'hardAcceleration', 'hardBraking', 'hardCornering', 'sos', 'accident', 'fatigueDriving'].forEach(type => params.append('type', type));
 
       const res = await fetch(`/api/reports/events?${params.toString()}`);
       if (res.ok) {
@@ -91,25 +102,39 @@ const Dashboard = () => {
   const eventsSpeed = useMemo(() => events.filter(e => e.type === 'deviceOverspeed'), [events]);
   const eventsGeofenceExit = useMemo(() => events.filter(e => e.type === 'geofenceExit'), [events]);
 
+  const groupEventsByDevice = (eventList, emoji = '🚗') => Object.values(eventList.reduce((acc, event) => { const device = deviceDetails.find(d => d.id === event.deviceId); if (!acc[event.deviceId]) acc[event.deviceId] = { id: event.deviceId, name: device?.name || `Cihaz ${event.deviceId}`, count: 0, emoji, device, lastEventTime: event.eventTime }; acc[event.deviceId].count += 1; if (new Date(event.eventTime) > new Date(acc[event.deviceId].lastEventTime)) acc[event.deviceId].lastEventTime = event.eventTime; return acc; }, {})).sort((a, b) => b.count - a.count);
+
+  const getAlarmEvents = (alarmType) => events.filter(e => e.type === 'alarm' && e.attributes?.alarm === alarmType);
+
+  const idleEvents = useMemo(() => getAlarmEvents('idle'), [events]);
+  const towEvents = useMemo(() => getAlarmEvents('tow'), [events]);
+  const hardAccelerationEvents = useMemo(() => getAlarmEvents('hardAcceleration'), [events]);
+  const hardBrakingEvents = useMemo(() => getAlarmEvents('hardBraking'), [events]);
+  const hardCorneringEvents = useMemo(() => getAlarmEvents('hardCornering'), [events]);
+  const sosEvents = useMemo(() => getAlarmEvents('sos'), [events]);
+  const accidentEvents = useMemo(() => getAlarmEvents('accident'), [events]);
+
   const kpiStats = useMemo(() => [
     { title: "Online", value: deviceDetails.filter(d => d.status === 'online').length, icon: WifiIcon, color: theme.palette.success.main, data: deviceDetails.filter(d => d.status === 'online') },
     { title: "Offline", value: deviceDetails.filter(d => d.status !== 'online').length, icon: WifiTetheringErrorIcon, color: theme.palette.grey[500], data: deviceDetails.filter(d => d.status !== 'online') },
     { title: t("positionMotion"), value: deviceDetails.filter(d => d.status === 'online' && d.motionState).length, icon: SpeedIcon, color: theme.palette.info.main, data: deviceDetails.filter(d => d.status === 'online' && d.motionState) },
-    { title: "Park", value: deviceDetails.filter(d => d.status !== 'online' || !d.motionState).length, icon: SpeedIcon, color: theme.palette.warning.main, data: deviceDetails.filter(d => d.status !== 'online' || !d.motionState) },
-    { title: t("eventDeviceOverspeed"), value: eventsSpeed.length, icon: WifiTetheringErrorIcon, color: theme.palette.error.main, data: eventsSpeed },
-    { title: t("eventGeofenceExit"), value: eventsGeofenceExit.length, icon: MapIcon, color: theme.palette.secondary.main, data: eventsGeofenceExit },
-  ], [deviceDetails, eventsSpeed, eventsGeofenceExit, t, theme]);
+    { title: "Park", value: deviceDetails.filter(d => d.status !== 'online' || !d.motionState).length, icon: LocalParkingIcon, color: theme.palette.warning.main, data: deviceDetails.filter(d => d.status !== 'online' || !d.motionState) },
+    { title: t("eventDeviceOverspeed"), value: eventsSpeed.length, icon: OfflineBoltIcon, color: theme.palette.error.main, data: groupEventsByDevice(eventsSpeed, '⚡') },
+    { title: t("eventGeofenceExit"), value: eventsGeofenceExit.length, icon: WrongLocationIcon, color: theme.palette.secondary.main, data: groupEventsByDevice(eventsGeofenceExit, '📍') },
+    { title: t("alarmIdle"), value: idleEvents.length, icon: BedtimeIcon, color: theme.palette.info.main, data: groupEventsByDevice(idleEvents, '🛌') },
+    { title: t("alarmTow"), value: towEvents.length, icon: LocalShippingIcon, color: theme.palette.primary.main, data: groupEventsByDevice(towEvents, '🚛') },
+    { title: t("alarmHardAcceleration"), value: hardAccelerationEvents.length, icon: TrendingUpIcon, color: theme.palette.success.main, data: groupEventsByDevice(hardAccelerationEvents, '🚀') },
+    { title: t("alarmHardBraking"), value: hardBrakingEvents.length, icon: VerticalAlignBottomIcon, color: theme.palette.warning.main, data: groupEventsByDevice(hardBrakingEvents, '🛑') },
+    { title: t("alarmHardCornering"), value: hardCorneringEvents.length, icon: RotateRightIcon, color: theme.palette.error.main, data: groupEventsByDevice(hardCorneringEvents, '🌀') },
+    { title: t("alarmSos"), value: sosEvents.length, icon: SosIcon, color: theme.palette.secondary.main, data: groupEventsByDevice(sosEvents, '🆘') },
+    { title: t("alarmAccident"), value: accidentEvents.length, icon: CarCrashIcon, color: theme.palette.error.main, data: groupEventsByDevice(accidentEvents, '💥') },
+  ], [deviceDetails, events, eventsSpeed, eventsGeofenceExit, idleEvents, towEvents, hardAccelerationEvents, hardBrakingEvents, hardCorneringEvents, sosEvents, accidentEvents, t, theme]);
+
+  //const handleKpiClick = (title, data) => { if (!data?.length) return; setDialogData({ title, devices: data }); setDialogOpen(true); };
 
   const handleKpiClick = (title, data) => {
     if (!data?.length) return;
     let finalData = data;
-    if (title === t("eventDeviceOverspeed") || title === t("eventGeofenceExit")) {
-      const counts = {};
-      data.forEach(e => { counts[e.deviceId] = (counts[e.deviceId] || 0) + 1; });
-      finalData = Object.entries(counts).map(([id, count]) => ({
-        id, name: deviceDetails.find(d => d.id === parseInt(id))?.name || `Cihaz ${id}`, count
-      }));
-    }
     setDialogData({ title, devices: finalData });
     setDialogOpen(true);
   };
@@ -143,7 +168,10 @@ const Dashboard = () => {
             )}
           </Card>
         )}
-
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, backgroundColor: 'action.hover', px: 1.2, py: 0.4, borderRadius: 5 }}>
+            {`📊 ${t("commandData")}  : ⏱️ 48 ${t("sharedHours")}`}          </Typography>
+        </Box>
         {/* 📊 KPI Kartları */}
         <Grid container justifyContent="center" spacing={1} mb={2}>
           {kpiStats.filter(kpi => kpi.value > 0).map((kpi) => (
@@ -263,7 +291,10 @@ const Dashboard = () => {
       {/* 📱 Detay Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" fontWeight={800}>{dialogData.title}</Typography>
+          {/* component="span" ekleyerek h2 içinde h6 oluşmasını engelledik */}
+          <Typography variant="h6" component="span" fontWeight={800}>
+            {dialogData.title}
+          </Typography>
           <IconButton onClick={() => setDialogOpen(false)}><CloseIcon /></IconButton>
         </DialogTitle>
         <DialogContent dividers>

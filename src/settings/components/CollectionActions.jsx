@@ -10,7 +10,7 @@ import RemoveDialog from '../../common/components/RemoveDialog';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import { useAdministrator, useManager } from '../../common/util/permissions';
 import UserWizardDialog from './UserWizardDialog';
-
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 const useStyles = makeStyles()(() => ({
   row: {
     display: 'flex',
@@ -60,7 +60,10 @@ const CollectionActions = ({
     action.handler(itemId);
     setMenuAnchorEl(null);
   };
-
+  const handleWizard = () => {
+    setMenuAnchorEl(null);
+    setWizardId(itemId);
+  };
   const handleRemoveResult = (removed) => {
     setRemoving(false);
     if (removed) {
@@ -82,6 +85,11 @@ const CollectionActions = ({
                   {action.title}
                 </MenuItem>
               ))}
+            {isUserPath && admin && (
+              <MenuItem onClick={handleWizard}>
+                <AutoFixHighIcon fontSize="small" color="secondary" /> Wizard
+              </MenuItem>
+            )}
             {!readonly && editPath && (
               <MenuItem onClick={handleEdit}>{t('sharedEdit')}</MenuItem>
             )}
@@ -101,6 +109,13 @@ const CollectionActions = ({
                 </IconButton>
               </Tooltip>
             ))}
+          {isUserPath && admin && (
+            <Tooltip title="Wizard">
+              <IconButton size="small" onClick={handleWizard}>
+                <AutoFixHighIcon fontSize="small" color="secondary" />
+              </IconButton>
+            </Tooltip>
+          )}
           {!readonly && (
             <>
               {editPath && (

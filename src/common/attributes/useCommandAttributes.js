@@ -205,13 +205,6 @@ export default (t) =>
           type: 'boolean',
         },
       ],
-      alarmVibration: [
-        {
-          key: 'data',
-          name: t('commandData'),
-          type: 'string',
-        },
-      ],
       alarmVibrationlevel: [
         {
           key: 'alarmSensorlevel',
@@ -219,6 +212,207 @@ export default (t) =>
           type: 'string',
         },
       ],
+      alarmAcceleration: [
+        {
+          key: 'acceleration',
+          name: t('commandAcceleration'),
+          description: t('commandAccelerationDescription'),
+          type: 'number',
+          min: 0,
+          max: 5000,
+          default: 450,
+          unit: 'mg',
+          placeholder: '450',
+        },
+      ],
+
+      alarmDeceleration: [
+        {
+          key: 'deceleration',
+          name: t('commandDeceleration'),
+          description: t('commandDecelerationDescription'),
+          type: 'number',
+          min: 0,
+          max: 5000,
+          default: 800,
+          unit: 'mg',
+          placeholder: '800',
+        },
+      ],
+
+      alarmHarshTurning: [
+        {
+          key: 'value',
+          name: t('commandHarshTurning'),
+          description: t('commandHarshTurningDescription'),
+          type: 'number',
+          min: 0,
+          max: 32,
+          default: 9,
+          placeholder: '9',
+        },
+      ],
+
+      alarmImpact: [
+        {
+          key: 'value',
+          name: t('commandImpact'),
+          description: t('commandImpactDescription'),
+          type: 'number',
+          min: 0,
+          max: 10,
+          default: 5,
+          placeholder: '5',
+        },
+      ],
+
+      alarmVibration: [
+        {
+          key: 'time',
+          name: t('commandTowTime'),
+          description: t('commandTowTimeDescription'),
+          type: 'number',
+          min: 0,
+          max: 255,
+          default: 10,
+          unit: 'sec',
+          placeholder: '10',
+        },
+        {
+          key: 'mode',
+          name: t('commandTowMode'),
+          description: t('commandTowModeDescription'),
+          type: 'number',
+          min: 0,
+          max: 1,
+          default: 0,
+          placeholder: '0',
+        },
+      ],
+
+      alarmIdling: [
+        {
+          key: 'time',
+          name: t('commandIdlingTime'),
+          description: t('commandIdlingTimeDescription'),
+          type: 'number',
+          min: 0,
+          max: 255,
+          default: 5,
+          unit: 'min',
+          placeholder: '5',
+        },
+      ],
+
+      alarmFatigueDriving: [
+        {
+          key: 'fatigueTime',
+          name: t('commandFatigueTime'),
+          description: t('commandFatigueTimeDescription'),
+          type: 'number',
+          min: 0,
+          max: 255,
+          default: 240,
+          unit: 'min',
+          placeholder: '240',
+        },
+        {
+          key: 'restTime',
+          name: t('commandRestTime'),
+          description: t('commandRestTimeDescription'),
+          type: 'number',
+          min: 0,
+          max: 255,
+          default: 20,
+          unit: 'min',
+          placeholder: '20',
+        },
+        {
+          key: 'totalDriveTime',
+          name: t('commandTotalDriveTime'),
+          description: t('commandTotalDriveTimeDescription'),
+          type: 'number',
+          min: 0,
+          max: 1440,
+          default: 480,
+          unit: 'min',
+          placeholder: '480',
+        },
+      ],
+
+      alarmVibrationSensitivity: [
+        {
+          key: 'sensitivity',
+          name: t('commandSensitivity'),
+          description: t('commandAlarmVibrationSensitivityDescription'),
+          type: 'number',
+          min: 3,
+          max: 255,
+          default: 3,
+          placeholder: '3',
+        },
+      ],
+
+      alarmGsmJamming: [
+        {
+          key: 'time',
+          name: t('commandGsmJammingTime'),
+          description: t('commandGsmJammingTimeDescription'),
+          type: 'number',
+          min: 0,
+          max: 255,
+          default: 10,
+          unit: 'sec',
+          placeholder: '10',
+        },
+      ],
+
+      accOffNoPosition: [
+        {
+          key: 'enable',
+          name: t('commandAccOffNoPosition'),
+          description: t('commandAccOffNoPositionDescription'),
+          type: 'boolean',
+        },
+      ],
+
+      smsInterval: [
+        {
+          key: 'normalTime',
+          name: t('commandNormalTime'),
+          description: t('commandNormalTimeDescription'),
+          type: 'number',
+          min: 0,
+          max: 65535,
+          default: 5,
+          unit: 'min',
+          placeholder: '5',
+        },
+        {
+          key: 'accOffTime',
+          name: t('commandAccOffTime'),
+          description: t('commandAccOffTimeDescription'),
+          type: 'number',
+          min: 0,
+          max: 65535,
+          default: 30,
+          unit: 'min',
+          placeholder: '30',
+        },
+        {
+          key: 'stoppingTime',
+          name: t('commandStoppingTime'),
+          description: t('commandStoppingTimeDescription'),
+          type: 'number',
+          min: 0,
+          max: 65535,
+          default: 60,
+          unit: 'min',
+          placeholder: '60',
+        },
+      ],
     }),
+
     [t],
+
   );

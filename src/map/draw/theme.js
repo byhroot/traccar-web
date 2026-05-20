@@ -12,7 +12,7 @@ export default [
       ['!=', 'mode', 'static'],
     ],
     paint: {
-      'fill-color': '#3bb2d0',
+      'fill-color': '#4FD1C5',
       'fill-outline-color': '#3bb2d0',
       'fill-opacity': 0.1,
     },
@@ -64,8 +64,8 @@ export default [
     },
     paint: {
       'line-color': '#fbb03b',
-      'line-dasharray': [0.2, 2],
-      'line-width': 2,
+      'line-dasharray': [2, 2],
+      'line-width': 3,
     },
   },
   {
@@ -119,6 +119,21 @@ export default [
     },
   },
   {
+    id: 'gl-draw-polygon-glow-active',
+    type: 'line',
+    filter: ['all', ['==', 'active', 'true'], ['==', '$type', 'Polygon']],
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': '#8B5CF6',
+      'line-width': 10,
+      'line-opacity': 0.15,
+      'line-blur': 4,
+    },
+  },
+  {
     id: 'gl-draw-point-point-stroke-inactive',
     type: 'circle',
     filter: [
@@ -154,7 +169,7 @@ export default [
     type: 'circle',
     filter: ['all', ['==', '$type', 'Point'], ['==', 'active', 'true'], ['!=', 'meta', 'midpoint']],
     paint: {
-      'circle-radius': 7,
+      'circle-radius': 10,
       'circle-color': '#fff',
     },
   },
@@ -175,6 +190,22 @@ export default [
       'fill-color': '#404040',
       'fill-outline-color': '#404040',
       'fill-opacity': 0.1,
+    },
+  },
+
+  {
+    id: 'gl-draw-polygon-and-line-vertex',
+    type: 'circle',
+    filter: [
+      'all',
+      ['==', 'meta', 'vertex'],
+      ['==', '$type', 'Point'],
+    ],
+    paint: {
+      'circle-radius': 5,
+      'circle-color': '#ffffff',
+      'circle-stroke-width': 2,
+      'circle-stroke-color': '#8B5CF6',
     },
   },
   {

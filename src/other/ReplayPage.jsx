@@ -251,7 +251,7 @@ const ReplayPage = () => {
                 </IconButton>
                 {/* positions[index] varsa formatla, yoksa '-' veya boşluk koy */}
                 {positions && positions[index]
-                  ? formatTime(positions[index].serverTime, 'seconds')
+                  ? formatTime(positions[index]?.fixTime, 'seconds')
                   : '--:--'}
               </div>
             </>

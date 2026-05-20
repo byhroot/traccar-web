@@ -58,7 +58,7 @@ import { useTranslation } from './LocalizationProvider';
 import { useParams } from 'react-router-dom';
 import ParkIcon from '@mui/icons-material/LocalParking'; // DeviceStopped
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-
+import NotificationsPageNewProAlertCard from '../../settings/NotificationsPageNewProAlertCard';
 // --- Sabitler ---
 
 const NOTIFICATION_TYPES = [
@@ -279,6 +279,7 @@ const NotificationCard = () => {
   });
 
   const smsLimit = user?.attributes?.smsLimit;
+  const iosDev = user?.attributes?.statuscarddisabled;
 
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -1316,6 +1317,7 @@ const NotificationCard = () => {
               }}
             />
           </Box>
+
           <Box
             sx={{
               ml: 'auto',                 // varsa soldaki başlıktan kendini sağa iter
@@ -1350,7 +1352,17 @@ const NotificationCard = () => {
             {'Bildirimler modüler bir yapıya sahiptir. Her araç için farklı bildirimler tanımlayabilir, aynı bildirim tipini birden fazla kez ekleyerek günün farklı saatlerine özel kurallar oluşturabilirsiniz. Örneğin: gece alarm durumlarında “telefonla arama”, gündüz ise yalnızca “uygulama bildirimi” alacak şekilde yapılandırabilirsiniz.'}
           </Alert>
         </Snackbar>
+        {!iosDev &&
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
 
+          >
+            <NotificationsPageNewProAlertCard smsLimit={smsLimit} />
+
+          </Box>
+        }
         {loading ? (
           <Typography variant="body2">{t('sharedLoading') || 'Yükleniyor...'}</Typography>
         ) : (

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -76,7 +76,9 @@ const MainToolbar = ({
   const theme = useTheme();
   const navigate = useNavigate();
   const t = useTranslation();
-
+  // State ve ref ekle (diğer useState'lerin yanına)
+  const [filterTooltipOpen, setFilterTooltipOpen] = useState(false);
+  const filterTooltipShown = useRef(false);
   const deviceReadonly = useDeviceReadonly();
   const admin = useAdministrator();
   const groups = useSelector((state) => state.groups.items);
@@ -92,7 +94,20 @@ const MainToolbar = ({
     Object.values(devices)
       .filter((d) => d.status !== "offline" && d.motionState === motionState)
       .length;
+  // useEffect ekle (return'den önce)
+  const hasActiveFilters = !!(filter.statuses.length || filter.groups.length || filter.motiones?.length);
 
+  useEffect(() => {
+    if (hasActiveFilters && !filterTooltipShown.current) {
+      filterTooltipShown.current = true;
+      setFilterTooltipOpen(true);
+      const timer = setTimeout(() => setFilterTooltipOpen(false), 4000);
+      return () => clearTimeout(timer);
+    }
+    if (!hasActiveFilters) {
+      filterTooltipShown.current = false;
+    }
+  }, [hasActiveFilters]);
   return (
     <Toolbar ref={toolbarRef} className={classes.toolbar}>
       <IconButton
@@ -126,20 +141,27 @@ const MainToolbar = ({
         }}
         endAdornment={
           <InputAdornment position="end">
-            <IconButton
-              size="small"
-              edge="end"
-              onClick={() => setFilterAnchorEl(inputRef.current)}
-              sx={{ mr: -0.5 }}
+            <Tooltip
+              open={filterTooltipOpen}
+              title="Seçilmiş filtreler var"
+              placement="bottom"
+              arrow
             >
-              <Badge
-                color="error" // Info yerine Error rengi uyarı/filtre aktifliğini daha iyi belli eder
-                variant="dot"
-                invisible={!filter.statuses.length && !filter.groups.length && !filter.motiones?.length}
+              <IconButton
+                size="small"
+                edge="end"
+                onClick={() => setFilterAnchorEl(inputRef.current)}
+                sx={{ mr: -0.5 }}
               >
-                <TuneIcon fontSize="small" color="action" />
-              </Badge>
-            </IconButton>
+                <Badge
+                  color="error"
+                  variant="dot"
+                  invisible={!hasActiveFilters}
+                >
+                  <TuneIcon fontSize="small" color="action" />
+                </Badge>
+              </IconButton>
+            </Tooltip>
           </InputAdornment>
         }
         size="small"

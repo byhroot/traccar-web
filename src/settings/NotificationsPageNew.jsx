@@ -45,6 +45,7 @@ import CallIcon from '@mui/icons-material/Call';
 import EmailIcon from '@mui/icons-material/Email';
 import NearbyErrorIcon from '@mui/icons-material/NearbyError';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import NotificationsPageNewProAlertCard from './NotificationsPageNewProAlertCard';
 
 const NotificationsPage = () => {
   const classes = useSettingsStyles();
@@ -54,6 +55,7 @@ const NotificationsPage = () => {
   const user = useSelector((state) => state.session.user);
   const [attributes] = useState(user.attributes);
   const smsLimit = attributes.smsLimit;
+  const iosDev = attributes.statuscarddisabled || false;
 
   const [timestamp, setTimestamp] = useState(Date.now());
   const [items, setItems] = useState([]);
@@ -242,26 +244,20 @@ const NotificationsPage = () => {
 
   return (
     <PageLayout mb={5} menu={<SettingsMenu />} breadcrumbs={['settingsTitle', 'sharedNotifications']}>
+
+
       <SearchHeader keyword={searchKeyword} setKeyword={setSearchKeyword} />
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
+      {!iosDev &&
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
 
-      >
+        >
+          <NotificationsPageNewProAlertCard smsLimit={smsLimit} />
 
-        {(smsLimit == null || smsLimit <= 0) && (
-          <Typography variant="body2" color="secondary">
-            {t("notificatorSms") + " / " + t("notificatorPushover") + " " + t("userUserLimit")} : 0
-          </Typography>
-        )}
-        {smsLimit >= 0 && (
-          <Typography className={classes.smsLimit} variant="body2" color="primary" style={{ fontStyle: 'italic' }}>
-            {t('notificatorSms')} & {t('notificatorPushover')}  {t('userUserLimit')} :{smsLimit ? smsLimit : 0}
-          </Typography>
-        )}
-      </Box>
-
+        </Box>
+      }
       {items.length === 0 && !loading && (
         <Box
           display="flex"

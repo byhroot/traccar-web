@@ -53,15 +53,15 @@ export default {
     styleOverrides: {
       '*': {
         scrollbarWidth: 'thin', // Firefox için ince scrollbar
-        scrollbarColor: '#07b8b4 #999999', // (Kaydırma çubuğu, Arka plan)
+        scrollbarColor: '#475569 transparent',
       },
       '::-webkit-scrollbar': {
         width: '8px', // Scrollbar genişliği
         height: '8px',
       },
       '::-webkit-scrollbar-thumb': {
-        backgroundColor: '#808080', // Kaydırma çubuğu rengi
-        borderRadius: '10px',
+        background: 'rgba(148,163,184,0.35)',
+        borderRadius: 999,
       },
       '::-webkit-scrollbar-track': {
         backgroundColor: '#808080', // Scrollbar arka plan rengi
@@ -86,5 +86,34 @@ export default {
       }),
     },
   },
-
+  MuiChip: {
+    styleOverrides: {
+      root: ({ theme }) => ({
+        borderRadius: 10,
+        fontWeight: 700,
+        backdropFilter: 'blur(10px)',
+      }),
+    },
+  },
+  MuiTooltip: {
+    styleOverrides: {
+      tooltip: ({ theme }) => ({
+        borderRadius: 12,
+        backdropFilter: 'blur(16px)',
+        backgroundColor: alpha(theme.palette.grey[900], 0.85),
+        fontSize: '0.78rem',
+        padding: '10px 14px',
+      }),
+    },
+  },
+  MuiMenu: {
+    styleOverrides: {
+      paper: ({ theme }) => ({
+        borderRadius: 18,
+        backdropFilter: 'blur(24px)',
+        backgroundImage: 'none',
+        border: `1px solid ${alpha(theme.palette.common.white, 0.08)}`,
+      }),
+    },
+  },
 };

@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   Box, Typography, Card, Grid, Chip, Avatar, CircularProgress,
   Dialog, DialogTitle, DialogContent, IconButton, Divider,
-  TextField, Select, MenuItem, FormControl, InputLabel,
+  TextField, Select, MenuItem, FormControl, InputLabel, Autocomplete,
   Switch, Button, Alert, Snackbar, useTheme, useMediaQuery
 } from '@mui/material';
 import PersonPinIcon from '@mui/icons-material/PersonPin';
@@ -23,6 +23,7 @@ import ReportsMenu from '../reports/components/ReportsMenu';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import deviceCategories from '../common/util/deviceCategories'; // Kategoriler buradan geliyor
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import SelectField from '../common/components/SelectField';
 // Hedefi 50KB yapalım, 500 byte çok çok az.
 const TARGET_SIZE_BYTES = 500 * 1024;
 
@@ -90,7 +91,7 @@ const KpiCard = ({ label, value, color, icon: Icon }) => (
     </Box>
   </Card>
 );
-const IgnitionVerifyStep = ({ deviceId, onSaveComplete, onManualSave, onCancel }) => {
+const IgnitionVerifyStep = ({ deviceId, onSaveComplete, onManualSave, onCancel, saving }) => {
   const position = useSelector((state) => state.session.positions[deviceId]);
   const device = useSelector((state) => state.devices.items[deviceId]);
   const isOnline = device?.status === 'online';
@@ -179,7 +180,7 @@ const IgnitionVerifyStep = ({ deviceId, onSaveComplete, onManualSave, onCancel }
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button fullWidth variant="outlined" color="inherit" onClick={onCancel}>
+          <Button disabled={saving} fullWidth variant="outlined" color="inherit" onClick={onCancel}>
             ← Geri
           </Button>
           <Button
@@ -187,8 +188,14 @@ const IgnitionVerifyStep = ({ deviceId, onSaveComplete, onManualSave, onCancel }
             variant="contained"
             color="warning"
             onClick={onManualSave}
+            disabled={saving}
+            startIcon={
+              saving
+                ? <CircularProgress size={16} color="inherit" />
+                : null
+            }
           >
-            Manuel Kaydet
+            {saving ? 'Kaydediliyor...' : 'Manuel Kaydet'}
           </Button>
         </Box>
       </Box>
@@ -427,39 +434,96 @@ const ServisPage = () => {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [t]);
+  const devicesMap = useSelector((state) => state.devices.items);
+  const devices = useMemo(() => Object.values(devicesMap), [devicesMap]);
 
+  const groups = useSelector((state) => state.groups.items);
+  const [groupOptions, setGroupOptions] = useState([
+    { id: 'all', name: 'Tüm Gruplar' },
+  ]);
 
-  const [search, setSearch] = useState('');
-  const [tab, setTab] = useState('pending');
+  useEffect(() => {
+    fetch('/api/groups')
+      .then((r) => r.json())
+      .then((data) => {
+        setGroupOptions([
+          { id: 'all', name: 'Tüm Gruplar' },
+          ...data.map((g) => ({
+            ...g,
+            id: String(g.id),
+          })),
+        ]);
+      });
+  }, []);
+  const [search, setSearch] = useState(() => {
+    return localStorage.getItem('servis.search') || '';
+  }); const [groupFilter, setGroupFilter] = useState(() => {
+    return localStorage.getItem('servis.groupFilter') || 'all';
+  }); const [tab, setTab] = useState('pending');
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
   const [verifyStep, setVerifyStep] = useState(false);
   const [form, setForm] = useState({});
   const [imgPreview, setImgPreview] = useState(null);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [dragging, setDragging] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const dragStartRef = useRef({ x: 0, y: 0 });
   const [imgB64, setImgB64] = useState(null);
   const [errors, setErrors] = useState({});
   const fileRef = useRef();
   const dispatch = useDispatch();
 
   // EKLE — store'dan al
-  const devicesMap = useSelector((state) => state.devices.items);
-  const devices = useMemo(() => Object.values(devicesMap), [devicesMap]);
+
   const loading = false; // artık store her zaman hazır
+  useEffect(() => {
+    localStorage.setItem('servis.groupFilter', groupFilter);
+    localStorage.setItem('servis.search', search);
+  }, [groupFilter, search]);
+  const kpiDevices = useMemo(() => {
+    return devices.filter((d) => {
+      if (
+        groupFilter !== 'all'
+        && String(d.groupId) !== String(groupFilter)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [devices, groupFilter]);
 
   const kpi = useMemo(() => ({
-    online: devices.filter((d) => d.status === 'online').length,
-    offline: devices.filter((d) => d.status !== 'online').length,
-    pending: devices.filter((d) => !isDone(d)).length,
-    done: devices.filter((d) => isDone(d)).length,
-  }), [devices]);
+    online: kpiDevices.filter((d) => d.status === 'online').length,
+    offline: kpiDevices.filter((d) => d.status !== 'online').length,
+    pending: kpiDevices.filter((d) => !isDone(d)).length,
+    done: kpiDevices.filter((d) => isDone(d)).length,
+  }), [kpiDevices]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
     return devices.filter((d) => {
       if (tab === 'pending' && isDone(d)) return false;
       if (tab === 'done' && !isDone(d)) return false;
-      if (q && !d.name.toLowerCase().includes(q) && !d.uniqueId.includes(q)) return false;
+      const keyword = search.toLowerCase();
+
+      const matchesSearch =
+        d.name?.toLowerCase().includes(keyword)
+        || d.uniqueId?.toLowerCase().includes(keyword)
+        || groups[d.groupId]?.name?.toLowerCase().includes(keyword);
+
+      if (search && !matchesSearch) {
+        return false;
+      }
+
+      if (
+        groupFilter !== 'all'
+        && String(d.groupId) !== String(groupFilter)
+      ) {
+        return false;
+      }
       return true;
     }).
       sort((a, b) => {
@@ -467,7 +531,7 @@ const ServisPage = () => {
         const bOnline = b.status === 'online' ? 0 : 1;
         return aOnline - bOnline;
       });
-  }, [devices, tab, search]);
+  }, [devices, tab, search, groupFilter, groups]);
 
   const openEdit = useCallback((id) => {
     const d = devices.find((x) => x.id === id);
@@ -476,7 +540,7 @@ const ServisPage = () => {
     setForm({
       id: d.id, name: d.name || '', uniqueId: d.uniqueId || '', category: d.category || '',
       deviceImage: attr.deviceImage || '', ruhsatEslesti: !!attr.ruhsatEslesti,
-      blokajkiti: !!attr.blokajkiti, km: '', _raw: d,
+      blokajkiti: !!attr.blokajkiti, km: attr.km || '', _raw: d,
     });
 
     // 🛠️ BURAYI GÜNCELLE: URL'nin sonuna zaman damgası ekleyerek cache'i kırıyoruz.
@@ -544,6 +608,7 @@ const ServisPage = () => {
       attr.ruhsatEslesti = form.ruhsatEslesti;
       attr.blokajkiti = form.blokajkiti;
       attr.servisislemyapan = sessionServis;
+      attr.km = form.km; // EKLE
       attr.lastUpdate = Date.now();
 
       if (imgB64) {
@@ -560,12 +625,27 @@ const ServisPage = () => {
             headers: { 'Content-Type': 'image/jpeg' },
             body: blob,
           });
-          if (uploadRes.ok) {
-            const serverFileName = await uploadRes.text();
-            attr.deviceImage = serverFileName.trim();
+          if (!uploadRes.ok) {
+            throw new Error(`Upload failed: ${uploadRes.status}`);
           }
+
+          const serverFileName = (await uploadRes.text()).trim();
+
+          if (!serverFileName) {
+            throw new Error('Empty upload response');
+          }
+
+          attr.deviceImage = serverFileName;
         } catch (err) {
           console.error('Resim yükleme hatası:', err);
+
+          setSnack({
+            open: true,
+            msg: 'Fotoğraf yüklenemedi, lütfen tekrar deneyin.',
+            severity: 'error',
+          });
+
+          return;
         }
       }
 
@@ -601,7 +681,7 @@ const ServisPage = () => {
 
   return (
     <PageLayout menu={null} breadcrumbs={['sharedServiceName', 'servisTitle']}>
-      <Box sx={{ p: { xs: 1, sm: 2 }, maxWidth: 900, mx: 'auto' }}>
+      <Box sx={{ p: { xs: 1, sm: 2 }, maxWidth: 800, mx: 'auto' }}>
         <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
           <KpiCard label="Online" value={kpi.online} color={theme.palette.success.main} icon={WifiIcon} />
           <KpiCard label="Offline" value={kpi.offline} color={theme.palette.text.disabled} icon={WifiOffIcon} />
@@ -615,9 +695,62 @@ const ServisPage = () => {
               <Box key={key} onClick={() => setTab(key)} sx={{ flex: 1, py: 1.5, textAlign: 'center', cursor: 'pointer', fontSize: 13, fontWeight: tab === key ? 700 : 400, color: tab === key ? 'primary.main' : 'text.secondary', borderBottom: tab === key ? '2px solid' : 'none', borderColor: 'primary.main', bgcolor: tab === key ? 'background.paper' : 'transparent' }}>{label}</Box>
             ))}
           </Box>
-          <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ara... Plaka veya IMEI No" style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14 }} />
+          <Box
+            sx={{
+              px: 2,
+              py: 1.5,
+              display: 'flex',
+              gap: 1,
+              flexDirection: { xs: 'column', sm: 'row' },
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 1.5,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                minHeight: 40,
+              }}
+            >
+              <SearchIcon
+                sx={{
+                  color: 'text.disabled',
+                  fontSize: 20,
+                }}
+              />
+
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Plaka, IMEI veya müşteri ara..."
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: 14,
+                  color: 'inherit',
+                }}
+              />
+            </Box>
+
+            <SelectField
+              label="Grup Filtrele"
+              data={groupOptions}
+              value={String(groupFilter)}
+              emptyValue="all"
+              onChange={(e) => setGroupFilter(String(e.target.value))}
+              fullWidth
+              singleLine
+            />
           </Box>
           {loading ? <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress size={24} /></Box> : filtered.map(d => <DeviceRow key={d.id} device={d} onEdit={openEdit} />)}
         </Card>
@@ -678,6 +811,7 @@ const ServisPage = () => {
                     }, 1500);
                   }}
                   onCancel={() => setVerifyStep(false)}
+                  saving={saving}
                 />
               ) : (
                 <>
@@ -708,11 +842,71 @@ const ServisPage = () => {
                     </Select>
                   </FormControl>
 
-                  <Box onClick={() => fileRef.current?.click()} sx={{ border: '1px dashed', borderColor: errors.deviceImage ? 'error.main' : 'divider', borderRadius: 2, p: 2, textAlign: 'center', cursor: 'pointer', mb: 2 }}>
-                    {imgPreview ? <img src={imgPreview} style={{ width: '100%', maxHeight: 280, borderRadius: 8, objectFit: 'contain', }} /> : <><CameraIcon sx={{ fontSize: 32, color: 'text.disabled' }} /><Typography variant="caption" display="block">Fotoğraf Yükle(Ruhsatı elinizde tutarak montaj yapılan yerin fotoğrafını çekin, Ekranda hem ruhsat hemde montaj noktası görünmelidir)</Typography></>}
-                    <input ref={fileRef} type="file" hidden accept="image/*"
-                      //capture="environment" 
-                      onChange={handleImgSelect} />
+                  <Box
+                    sx={{
+                      border: '1px dashed',
+                      borderColor: errors.deviceImage ? 'error.main' : 'divider',
+                      borderRadius: 2,
+                      p: 2,
+                      textAlign: 'center',
+                      mb: 2,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {imgPreview ? (
+                      <>
+                        <Box
+                          component="img"
+                          src={imgPreview}
+                          onClick={() => {
+                            setZoom(1);
+                            setPosition({ x: 0, y: 0 });
+                            setImageViewerOpen(true);
+                          }}
+                          sx={{
+                            width: '100%',
+                            maxHeight: 280,
+                            borderRadius: 2,
+                            objectFit: 'contain',
+                            cursor: 'zoom-in',
+                            transition: '0.2s',
+                            '&:hover': {
+                              opacity: 0.92,
+                            },
+                          }}
+                        />
+
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          size="small"
+                          sx={{ mt: 1.5 }}
+                          startIcon={<CameraIcon />}
+                          onClick={() => fileRef.current?.click()}
+                        >
+                          Fotoğrafı Değiştir
+                        </Button>
+                      </>
+                    ) : (
+                      <Box
+                        onClick={() => fileRef.current?.click()}
+                        sx={{ cursor: 'pointer' }}
+                      >
+                        <CameraIcon sx={{ fontSize: 32, color: 'text.disabled' }} />
+
+                        <Typography variant="caption" display="block">
+                          Fotoğraf Yükle(Ruhsatı elinizde tutarak montaj yapılan yerin fotoğrafını çekin, Ekranda hem ruhsat hemde montaj noktası görünmelidir)
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleImgSelect}
+                    />
                   </Box>
 
                   <TextField fullWidth label="Güncel KM" type="number" size="small" sx={{ mb: 2 }} value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} />
@@ -771,7 +965,163 @@ const ServisPage = () => {
           </>
         )}
       </Dialog>
+      <Dialog
+        open={imageViewerOpen}
+        onClose={() => {
+          setImageViewerOpen(false);
+          setZoom(1);
+          setPosition({ x: 0, y: 0 });
+        }} fullScreen
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            bgcolor: 'black',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <IconButton
+            onClick={() => setImageViewerOpen(false)}
+            sx={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              zIndex: 5,
+              color: 'white',
+              bgcolor: 'rgba(0,0,0,0.45)',
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
 
+          <Box
+            onMouseMove={(e) => {
+              if (!dragging) return;
+
+              setPosition({
+                x: e.clientX - dragStartRef.current.x,
+                y: e.clientY - dragStartRef.current.y,
+              });
+            }}
+            onMouseUp={() => setDragging(false)}
+            onMouseLeave={() => setDragging(false)}
+            onTouchMove={(e) => {
+              if (!dragging) return;
+
+              const touch = e.touches[0];
+
+              setPosition({
+                x: touch.clientX - dragStartRef.current.x,
+                y: touch.clientY - dragStartRef.current.y,
+              });
+            }}
+            onTouchEnd={() => setDragging(false)}
+            sx={{
+              width: '100%',
+              height: '100%',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Box
+              component="img"
+              src={imgPreview}
+              draggable={false}
+              onMouseDown={(e) => {
+                if (zoom <= 1) return;
+
+                setDragging(true);
+
+                dragStartRef.current = {
+                  x: e.clientX - position.x,
+                  y: e.clientY - position.y,
+                };
+              }}
+              onTouchStart={(e) => {
+                if (zoom <= 1) return;
+
+                const touch = e.touches[0];
+
+                setDragging(true);
+
+                dragStartRef.current = {
+                  x: touch.clientX - position.x,
+                  y: touch.clientY - position.y,
+                };
+              }}
+              onWheel={(e) => {
+                e.preventDefault();
+
+                setZoom((prev) => {
+                  const next = prev + (e.deltaY < 0 ? 0.15 : -0.15);
+
+                  if (next <= 1) {
+                    setPosition({ x: 0, y: 0 });
+                  }
+
+                  return Math.min(Math.max(next, 1), 5);
+                });
+              }}
+              sx={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
+                userSelect: 'none',
+                transition: dragging ? 'none' : 'transform 0.12s ease-out',
+                transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+                cursor: zoom > 1 ? (dragging ? 'grabbing' : 'grab') : 'zoom-in',
+              }}
+            />
+          </Box>
+
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 20,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: 1,
+              bgcolor: 'rgba(0,0,0,0.45)',
+              borderRadius: 10,
+              p: 1,
+            }}
+          >
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => setZoom((z) => Math.max(1, z - 0.25))}
+            >
+              -
+            </Button>
+
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => {
+                setZoom(1);
+                setPosition({ x: 0, y: 0 });
+              }}            >
+              %100
+            </Button>
+
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => setZoom((z) => Math.min(5, z + 0.25))}
+            >
+              +
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
       <Snackbar open={snack.open} autoHideDuration={3000} onClose={() => setSnack({ ...snack, open: false })}>
         <Alert severity={snack.severity}>{snack.msg}</Alert>
       </Snackbar>

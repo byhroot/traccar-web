@@ -155,9 +155,9 @@ const ReportsMenu = () => {
         {admin && (
           <MenuItem
             title={t('reportAudit')}
-            link="/reports/audit"
+            link="/reports/actions"
             icon={<VerifiedUserIcon />}
-            selected={location.pathname === '/reports/audit'}
+            selected={location.pathname === '/reports/actions'}
           />
         )}
       </List>

@@ -40,7 +40,7 @@ const SupportPage = () => {
   };
 
   // Kullanıcı bilgilerini düz metin olarak birleştir
-  const userDataString = `name==${currentUser.name};;email==${currentUser.email};;phone==${currentUser.phone};;key==`;
+  const userDataString = `name==${currentUser.name};;email==${currentUser.email};;phone==${currentUser.phone};;key==&jlvL;1Yx4=wHC=`;
 
   // Şifreleme işlemi (3 karakter kaydırma)
   const encryptedData = customEncrypt(userDataString, 3);

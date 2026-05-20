@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Grid, Card, CardContent, Typography, IconButton, Dialog, DialogTitle, DialogContent,
+  Grid, Card, CardContent, Typography, IconButton, Dialog, DialogTitle, DialogContent, Chip,
   Table, TableHead, TableRow, TableCell, TableBody, Box, Button, Tooltip, useTheme, useMediaQuery, TableContainer
 } from '@mui/material';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid
+  LineChart, Line, CartesianGrid,
 } from 'recharts';
 import dayjs from 'dayjs';
 import CloseIcon from '@mui/icons-material/Close';
@@ -94,12 +94,13 @@ const parsePhoneFromAttributes = (attributes) => {
   return digits.startsWith('90') ? digits : digits;
 };
 
-export default function UserLogsActionPageCard({
+const UserLogsActionPageCard = ({
   items,
+  users,
   userNames,
   deviceNames,
-  users, // <-- eklendi: [{id, name, phone, ...}]
-}) {
+  actionButton,
+}) => {
   const usersById = useMemo(() => {
     const m = {};
     (users || []).forEach(u => { m[u.id] = u; });
@@ -270,10 +271,111 @@ export default function UserLogsActionPageCard({
     }
     try {
       setIpLoading(true);
-      const res = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`);
-      const json = await res.json();
-      setIpDialogData(json);
-      ipCache.set(ip, json);
+
+      const providers = [
+        async () => {
+          const res = await fetch(
+            `https://ipapi.co/${encodeURIComponent(ip)}/json/`
+          );
+
+          const json = await res.json();
+
+          return {
+            success: !json.error,
+            provider: 'ipapi',
+            data: {
+              ip,
+              country: json.country_name,
+              country_code: json.country_code,
+              city: json.city,
+              region: json.region,
+              postal: json.postal,
+              latitude: json.latitude,
+              longitude: json.longitude,
+              isp: json.org,
+              timezone: json.timezone,
+            },
+          };
+        },
+
+        async () => {
+          const res = await fetch(
+            `https://freeipapi.com/api/json/${encodeURIComponent(ip)}`
+          );
+
+          const json = await res.json();
+
+          return {
+            success: true,
+            provider: 'freeipapi',
+            data: {
+              ip,
+              country: json.countryName,
+              country_code: json.countryCode,
+              city: json.cityName,
+              region: json.regionName,
+              postal: json.zipCode,
+              latitude: json.latitude,
+              longitude: json.longitude,
+              isp: json.isp,
+              timezone: json.timeZone,
+            },
+          };
+        },
+
+        async () => {
+          const res = await fetch(
+            `https://ipwhois.app/json/${encodeURIComponent(ip)}`
+          );
+
+          const json = await res.json();
+
+          return {
+            success: json.success !== false,
+            provider: 'ipwhois',
+            data: {
+              ip,
+              country: json.country,
+              country_code: json.country_code,
+              city: json.city,
+              region: json.region,
+              postal: json.postal,
+              latitude: json.latitude,
+              longitude: json.longitude,
+              isp: json.isp,
+              timezone: json.timezone?.id,
+            },
+          };
+        },
+      ];
+
+      let successData = null;
+
+      for (const provider of providers) {
+        try {
+          const result = await provider();
+
+          if (result?.success) {
+            successData = result.data;
+
+            console.log(
+              `IP provider success: ${result.provider}`
+            );
+
+            break;
+          }
+        } catch (err) {
+          console.warn('Provider failed:', err);
+        }
+      }
+
+      if (!successData) {
+        throw new Error('All IP providers failed');
+      }
+
+      setIpDialogData(successData);
+      ipCache.set(ip, successData);
+
     } catch (e) {
       setIpError('IP sorgusunda sorun oluştu.');
       setIpDialogData(null);
@@ -336,7 +438,94 @@ export default function UserLogsActionPageCard({
       default: return <EditIcon fontSize="large" />;
     }
   };
+  const RankedListCard = ({
+    title,
+    icon,
+    color,
+    items,
+    onItemClick,
+  }) => (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          mb={2}
+        >
+          <Box sx={{ color }}>
+            {icon}
+          </Box>
 
+          <Typography variant="subtitle1" fontWeight={700}>
+            {title}
+          </Typography>
+        </Box>
+
+        <Box display="flex" flexDirection="column" gap={1}>
+          {items.map((item, index) => (
+            <Box
+              key={item.name}
+              onClick={() => onItemClick(item)}
+              sx={{
+                p: 1.2,
+                borderRadius: 2,
+                cursor: 'pointer',
+                border: '1px solid rgba(255,255,255,0.06)',
+                transition: '0.2s',
+                '&:hover': {
+                  bgcolor: `${color}15`,
+                  transform: 'translateX(4px)',
+                },
+              }}
+            >
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={1.2}
+                  minWidth={0}
+                >
+                  <Typography
+                    sx={{
+                      minWidth: 24,
+                      color,
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                    }}
+                  >
+                    #{index + 1}
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    noWrap
+                    sx={{ fontWeight: 600 }}
+                  >
+                    {item.name}
+                  </Typography>
+                </Box>
+
+                <Chip
+                  label={item.count}
+                  size="small"
+                  sx={{
+                    bgcolor: `${color}20`,
+                    color,
+                    fontWeight: 700,
+                  }}
+                />
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
+  );
   const kpiCards = useMemo(() => {
     const types = Object.keys(allTypesSummary).sort();
     const base = types.map(t => ({
@@ -393,7 +582,13 @@ export default function UserLogsActionPageCard({
   return (
     <>
       {/* Çoklu Trend */}
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h6">
+          Kullanıcı Logları
+        </Typography>
 
+        {actionButton}
+      </Box>
       {/* KPI */}
       <Grid container spacing={1} sx={{ mb: 2 }}>
         {kpiCards.map((c) => (
@@ -446,152 +641,108 @@ export default function UserLogsActionPageCard({
       </Grid>
 
       <Grid container spacing={2}>
-        {/* En Çok Giriş Yapan Kullanıcılar */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card><CardContent>
-            <Typography variant="subtitle1" gutterBottom>👥 En Çok Giriş Yapan Kullanıcılar</Typography>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart
-                data={topLoginUsers}
-                onClick={(e) => {
-                  if (e && e.activeLabel) {
-                    const user = e.activeLabel;
-                    const rows = items
-                      .filter(it => ['login', 'socketlogin'].includes(it.actionType) && (userNames[it.userId] === user))
-                      .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
-                      .map(buildRowCommon);
-                    openRowsDialog(`${user} — Giriş Olayları`, rows);
-                  }
-                }}
-              >
-                <XAxis dataKey="name" />
-                <YAxis />
-                <ReTooltip />
-                <Bar dataKey="count" fill={COLORS.login} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent></Card>
-        </Grid>
-
-        {/* En Çok Komut Gönderilen Cihazlar */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card><CardContent>
-            <Typography variant="subtitle1" gutterBottom>⚙️ En Çok Komut Gönderilen Cihazlar</Typography>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart
-                data={topCommandDevices}
-                onClick={(e) => {
-                  if (e && e.activeLabel) {
-                    const deviceName = e.activeLabel;
-                    const rows = items
-                      .filter(it => it.actionType === 'command' && (deviceNames[it.objectId] === deviceName))
-                      .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
-                      .map(i => {
-                        const base = buildRowCommon(i);
-                        return {
-                          ...base,
-                          'Komut Tipi': i.attributes?.type || '-',
-                          'Açıklama': i.attributes?.description || '-',
-                          'Cihaz': deviceNames[i.objectId] || i.objectId
-                        };
-                      });
-                    openRowsDialog(`${deviceName} — Komut Geçmişi`, rows,
-                      ['Tarih', 'IP', 'Kullanıcı', 'Komut Tipi', 'Açıklama', 'Cihaz']);
-                  }
-                }}
-              >
-                <XAxis dataKey="name" />
-                <YAxis />
-                <ReTooltip />
-                <Bar dataKey="count" fill={COLORS.command} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent></Card>
-        </Grid>
-
-        {/* En Çok Düzenlenen Objeler */}
 
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card><CardContent>
-            <Typography variant="subtitle1" gutterBottom>✏️ En Çok Düzenlenen Objeler</Typography>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart
-                data={topEditedObjects}
-                onClick={(e) => {
-                  if (e && e.activeLabel) {
-                    const key = e.activeLabel;
-                    const rows = items
-                      .filter(it => it.actionType === 'edit' && `${it.objectType}:${it.objectId}` === key)
-                      .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
-                      .map(buildRowCommon);
-                    openRowsDialog(`${key} — Edit Geçmişi`, rows);
-                  }
-                }}
-              >
-                <XAxis dataKey="name" hide />
-                <YAxis />
-                <ReTooltip />
-                <Bar dataKey="count" fill={COLORS.edit} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent></Card>
+          <RankedListCard
+            title="En Çok Giriş Yapan Kullanıcılar"
+            icon={<LoginIcon />}
+            color={COLORS.login}
+            items={topLoginUsers}
+            onItemClick={(item) => {
+              const rows = items
+                .filter(it =>
+                  ['login', 'socketlogin'].includes(it.actionType)
+                  && it.userId === item.userId
+                )
+                .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
+                .map(buildRowCommon);
+
+              openRowsDialog(`${item.name} — Giriş Olayları`, rows);
+            }}
+          />
         </Grid>
 
-        {/* 🆕 En Çok Ekleyen Kullanıcılar */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card><CardContent>
-            <Typography variant="subtitle1" gutterBottom>➕ En Çok Ekleyen Kullanıcılar</Typography>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart
-                data={topCreatorUsers}
-                onClick={(e) => {
-                  if (e && e.activeLabel) {
-                    const user = e.activeLabel;
-                    const rows = items
-                      .filter(it => it.actionType === 'create' && (userNames[it.userId] === user))
-                      .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
-                      .map(buildRowCommon);
-                    openRowsDialog(`${user} — Create Olayları`, rows);
-                  }
-                }}
-              >
-                <XAxis dataKey="name" />
-                <YAxis />
-                <ReTooltip />
-                <Bar dataKey="count" fill={COLORS.create} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent></Card>
+          <RankedListCard
+            title="En Çok Komut Gönderilen Cihazlar"
+            icon={<TerminalIcon />}
+            color={COLORS.command}
+            items={topCommandDevices}
+            onItemClick={(item) => {
+              const rows = items
+                .filter(it =>
+                  it.actionType === 'command'
+                  && String(it.objectId) === String(item.deviceId)
+                )
+                .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
+                .map(buildRowCommon);
+
+              openRowsDialog(`${item.name} — Komut Geçmişi`, rows);
+            }}
+          />
         </Grid>
 
-        {/* 🗑️ En Çok Silen Kullanıcılar */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card><CardContent>
-            <Typography variant="subtitle1" gutterBottom>🗑️ En Çok Silen Kullanıcılar</Typography>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart
-                data={topRemoverUsers}
-                onClick={(e) => {
-                  if (e && e.activeLabel) {
-                    const user = e.activeLabel;
-                    const rows = items
-                      .filter(it => it.actionType === 'remove' && (userNames[it.userId] === user))
-                      .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
-                      .map(buildRowCommon);
-                    openRowsDialog(`${user} — Remove Olayları`, rows);
-                  }
-                }}
-              >
-                <XAxis dataKey="name" />
-                <YAxis />
-                <ReTooltip />
-                <Bar dataKey="count" fill={COLORS.remove} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent></Card>
+          <RankedListCard
+            title="En Çok Düzenlenen Objeler"
+            icon={<EditIcon />}
+            color={COLORS.edit}
+            items={topEditedObjects}
+            onItemClick={(item) => {
+              const rows = items
+                .filter(it =>
+                  it.actionType === 'edit'
+                  && `${it.objectType}:${it.objectId}` === item.name
+                )
+                .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
+                .map(buildRowCommon);
+
+              openRowsDialog(`${item.name} — Edit Geçmişi`, rows);
+            }}
+          />
         </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <RankedListCard
+            title="En Çok Ekleyen Kullanıcılar"
+            icon={<AddCircleIcon />}
+            color={COLORS.create}
+            items={topCreatorUsers}
+            onItemClick={(item) => {
+              const rows = items
+                .filter(it =>
+                  it.actionType === 'create'
+                  && it.userId === item.userId
+                )
+                .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
+                .map(buildRowCommon);
+
+              openRowsDialog(`${item.name} — Create Olayları`, rows);
+            }}
+          />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <RankedListCard
+            title="En Çok Silen Kullanıcılar"
+            icon={<DeleteIcon />}
+            color={COLORS.remove}
+            items={topRemoverUsers}
+            onItemClick={(item) => {
+              const rows = items
+                .filter(it =>
+                  it.actionType === 'remove'
+                  && it.userId === item.userId
+                )
+                .sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime))
+                .map(buildRowCommon);
+
+              openRowsDialog(`${item.name} — Remove Olayları`, rows);
+            }}
+          />
+        </Grid>
+
       </Grid>
-
       {/* Detay Dialog */}
       {/* Detay Dialog */}
       <Dialog
@@ -775,38 +926,8 @@ export default function UserLogsActionPageCard({
         </DialogContent>
       </Dialog>
 
-      {/* IP Info Dialog */}
-      <Dialog open={ipDialogOpen} onClose={() => setIpDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>IP Detay — {ipDialogIp}</DialogTitle>
-        <DialogContent dividers>
-          {!ipDialogIp && <Typography>IP yok.</Typography>}
-          {ipLoading && <Typography>Yükleniyor…</Typography>}
-          {ipError && <Typography color="error">{ipError}</Typography>}
-          {!ipLoading && !ipError && ipDialogData && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-              <Typography variant="body2"><b>Ülke:</b> {ipDialogData.country} ({ipDialogData.country_code})</Typography>
-              <Typography variant="body2"><b>Şehir:</b> {ipDialogData.city}</Typography>
-              <Typography variant="body2"><b>Bölge:</b> {ipDialogData.region}</Typography>
-              <Typography variant="body2"><b>Kıta:</b> {ipDialogData.continent} ({ipDialogData.continent_code})</Typography>
-              <Typography variant="body2"><b>Koordinat:</b> {ipDialogData.latitude}, {ipDialogData.longitude}</Typography>
-              <Typography variant="body2"><b>Posta Kodu:</b> {ipDialogData.postal}</Typography>
-              <Typography variant="body2"><b>ASN:</b> {ipDialogData.connection?.asn}</Typography>
-              <Typography variant="body2"><b>Org/ISP:</b> {ipDialogData.connection?.org} / {ipDialogData.connection?.isp}</Typography>
-              <Typography variant="body2"><b>Domain:</b> {ipDialogData.connection?.domain}</Typography>
-              <Typography variant="body2"><b>Zaman Dilimi:</b> {ipDialogData.timezone?.id} ({ipDialogData.timezone?.utc})</Typography>
-            </Box>
-          )}
-          {!ipLoading && !ipError && ipDialogData && ipDialogData.flag?.img && (
-            <Box sx={{ mt: 2 }}>
-              <img alt="flag" src={ipDialogData.flag.img} height={18} />
-              <Typography variant="caption" sx={{ ml: 1 }}>{ipDialogData.flag.emoji} {ipDialogData.flag.emoji_unicode}</Typography>
-            </Box>
-          )}
-          {!ipLoading && !ipError && ipDialogData && ipDialogData.success === false && (
-            <Typography color="warning.main">Sorgu başarısız: {ipDialogData.message || 'Bilinmeyen hata'}</Typography>
-          )}
-        </DialogContent>
-      </Dialog>
+
     </>
   );
 }
+export default UserLogsActionPageCard;

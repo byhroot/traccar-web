@@ -146,8 +146,15 @@ const DeviceChart = ({ devices }) => {
         grouped[day] = { distance: 0, engineHours: 0, maxSpeed: 0 };
       }
       grouped[day].distance += s.distance / 1000;
-      grouped[day].engineHours += s.engineHours / 3600000;
-      // maxSpeed için günün en yüksek hızını al
+      const engineHours = s.engineHours / 3600000;
+
+      if (
+        Number.isFinite(engineHours) &&
+        engineHours >= 0 &&
+        engineHours < 24
+      ) {
+        grouped[day].engineHours += engineHours;
+      }      // maxSpeed için günün en yüksek hızını al
       grouped[day].maxSpeed = Math.max(grouped[day].maxSpeed, s.maxSpeed * 1.852);
     });
 
@@ -174,8 +181,19 @@ const DeviceChart = ({ devices }) => {
           value = deviceSummary.reduce((acc, s) => acc + s.distance / 1000, 0);
           break;
         case "engineHours":
-          value = deviceSummary.reduce((acc, s) => acc + s.engineHours / 3600000, 0);
-          break;
+          value = deviceSummary.reduce((acc, s) => {
+            const hours = s.engineHours / 3600000;
+
+            if (
+              Number.isFinite(hours) &&
+              hours >= 0 &&
+              hours < 24
+            ) {
+              return acc + hours;
+            }
+
+            return acc;
+          }, 0); break;
         case "maxSpeed":
           value = deviceSummary.reduce(
             (acc, s) => Math.max(acc, s.maxSpeed * 1.852),
@@ -251,7 +269,7 @@ const DeviceChart = ({ devices }) => {
                   metric === "distance"
                     ? "deviceTotalDistance"
                     : metric === "engineHours"
-                      ? "positionHours"
+                      ? "reportEngineHours"
                       : "reportMaximumSpeed"
                 )}
                 {displayDevice ? ` (${displayDevice})` : ""}:

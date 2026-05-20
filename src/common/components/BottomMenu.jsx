@@ -23,7 +23,7 @@ import { useTranslation } from './LocalizationProvider';
 import { useAdministrator, useManager, useRestriction } from '../util/permissions';
 import { nativePostMessage } from './NativeInterface';
 import ModernSettingsMenu from '../../settings/components/SettingsMenuBottom';
-
+import DashboardIcon from '@mui/icons-material/Dashboard';
 const BottomMenu = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,7 +43,7 @@ const BottomMenu = () => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const currentSelection = () => {
-    if (location.pathname === `/settings/user/${user.id}`) {
+    if (location.pathname.startsWith(`/settings`)) {
       return 'account';
     }
     if (location.pathname.startsWith('/settings')) {
@@ -165,8 +165,9 @@ const BottomMenu = () => {
           clipPath: 'path("M0,0 Hcalc(50% - 50px) Q50%,20 50%,0 Hcalc(50% + 40px) V100% H0 Z")',
         }}
       >
+
         {[
-          { label: t('mainpageTitle'), value: 'dashboard', disabled: servis, icon: <OtherHousesIcon /> },
+          { label: t('mainpageTitle'), value: 'dashboard', disabled: servis, icon: <DashboardIcon /> },
           { label: t('sharedServiceName'), value: 'servis', disabled: !servis, icon: <HandymanIcon /> },
           { label: t('mapTitle'), value: 'map', icon: <SatelliteAltIcon />, badge: socket === false },
           { label: t('reportTitle'), value: 'reports', icon: <AssessmentIcon />, disabled: disableReports },
