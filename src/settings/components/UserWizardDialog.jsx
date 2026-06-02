@@ -6,7 +6,7 @@ import {
     CircularProgress, Paper, Fade, LinearProgress, Snackbar,
 } from '@mui/material';
 import { alpha, styled } from '@mui/material/styles';
-
+import InfoIcon from '@mui/icons-material/Info';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
@@ -77,24 +77,25 @@ const SummaryRow = styled(Box)(({ theme }) => ({
 // ─── Sabitler ────────────────────────────────────────────────────────────────
 
 const USER_RESTRICTIONS = [
-    { key: 'readonly', label: 'Salt Okunur — Hesap ayarlarını değiştiremez. (Bildirim,Bölge,vb. oluşturamaz)', color: 'warning' },
-    { key: 'deviceReadonly', label: 'Cihaz Düzenleme Yasak — Bakım Hatırlatma, Bakım Notları, Ayarlar vb.', color: 'warning' },
-    { key: 'limitCommands', label: 'Komut Gönderimi Kısıtlı — Araçlara komut gönderemez', color: 'warning' },
-    { key: 'disableReports', label: 'Raporlar Kapalı — Geçmiş izleme, raporlar, olaylar', color: 'default' },
+    { key: 'readonly', label: 'Hesap Salt Okunur — Hesap ayarlarını değiştiremez. Sadece Araçları Görüntüleyebilir. (Bildirim,Bölge,vb. oluşturamaz)', color: 'warning' },
+    { key: 'deviceReadonly', label: 'Araç Salt Okunur -  Araç ayarlarını düzenleyemez, değiştiremez — Araç Ayarları, Araç Notları, Hatırlatmalar, vb.', color: 'warning' },
+    { key: 'limitCommands', label: 'Komut Gönderimi Kısıtlı — Araçlara komut gönderemez(Blokaj veya Alarm Hassasiyeti Ayarlama vb.)', color: 'warning' },
+    { key: 'disableReports', label: 'Raporları Kısıtla — Geçmiş izleme, raporlar, olaylar', color: 'default' },
 ];
 
 const UI_RESTRICTIONS = [
-    { key: 'ui.disableCalendars', label: 'Takvimler&Zaman Dilimleri gizlensin' },
     { key: 'ui.disableDrivers', label: 'Sürücüler Menüsü gizlensin' },
     { key: 'ui.disableMaintenance', label: 'Bakım menüsü gizlensin' },
     { key: 'ui.disableGroups', label: 'Gruplar Menüsü gizlensin' },
+    { key: 'ui.disableCalendars', label: 'Takvimler & Zaman Dilimleri gizlensin' },
+
 ];
 
 const defaultUserData = {
     name: '', email: '', password: '', phone: '',
     disabled: false, readonly: false, deviceReadonly: false,
     limitCommands: false, disableReports: false,
-    fixedEmail: true,
+    //fixedEmail: true,
     attributes: {
         'ui.disableCalendars': false,
         'ui.disableDrivers': false,
@@ -192,7 +193,7 @@ const StepPermissions = ({ data, onChangeField, onChangeAttr }) => (
                 </Paper>
             ))}
         </Stack>
-        <Divider><Typography variant="caption" color="text.secondary">Menü Görünümü</Typography></Divider>
+        <Divider><Typography variant="caption" color="text.secondary"> Ana Menü Görünümü</Typography></Divider>
         <Stack spacing={0.5}>
             {UI_RESTRICTIONS.map(({ key, label }) => {
                 const val = !!data.attributes?.[key];
@@ -220,6 +221,7 @@ const AssignSection = ({ title, icon, items, selected, onToggle, searchPlacehold
                 <Typography variant="subtitle2" fontWeight={700}>{title}</Typography>
                 {selected.length > 0 && <Chip label={selected.length} size="small" color="primary" sx={{ height: 18, fontSize: 11 }} />}
             </Stack>
+
             <TextField size="small" placeholder={searchPlaceholder} value={search} onChange={(e) => setSearch(e.target.value)} fullWidth sx={{ mb: 1.5 }}
                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" color="disabled" /></InputAdornment> }} />
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, maxHeight: 120, overflowY: 'auto', pr: 0.5 }}>
@@ -258,6 +260,15 @@ const StepAssignments = ({ assignments, onAssignChange, allDevices, allGroups, a
                 items={allDevices} selected={assignments.devices || []} onToggle={(id) => toggle('devices', id)}
                 searchPlaceholder="Cihaz ara…" getId={(d) => d.id} getLabel={(d) => d.name} />
             <Divider />
+            {/* Gruplar bölümünün hemen altına */}
+            <Alert severity="info" icon={<InfoIcon fontSize="small" />} sx={{ borderRadius: 1, py: 0 }}>
+                <AlertTitle sx={{ fontWeight: 600, fontSize: 13, mb: 0.3 }}>
+                    Grup seçimi yaparsanız, Yukarıdan tek tek araç eklemenize gerek yoktur!
+                </AlertTitle>
+                <Typography variant="caption" sx={{ lineHeight: 1.5 }}>
+                    Seçilen grubun altındaki <b>tüm araçlar</b> otomatik olarak kullanıcıya yetkilendirilir.
+                </Typography>
+            </Alert>
             <AssignSection title="Gruplar" icon={<FolderIcon color="warning" fontSize="small" />}
                 items={allGroups} selected={assignments.groups || []} onToggle={(id) => toggle('groups', id)}
                 searchPlaceholder="Grup ara…" getId={(g) => g.id} getLabel={(g) => g.name} />

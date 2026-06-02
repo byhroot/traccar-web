@@ -225,15 +225,77 @@ const AdminFinanceDialog = ({ open, onClose, devices = [] }) => {
       }}>
 
       {/* HEADER */}
-      <DialogTitle sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid', borderColor: 'divider', backdropFilter: 'blur(10px)', bgcolor: isDark ? 'rgba(11, 15, 25, 0.8)' : 'rgba(248, 250, 252, 0.8)', position: 'sticky', top: 0, zIndex: 10 }}>
-        <Box>
-          <Typography variant="h5" fontWeight="900" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            <SpeedIcon fontSize="large" sx={{ color: theme.palette.primary.main }} />
-            Finansal Zeka & Projeksiyon Merkezi
+      <DialogTitle
+        sx={{
+          px: { xs: 1.5, sm: 3 },
+          py: { xs: 1, sm: 2 },
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          backdropFilter: 'blur(10px)',
+          bgcolor: isDark
+            ? 'rgba(11, 15, 25, 0.8)'
+            : 'rgba(248, 250, 252, 0.8)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontSize: { xs: '1rem', sm: '1.35rem' },
+              fontWeight: 900,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              lineHeight: 1.2,
+              background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            <SpeedIcon
+              sx={{
+                fontSize: { xs: 22, sm: 30 },
+                color: theme.palette.primary.main,
+                flexShrink: 0,
+              }}
+            />
+
+            {isMobile
+              ? 'Finansal Zeka'
+              : 'Finansal Zeka & Projeksiyon Merkezi'}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ ml: 5.5 }}>Gerçek zamanlı tahsilat ve filo sağlık durumu</Typography>
+
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              display: 'block',
+              ml: { xs: 0, sm: 4 },
+              mt: 0.25,
+              fontSize: { xs: '0.65rem', sm: '0.75rem' },
+              lineHeight: 1.2,
+            }}
+          >
+            Gerçek zamanlı tahsilat ve filo sağlık durumu
+          </Typography>
         </Box>
-        <IconButton onClick={onClose} sx={{ bgcolor: 'action.hover' }}><CloseIcon /></IconButton>
+
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{
+            bgcolor: 'action.hover',
+            ml: 1,
+            flexShrink: 0,
+          }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent sx={{ p: isMobile ? 2 : 4 }}>
@@ -243,7 +305,7 @@ const AdminFinanceDialog = ({ open, onClose, devices = [] }) => {
           <Grid container spacing={3}>
 
             {/* KONTROL PANELİ */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Paper elevation={0} sx={{ p: 2, borderRadius: '20px', border: '1px solid', borderColor: 'divider', display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.paper' }}>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -280,42 +342,42 @@ const AdminFinanceDialog = ({ open, onClose, devices = [] }) => {
             </Grid>
 
             {/* METRİK KARTLARI */}
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 6, md: 4 }}>
               <Paper onClick={() => setSelectedView('upcoming')} sx={cardStyle(selectedView === 'upcoming', 'success.main')}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Avatar sx={{ bgcolor: isDark ? 'rgba(46, 125, 50, 0.2)' : '#e8f5e9', color: '#2e7d32', width: 48, height: 48 }}><TrendingUpIcon /></Avatar>
                   <Chip label="Seçili Dönem" size="small" color="success" variant="outlined" />
                 </Box>
                 <Typography variant="caption" color="text.secondary" fontWeight="800" letterSpacing={1}>BEKLENEN NAKİT AKIŞI</Typography>
-                <Typography variant="h3" fontWeight="900" sx={{ my: 1 }}>{formatCur(expectedRevenue)}</Typography>
+                <Typography variant="h4" fontWeight="900" sx={{ my: 1 }}>{formatCur(expectedRevenue)}</Typography>
                 <Typography variant="body2" color="text.secondary" fontWeight="500">
                   <strong style={{ color: theme.palette.success.main }}>{upcomingDevices.length}</strong> araç ödeme bekliyor.
                 </Typography>
               </Paper>
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 6, md: 4 }}>
               <Paper onClick={() => setSelectedView('expired')} sx={cardStyle(selectedView === 'expired', 'error.main')}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Avatar sx={{ bgcolor: isDark ? 'rgba(211, 47, 47, 0.2)' : '#ffebee', color: '#d32f2f', width: 48, height: 48 }}><TrendingDownIcon /></Avatar>
                   <Chip label="Acil Eylem" size="small" color="error" />
                 </Box>
                 <Typography variant="caption" color="text.secondary" fontWeight="800" letterSpacing={1}>RİSKLİ / GECİKMİŞ TUTAR</Typography>
-                <Typography variant="h3" fontWeight="900" sx={{ my: 1 }}>{formatCur(lostRevenue)}</Typography>
+                <Typography variant="h4" fontWeight="900" sx={{ my: 1 }}>{formatCur(lostRevenue)}</Typography>
                 <Typography variant="body2" color="text.secondary" fontWeight="500">
                   <strong style={{ color: theme.palette.error.main }}>{expiredDevices.length}</strong> araç süresi dolmuş.
                 </Typography>
               </Paper>
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 6, md: 4 }}>
               <Paper onClick={() => setSelectedView('total')} sx={cardStyle(selectedView === 'total', 'primary.main')}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Avatar sx={{ bgcolor: isDark ? 'rgba(25, 118, 210, 0.2)' : '#e3f2fd', color: '#1976d2', width: 48, height: 48 }}><AccountBalanceWalletIcon /></Avatar>
                   <Chip label="Tümü" size="small" color="primary" variant="outlined" />
                 </Box>
                 <Typography variant="caption" color="text.secondary" fontWeight="800" letterSpacing={1}>AKTİF PORTFÖY BÜYÜKLÜĞÜ</Typography>
-                <Typography variant="h3" fontWeight="900" sx={{ my: 1 }}>{allExpiringDevices.length} <span style={{ fontSize: '1.2rem', fontWeight: '500', color: theme.palette.text.secondary }}>Cihaz</span></Typography>
+                <Typography variant="h4" fontWeight="900" sx={{ my: 1 }}>{allExpiringDevices.length} <span style={{ fontSize: '1.2rem', fontWeight: '500', color: theme.palette.text.secondary }}>Cihaz</span></Typography>
                 <Typography variant="body2" color="text.secondary" fontWeight="500">
                   Toplam <strong style={{ color: theme.palette.primary.main }}>{Object.keys(groups).length}</strong> farklı grup altında.
                 </Typography>
@@ -323,7 +385,7 @@ const AdminFinanceDialog = ({ open, onClose, devices = [] }) => {
             </Grid>
 
             {/* GRAFİKLER */}
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Paper elevation={0} sx={{ p: 3, borderRadius: '24px', border: '1px solid', borderColor: 'divider', height: 340, bgcolor: 'background.paper' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="subtitle1" fontWeight="800">Gelecek 6 Aylık Ciro Projeksiyonu</Typography>
@@ -340,7 +402,7 @@ const AdminFinanceDialog = ({ open, onClose, devices = [] }) => {
                 </Box>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper elevation={0} sx={{ p: 3, borderRadius: '24px', border: '1px solid', borderColor: 'divider', height: 340, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
                 <Typography variant="subtitle1" fontWeight="800" sx={{ mb: 2 }}>Vade Durumu Analizi</Typography>
                 <Box sx={{ width: '100%', flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -373,7 +435,7 @@ const AdminFinanceDialog = ({ open, onClose, devices = [] }) => {
             </Grid>
 
             {/* TABLO BÖLÜMÜ */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Paper elevation={0} sx={{ borderRadius: '24px', border: '1px solid', borderColor: 'divider', overflow: 'hidden', bgcolor: 'background.paper' }}>
                 <Box sx={{ p: 2.5, px: 3, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>

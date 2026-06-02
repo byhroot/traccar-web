@@ -115,7 +115,7 @@ const PaymentStatusCard = ({ refreshKey }) => {
               <ReceiptLong color="primary" />
               <Box>
                 <Typography variant="subtitle1" fontWeight="800">
-                  Ödeme Kayıtları & Linkler
+                  Mevcut Ödeme Kayıtlarınız & Linkler
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {paylinks.length} kayıt bulundu

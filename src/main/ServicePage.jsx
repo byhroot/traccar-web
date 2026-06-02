@@ -116,7 +116,7 @@ const IgnitionVerifyStep = ({ deviceId, onSaveComplete, onManualSave, onCancel, 
         const next = c + 1;
         if (next >= REQUIRED_CYCLES) {
           setDone(true);
-          setTimeout(() => onSaveComplete(), 1200);
+          setTimeout(() => onSaveComplete(), 7200);
         }
         return next;
       });
@@ -135,10 +135,10 @@ const IgnitionVerifyStep = ({ deviceId, onSaveComplete, onManualSave, onCancel, 
           <CheckCircleIcon sx={{ color: '#639922', fontSize: 40 }} />
         </Box>
         <Typography variant="h6" fontWeight={700} textAlign="center">
-          Doğrulama tamamlandı
+          Doğrulama tamamlandı.
         </Typography>
         <Typography variant="body2" color="text.secondary" textAlign="center">
-          Veriler kaydediliyor...
+          Veriler kaydediliyor... Bu ekranı kapatmayın! | Araç birkaç saat içerisinde Müşteri Hesabına Aktarılacaktır..
         </Typography>
         <CircularProgress size={22} sx={{ color: '#639922' }} />
       </Box>
@@ -804,7 +804,7 @@ const ServisPage = () => {
                   }}
                   onManualSave={async () => {
                     await doSave();
-                    setSnack({ open: true, msg: 'Manuel olarak kaydedildi', severity: 'success' });
+                    setSnack({ open: true, msg: 'Manuel olarak kaydedildi | Cihaz Online olduğunda >> Müşteri hesabına otomatik aktarılacaktır.', severity: 'success' });
                     setTimeout(() => {
                       setEditId(null);
                       setVerifyStep(false);

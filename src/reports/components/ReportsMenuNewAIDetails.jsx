@@ -48,26 +48,30 @@ const calculateDateRange = (rangeType) => {
   };
 };
 
+// YENİ:
 const minimizeEventsForAI = (events = []) =>
   events.map(e => ({
     deviceId: e.deviceId,
     type: e.type,
     time: e.eventTime,
     attr: e.attributes?.alarm || e.attributes?.status || '',
+    ...(e.type === 'deviceOverspeed' && e.attributes?.speed != null && {
+      speed: Math.round(e.attributes.speed * 1.852),
+      limit: Math.round(e.attributes.speedLimit * 1.852),
+    }),
   })).slice(0, 50);
 
-const minimizeTripsForAI = (trips = [], devices = []) =>
-  trips.map(t => {
-    const dev = devices.find(d => String(d.id) === String(t.deviceId));
+const minimizeSummaryForAI = (summaries = [], devices = []) =>
+  summaries.map(s => {
+    const dev = devices.find(d => String(d.id) === String(s.deviceId));
     return {
-      deviceId: t.deviceId,
-      category: dev?.category || 'unknown', // ← eklendi
-      dist: Math.round((t.distance || 0) / 1000),
-      avg: Math.round((t.averageSpeed || 0) * 1.852),
-      max: Math.round((t.maxSpeed || 0) * 1.852),
-      tripTime: Math.floor((t.duration || 0) / 60000),
-      startTime: t.startTime,
-      endTime: t.endTime,
+      deviceId: s.deviceId,
+      category: dev?.category || 'unknown',
+      dist_km: Math.round((s.distance || 0) / 1000),
+      avg_kmh: Math.round((s.averageSpeed || 0) * 1.852),
+      max_kmh: Math.round((s.maxSpeed || 0) * 1.852),
+      startTime: s.startTime,
+      endTime: s.endTime,
     };
   }).slice(0, 50);
 
@@ -85,21 +89,21 @@ const formatDateTime = (isoStr) => {
   } catch { return isoStr; }
 };
 
-// AI yanıtındaki ham ID'leri cihaz adına çevir
 const replaceIdsWithNames = (text, devices) => {
   if (!text || !devices?.length) return text;
   let result = text;
   devices.forEach(dev => {
-    // "ID: 170", "ID:170", "170 ID'li", "Cihaz 170" gibi tüm varyasyonlar
     const patterns = [
       new RegExp(`Cihaz\\s+${dev.id}\\b`, 'gi'),
       new RegExp(`ID:\\s*${dev.id}\\b`, 'gi'),
       new RegExp(`\\b${dev.id}\\s+ID['']li`, 'gi'),
+      new RegExp(`\\[\\[${dev.id}\\]\\]`, 'gi'),                    // [[170]]
+      new RegExp(`\\[\\[deviceId:\\s*${dev.id}\\]\\]`, 'gi'),       // [[deviceId: 136]]
+      new RegExp(`\\[\\[\\*\\*${dev.id}\\*\\*\\]\\]`, 'gi'), // [[**07YRP81**]]
     ];
     patterns.forEach(re => {
       result = result.replace(re, `**${dev.name}**`);
     });
-    // Kalan ham sayıyı yalnızca "tek başına" ise değiştir (son geçiş)
     result = result.replace(new RegExp(`\\b${dev.id}\\b`, 'g'), `**${dev.name}**`);
   });
   return result;
@@ -127,13 +131,40 @@ const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#0
 
 // ─── KPI CARD ────────────────────────────────────────────────────────────────
 
-const KpiCard = ({ icon: Icon, label, value, color = '#6366f1' }) => (
-  <Paper elevation={0} sx={{ p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+const KpiCard = ({ icon: Icon, label, value, color = '#6366f1', onClick }) => (
+  <Paper
+    elevation={0}
+    onClick={onClick}
+    sx={{
+      p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider', height: '100%',
+      cursor: onClick ? 'pointer' : 'default',
+      transition: 'all 0.18s',
+      ...(onClick && {
+        animation: 'pulse 2s infinite',
+        '@keyframes pulse': {
+          '0%': { boxShadow: `0 0 0 0 ${alpha(color, 0.4)}` },
+          '70%': { boxShadow: `0 0 0 8px ${alpha(color, 0)}` },
+          '100%': { boxShadow: `0 0 0 0 ${alpha(color, 0)}` },
+        },
+        '&:hover': {
+          borderColor: color,
+          transform: 'translateY(-2px)',
+          boxShadow: `0 6px 20px ${alpha(color, 0.18)}`,
+          animation: 'none', // hover'da pulse durur
+        },
+      }),
+    }}
+  >
     <Box sx={{ bgcolor: alpha(color, 0.12), p: 1, borderRadius: 2, display: 'inline-flex', mb: 1.5 }}>
       <Icon sx={{ fontSize: 20, color }} />
     </Box>
     <Typography variant="h5" fontWeight={800} sx={{ mb: 0.25, letterSpacing: -0.5 }}>{value}</Typography>
-    <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>{label}</Typography>
+    <Stack direction="row" alignItems="center" spacing={0.5}>
+      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>{label}</Typography>
+      {onClick && (
+        <OpenInFullIcon sx={{ fontSize: 11, color: 'text.disabled', ml: 0.5 }} />
+      )}
+    </Stack>
   </Paper>
 );
 
@@ -144,6 +175,212 @@ const KpiSkeleton = () => (
     <Box sx={{ bgcolor: 'action.hover', borderRadius: 1, height: 12, width: '65%' }} />
   </Paper>
 );
+
+// ─── FLEET DISTANCE DIALOG ────────────────────────────────────────────────────
+
+const FleetDistDialog = ({ open, onClose, rawSummary, devices, insights, rawEvents }) => {
+  const [insightDialog, setInsightDialog] = useState(null);
+
+  // Per-device km totals
+  const deviceStats = useMemo(() => {
+    const map = {};
+    rawSummary.forEach(t => {
+      const id = String(t.deviceId);
+      if (!map[id]) map[id] = { totalDist: 0, totalTrips: 0, totalTime: 0, maxSpeed: 0 };
+      map[id].totalDist += t.distance || 0;
+      map[id].totalTrips += 1;
+      map[id].totalTime += t.duration || 0;
+      const spd = Math.round((t.maxSpeed || 0) * 1.852);
+      if (spd > map[id].maxSpeed) map[id].maxSpeed = spd;
+    });
+    return Object.entries(map)
+      .map(([id, stats]) => {
+        const device = devices.find(d => String(d.id) === id);
+        const deviceInsights = insights.filter(i => String(i.deviceId) === id);
+        const hasError = deviceInsights.some(i => i.color === 'error');
+        const hasWarning = deviceInsights.some(i => i.color === 'warning');
+        return {
+          deviceId: id,
+          name: device?.name || `Cihaz ${id}`,
+          km: Math.round(stats.totalDist / 1000),
+          trips: stats.totalTrips,
+          time: formatDuration(stats.totalTime / 1000),
+          maxSpeed: stats.maxSpeed,
+          severity: hasError ? 'error' : hasWarning ? 'warning' : 'success',
+        };
+      })
+      .sort((a, b) => b.km - a.km);
+  }, [rawSummary, devices, insights]);
+
+  const maxKm = deviceStats[0]?.km || 1;
+
+  const handleVehicleCardClick = (stat) => {
+    // Build a synthetic insight item so InsightDialog can render properly
+    const deviceInsight = insights.find(i => String(i.deviceId) === stat.deviceId);
+    const syntheticItem = deviceInsight || {
+      deviceId: stat.deviceId,
+      title: `${stat.name}: Araç Detayı`,
+      value: `${stat.km} km`,
+      desc: `${stat.trips} Günlük Özet`,
+      color: stat.severity,
+    };
+    setInsightDialog(syntheticItem);
+  };
+
+  const severityColors = {
+    error: { bar: '#ef4444', light: '#fee2e2', badge: '#fca5a5', badgeText: '#7f1d1d' },
+    warning: { bar: '#f59e0b', light: '#fef9ee', badge: '#fde68a', badgeText: '#78350f' },
+    success: { bar: '#10b981', light: '#f0fdf8', badge: '#a7f3d0', badgeText: '#064e3b' },
+  };
+
+  return (
+    <>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
+        fullWidth
+        fullScreen
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+      >
+        {/* Header */}
+        <Box sx={{ px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: alpha('#6366f1', 0.04) }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Box sx={{ bgcolor: alpha('#6366f1', 0.12), p: 1, borderRadius: 2, display: 'inline-flex' }}>
+                <RouteIcon sx={{ fontSize: 20, color: '#6366f1' }} />
+              </Box>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={700}>Araç Bazlı Mesafe</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {deviceStats.length} araç · Tıklayarak detay görüntüleyin
+                </Typography>
+              </Box>
+            </Stack>
+            <IconButton onClick={onClose} size="small"><CloseIcon sx={{ fontSize: 18 }} /></IconButton>
+          </Stack>
+        </Box>
+
+        <DialogContent sx={{ p: 2.5 }}>
+          {deviceStats.length === 0 ? (
+            <Box textAlign="center" py={8} sx={{ opacity: 0.3 }}>
+              <RouteIcon sx={{ fontSize: 48, mb: 1.5, display: 'block', mx: 'auto' }} />
+              <Typography variant="body2">Bu dönemde mesafe verisi bulunamadı.</Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={1.5}>
+              {deviceStats.map((stat) => {
+                const sc = severityColors[stat.severity];
+                const barPct = Math.max(8, Math.round((stat.km / maxKm) * 100));
+                return (
+                  <Grid size={{ xs: 12, sm: 6 }} key={stat.deviceId}>
+                    <Card
+                      elevation={0}
+                      onClick={() => handleVehicleCardClick(stat)}
+                      sx={{
+                        borderRadius: 2.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        transition: 'all 0.18s',
+                        '&:hover': {
+                          borderColor: sc.bar,
+                          transform: 'translateY(-2px)',
+                          boxShadow: `0 6px 20px ${alpha(sc.bar, 0.15)}`,
+                          '& .vehicle-open-icon': { opacity: 1 },
+                        },
+                      }}
+                    >
+                      {/* Colored top accent */}
+                      <Box sx={{ height: 3, bgcolor: sc.bar }} />
+                      <CardContent sx={{ pt: 1.5, pb: '10px !important', px: 2 }}>
+                        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" mb={1}>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Avatar sx={{ width: 30, height: 30, bgcolor: sc.light }}>
+                              <DirectionsCarIcon sx={{ fontSize: 15, color: sc.bar }} />
+                            </Avatar>
+                            <Box>
+                              <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: 13, lineHeight: 1.2 }}>
+                                {stat.name}
+                              </Typography>
+                              <Stack direction="row" spacing={0.75} alignItems="center" mt={0.25}>
+                                {stat.severity === 'error' && (
+                                  <Chip label="Kritik" size="small" sx={{ height: 16, fontSize: 10, bgcolor: sc.badge, color: sc.badgeText, fontWeight: 700 }} />
+                                )}
+                                {stat.severity === 'warning' && (
+                                  <Chip label="Uyarı" size="small" sx={{ height: 16, fontSize: 10, bgcolor: sc.badge, color: sc.badgeText, fontWeight: 700 }} />
+                                )}
+                              </Stack>
+                            </Box>
+                          </Stack>
+                          <Stack alignItems="flex-end" spacing={0}>
+                            <Typography variant="h6" fontWeight={800} sx={{ color: sc.bar, lineHeight: 1, fontSize: '1.3rem' }}>
+                              {stat.km} km
+                            </Typography>
+                            <OpenInFullIcon className="vehicle-open-icon" sx={{ fontSize: 11, color: 'text.disabled', opacity: 0, transition: 'opacity 0.18s', mt: 0.25 }} />
+                          </Stack>
+                        </Stack>
+
+                        {/* km progress bar */}
+                        <Box sx={{ mb: 1.5 }}>
+                          <Box sx={{
+                            height: 5, borderRadius: 99,
+                            bgcolor: alpha(sc.bar, 0.12),
+                            overflow: 'hidden',
+                          }}>
+                            <Box sx={{
+                              height: '100%',
+                              width: `${barPct}%`,
+                              bgcolor: sc.bar,
+                              borderRadius: 99,
+                              transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
+                            }} />
+                          </Box>
+                        </Box>
+
+                        {/* Meta row */}
+                        <Stack direction="row" spacing={2}>
+                          {[
+                            { icon: RouteIcon, val: `${stat.trips} günlük özet` },
+                            { icon: AccessTimeIcon, val: stat.time },
+                            { icon: SpeedIcon, val: `${stat.maxSpeed} km/h` },
+                          ].map(({ icon: Ic, val }) => (
+                            <Stack key={val} direction="row" alignItems="center" spacing={0.4}>
+                              <Ic sx={{ fontSize: 11, color: 'text.disabled' }} />
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>{val}</Typography>
+                            </Stack>
+                          ))}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="caption" color="text.disabled" sx={{ flex: 1 }}>
+            {deviceStats.reduce((s, d) => s + d.km, 0).toLocaleString('tr-TR')} km toplam · {deviceStats.reduce((s, d) => s + d.trips, 0)} Özet
+          </Typography>
+          <Button onClick={onClose} size="small" sx={{ textTransform: 'none', borderRadius: 2 }}>Kapat</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Nested InsightDialog — opens when a vehicle card is clicked */}
+      <InsightDialog
+        open={Boolean(insightDialog)}
+        onClose={() => setInsightDialog(null)}
+        item={insightDialog}
+        devices={devices}
+        rawSummary={rawSummary}
+        rawEvents={rawEvents}
+      />
+    </>
+  );
+};
 
 // ─── INSIGHT CARD ────────────────────────────────────────────────────────────
 
@@ -200,15 +437,13 @@ const SkeletonCard = () => (
 );
 
 // ─── INSIGHT DETAIL DIALOG ────────────────────────────────────────────────────
-// ÖNEMLİ: Tüm hook'lar conditional return'den ÖNCE çağrılmalı.
 
-const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) => {
+const InsightDialog = ({ open, onClose, item, devices, rawSummary, rawEvents }) => {
   const [tab, setTab] = useState(0);
 
-  // item null olsa bile hook'lar aynı sırada çağrılmalı — koşulsuz hesaplayıp render'da kullanıyoruz
   const idFromAI = item?.deviceId || item?.deviceIds || null;
   const device = useMemo(() => devices.find(d => String(d.id) === String(idFromAI)), [devices, idFromAI]);
-  const devTrips = useMemo(() => rawTrips.filter(t => String(t.deviceId) === String(idFromAI)), [rawTrips, idFromAI]);
+  const devTrips = useMemo(() => rawSummary.filter(t => String(t.deviceId) === String(idFromAI)), [rawSummary, idFromAI]);
   const devEvents = useMemo(() => rawEvents.filter(e => String(e.deviceId) === String(idFromAI)), [rawEvents, idFromAI]);
 
   const speedData = useMemo(() =>
@@ -240,7 +475,6 @@ const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) =>
 
   useEffect(() => { if (open) setTab(0); }, [open]);
 
-  // Hook'lardan SONRA erken çıkış yapılabilir
   if (!item) return null;
 
   const c = COLOR_MAP[item.color] || COLOR_MAP.success;
@@ -249,7 +483,7 @@ const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) =>
   const overspeeds = devEvents.filter(e => e.type === 'deviceOverspeed').length;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth fullScreen
       PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
 
       {/* Header */}
@@ -279,7 +513,7 @@ const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) =>
             { icon: RouteIcon, label: 'Toplam Mesafe', value: `${Math.round(totalDist / 1000)} km` },
             { icon: AccessTimeIcon, label: 'Sürüş Süresi', value: formatDuration(totalTime / 1000) },
             { icon: SpeedIcon, label: 'Hız Aşımı', value: `${overspeeds} kez` },
-            { icon: RouteIcon, label: 'Seyahat', value: `${devTrips.length} adet` },
+            { icon: RouteIcon, label: 'Günlük Özet', value: `${devTrips.length} adet` },
           ].map(({ icon: Ic, label, value }) => (
             <Grid size={{ xs: 6, sm: 3, md: 2 }} key={label}>
               <Box sx={{ bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider', p: 1 }}>
@@ -296,7 +530,7 @@ const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) =>
         sx={{ px: 3, borderBottom: '1px solid', borderColor: 'divider' }}
         TabIndicatorProps={{ style: { backgroundColor: c.bar } }}>
         <Tab label="Grafikler" sx={{ textTransform: 'none', fontSize: 13 }} />
-        <Tab label={`Seyahatler (${devTrips.length})`} sx={{ textTransform: 'none', fontSize: 13 }} />
+        <Tab label={`Günlük Özet (${devTrips.length})`} sx={{ textTransform: 'none', fontSize: 13 }} />
         <Tab label={`Olaylar (${devEvents.length})`} sx={{ textTransform: 'none', fontSize: 13 }} />
       </Tabs>
 
@@ -381,12 +615,13 @@ const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) =>
         )}
 
         {/* TAB 1 — Trips */}
+        {/* TAB 1 — Daily Summary */}
         {tab === 1 && (
           <TableContainer sx={{ maxHeight: 380 }}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  {['Başlangıç', 'Bitiş', 'Mesafe', 'Ort. Hız', 'Maks. Hız', 'Süre'].map(h => (
+                  {['Tarih', 'Mesafe', 'Ort. Hız', 'Maks. Hız', 'Motor Saati'].map(h => (
                     <TableCell key={h} sx={{ fontWeight: 700, fontSize: 11, bgcolor: 'background.paper' }}>{h}</TableCell>
                   ))}
                 </TableRow>
@@ -394,34 +629,42 @@ const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) =>
               <TableBody>
                 {devTrips.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 5, color: 'text.disabled', fontSize: 13 }}>
-                      Bu dönemde seyahat kaydı bulunamadı.
+                    <TableCell colSpan={5} align="center" sx={{ py: 5, color: 'text.disabled', fontSize: 13 }}>
+                      Bu dönemde özet verisi bulunamadı.
                     </TableCell>
                   </TableRow>
-                ) : devTrips.map((t, i) => {
-                  const maxKmh = Math.round((t.maxSpeed || 0) * 1.852);
-                  return (
-                    <TableRow key={i} hover>
-                      <TableCell sx={{ fontSize: 12 }}>{formatDateTime(t.startTime)}</TableCell>
-                      <TableCell sx={{ fontSize: 12 }}>{formatDateTime(t.endTime)}</TableCell>
-                      <TableCell sx={{ fontSize: 12 }}>
-                        <Chip label={`${Math.round((t.distance || 0) / 1000)} km`} size="small"
-                          sx={{ height: 20, fontSize: 11, bgcolor: '#ede9fe', color: '#4c1d95' }} />
-                      </TableCell>
-                      <TableCell sx={{ fontSize: 12 }}>{Math.round((t.averageSpeed || 0) * 1.852)} km/h</TableCell>
-                      <TableCell sx={{ fontSize: 12 }}>
-                        <Typography component="span" sx={{
-                          fontSize: 12,
-                          color: maxKmh > 120 ? 'error.main' : 'text.primary',
-                          fontWeight: maxKmh > 120 ? 700 : 400,
-                        }}>
-                          {maxKmh} km/h
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ fontSize: 12 }}>{formatDuration((t.duration || 0) / 1000)}</TableCell>
-                    </TableRow>
-                  );
-                })}
+                ) : [...devTrips]
+                  .filter(t => t.distance > 0)
+                  .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+                  .map((t, i) => {
+                    const maxKmh = Math.round((t.maxSpeed || 0) * 1.852);
+                    const avgKmh = Math.round((t.averageSpeed || 0) * 1.852);
+                    const distKm = Math.round((t.distance || 0) / 1000);
+                    const engineH = t.engineHours ? formatDuration(t.engineHours / 1000) : '—';
+                    const dateLabel = new Date(t.startTime).toLocaleDateString('tr-TR', {
+                      day: '2-digit', month: '2-digit', year: 'numeric'
+                    });
+                    return (
+                      <TableRow key={i} hover>
+                        <TableCell sx={{ fontSize: 12, fontWeight: 600 }}>{dateLabel}</TableCell>
+                        <TableCell sx={{ fontSize: 12 }}>
+                          <Chip label={`${distKm} km`} size="small"
+                            sx={{ height: 20, fontSize: 11, bgcolor: '#ede9fe', color: '#4c1d95' }} />
+                        </TableCell>
+                        <TableCell sx={{ fontSize: 12 }}>{avgKmh} km/h</TableCell>
+                        <TableCell sx={{ fontSize: 12 }}>
+                          <Typography component="span" sx={{
+                            fontSize: 12,
+                            color: maxKmh > 120 ? 'error.main' : 'text.primary',
+                            fontWeight: maxKmh > 120 ? 700 : 400,
+                          }}>
+                            {maxKmh} km/h
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ fontSize: 12 }}>{engineH}</TableCell>
+                      </TableRow>
+                    );
+                  })}
               </TableBody>
             </Table>
           </TableContainer>
@@ -462,7 +705,9 @@ const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) =>
                             }} />
                           </TableCell>
                           <TableCell sx={{ fontSize: 12, color: 'text.secondary' }}>
-                            {e.attributes?.alarm || e.attributes?.status || '—'}
+                            {e.type === 'deviceOverspeed' && e.attributes?.speed && e.attributes?.speedLimit
+                              ? `${Math.round(e.attributes.speed * 1.852)} km/h / limit: ${Math.round(e.attributes.speedLimit * 1.852)} km/h`
+                              : e.attributes?.alarm || e.attributes?.status || '—'}
                           </TableCell>
                         </TableRow>
                       );
@@ -476,7 +721,7 @@ const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) =>
 
       <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
         <Typography variant="caption" color="text.disabled" sx={{ flex: 1 }}>
-          {devTrips.length} seyahat · {devEvents.length} olay
+          {devTrips.length} Günlük Özet · {devEvents.length} olay
         </Typography>
         <Button onClick={onClose} size="small" sx={{ textTransform: 'none', borderRadius: 2 }}>Kapat</Button>
       </DialogActions>
@@ -486,10 +731,10 @@ const InsightDialog = ({ open, onClose, item, devices, rawTrips, rawEvents }) =>
 
 // ─── OVERVIEW CHARTS ─────────────────────────────────────────────────────────
 
-const OverviewCharts = ({ insights, rawTrips, rawEvents, devices }) => {
+const OverviewCharts = ({ insights, rawSummary, rawEvents, devices }) => {
   const distByDevice = useMemo(() => {
     const map = {};
-    rawTrips.forEach(t => {
+    rawSummary.forEach(t => {
       const dev = devices.find(d => String(d.id) === String(t.deviceId));
       const name = dev?.name || `#${t.deviceId}`;
       map[name] = (map[name] || 0) + Math.round((t.distance || 0) / 1000);
@@ -498,7 +743,7 @@ const OverviewCharts = ({ insights, rawTrips, rawEvents, devices }) => {
       .map(([name, dist]) => ({ name, dist }))
       .sort((a, b) => b.dist - a.dist)
       .slice(0, 8);
-  }, [rawTrips, devices]);
+  }, [rawSummary, devices]);
 
   const eventTypes = useMemo(() => {
     const map = {};
@@ -515,7 +760,7 @@ const OverviewCharts = ({ insights, rawTrips, rawEvents, devices }) => {
     { name: 'Kritik', value: insights.filter(i => i.color === 'error').length, fill: '#ef4444' },
   ].filter(d => d.value > 0), [insights]);
 
-  if (rawTrips.length === 0 && rawEvents.length === 0) return null;
+  if (rawSummary.length === 0 && rawEvents.length === 0) return null;
 
   return (
     <Box mb={3}>
@@ -609,18 +854,20 @@ const ReportsMenuNewAIDetails = () => {
 
   const [insights, setInsights] = useState([]);
   const [isLoadingUI, setIsLoadingUI] = useState(true);
-  // Mevcut state'in yanına ekle:
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [dialogItem, setDialogItem] = useState(null);
+
+  // Fleet distance dialog state
+  const [fleetDistOpen, setFleetDistOpen] = useState(false);
 
   const [chatHistory, setChatHistory] = useState([
     { role: 'ai', text: 'Sistem analize hazır. Araç veya grup seçerek analizi başlatabilirsiniz.' },
   ]);
   const [chatInput, setChatInput] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [rawTripsState, setRawTripsState] = useState([]);
+  const [rawSummaryState, setRawSummaryState] = useState([]);
   const [rawEventsState, setRawEventsState] = useState([]);
 
   const AI_API_URL = 'https://giris.takipon.com/api/ai';
@@ -629,7 +876,6 @@ const ReportsMenuNewAIDetails = () => {
     if (isChatOpen) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory, isChatOpen]);
 
-  // İlk yükleme
   useEffect(() => {
     const init = async () => {
       try {
@@ -645,7 +891,6 @@ const ReportsMenuNewAIDetails = () => {
     init();
   }, []);
 
-  // Cache kontrolü
   useEffect(() => {
     const cached = localStorage.getItem('aiAnalysisCache');
     const cacheTime = localStorage.getItem('aiAnalysisCacheTime');
@@ -654,9 +899,9 @@ const ReportsMenuNewAIDetails = () => {
       setInsights(JSON.parse(cached));
       const summary = localStorage.getItem('aiAnalysisSummary');
       if (summary) setChatHistory([{ role: 'ai', text: summary }]);
-      const cachedTrips = localStorage.getItem('rawTripsCache');
+      const cachedSummary = localStorage.getItem('rawSummaryCache');
       const cachedEvents = localStorage.getItem('rawEventsCache');
-      if (cachedTrips) setRawTripsState(JSON.parse(cachedTrips));
+      if (cachedSummary) setRawSummaryState(JSON.parse(cachedSummary));
       if (cachedEvents) setRawEventsState(JSON.parse(cachedEvents));
       setFilterOpen(false);
     } else {
@@ -664,7 +909,6 @@ const ReportsMenuNewAIDetails = () => {
     }
   }, []);
 
-  // Oto-analiz
   useEffect(() => {
     if (isLoadingUI || devices.length === 0 || insights.length > 0) return;
     if (localStorage.getItem('aiAnalysisCache')) return;
@@ -696,33 +940,36 @@ const ReportsMenuNewAIDetails = () => {
 
       const [eventRes, tripRes] = await Promise.allSettled([
         fetch(`/api/reports/events?from=${dates.start}&to=${dates.end}&${eventQuery}`),
-        fetch(`/api/reports/trips?from=${dates.start}&to=${dates.end}&${tripQuery}`, { headers: { Accept: 'application/json' } }),
+        fetch(`/api/reports/summary?from=${dates.start}&to=${dates.end}&${tripQuery}&daily=true`, { headers: { Accept: 'application/json' } }),
       ]);
 
       const rawEvents = eventRes.status === 'fulfilled' ? await eventRes.value.json() : [];
-      const rawTrips = tripRes.status === 'fulfilled' ? await tripRes.value.json() : [];
+      const rawSummary = tripRes.status === 'fulfilled' ? await tripRes.value.json() : [];
 
       setRawEventsState(rawEvents);
-      setRawTripsState(rawTrips);
-      localStorage.setItem('rawTripsCache', JSON.stringify(rawTrips));
+      setRawSummaryState(rawSummary);
+      localStorage.setItem('rawSummaryCache', JSON.stringify(rawSummary));
       localStorage.setItem('rawEventsCache', JSON.stringify(rawEvents));
 
       const payload = {
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         max_tokens: 1000,
         messages: [
           {
             role: 'system',
             content: `Sen bir araç ve motosiklet filo takip uzmanısın. Türkçe yanıt ver. Ham veriler GMT+0 'a göredir. Sen yanıt üretirken türkiye zaman dilimine (GMT+3) göre yanıt ver.
 trips içindeki her kayıtta category alanı vardır, bu araç tipini gösterir (örneğin "car" veya "motorcycle")
-
-Hız limiti aşımları(deviceOverspeed), ani hızlanmalar(hardAcceleration), ani frenlemeler(hardBraking), sert virajlar(hardCornering) gibi olaylar önemlidir.
-Akü Bağlantısı Kesilmesi(Alarm>powerCut) olayı çok kritiktir.
-Akü Bağlantısı Kesilmesi(powerCut) olayından sonra seyahat veya yolculuk varsa hırsızlık girişimi veya yetkisiz kullanım olabilir, bu kritik bir durumdur.
-Olaylarda 
+Events listesinde eğer Alarm varsa attribute alarnlarındaki;
+-'powerCut' olan olay varsa Cihaz Akü Bağlantısı Sökülmüştür, Olası müdahale veya yetkisiz kullanım olabilir(Kritik).
+-'lowPower' olayları aracın Akü sağlığı ile ilgili olabilir(uyarı).
+-'vibration' olayları motosiklet gibi araçlarda gündüz saatlerinde  olağan karşılanabilir.
+Titreşim alarmları genellikle aracın park halindeyken sarsıntı tespit ettiği durumları gösterir. Bu durum sabit bir nesneye çarpma, rüzgar etkisi veya başka bir dış faktörden kaynaklanıyor olabilir.
+Birden fazla araç varsa, mümkünse her araç için en az 1 insight üret.
+Summary Türkçe ve kısa olsun. olumlama yap genel olarak
 Veriler:
-Trips: dist(km), avg(km/h), max(km/h), tripTime(DAKİKA), startTime, endTime
-Avg, yolculuk süresi, mesafe ve araç tipine göre verimlilik analizi yapabilirsin.
+Trips: dist(km), avg(km/h), max(km/h bu hız limiti değil), tripTime(DAKİKA), startTime, endTime
+Events: type, time, attr (alarm veya status bilgisi), overspeed ise speed ve limit bilgisi
+Mesafe, Avg, yolculukta ulaşılan max hız, yolculuk süresi ve araç tipine göre anlaşılır verimlilik yorumları yapabilirsin.
 Her insight'a 'deviceId' ekle.
 SADECE JSON: {"insights":[{"deviceId":"89","title":"BAŞLIK","value":"DEĞER","desc":"AÇIKLAMA","color":"success|warning|error"}],"summary":"Genel özet"}`,
           },
@@ -730,7 +977,7 @@ SADECE JSON: {"insights":[{"deviceId":"89","title":"BAŞLIK","value":"DEĞER","d
             role: 'user',
             content: JSON.stringify({
               events: minimizeEventsForAI(rawEvents),
-              trips: minimizeTripsForAI(rawTrips, devices),
+              trips: minimizeSummaryForAI(rawSummary, devices),
             }),
           },
         ],
@@ -758,7 +1005,6 @@ SADECE JSON: {"insights":[{"deviceId":"89","title":"BAŞLIK","value":"DEĞER","d
       localStorage.setItem('aiAnalysisCacheTime', String(Date.now()));
       localStorage.setItem('aiAnalysisSummary', result.summary || '');
 
-      // Summary'deki ID'leri de isme çevir
       const humanSummary = replaceIdsWithNames(result.summary || 'Analiz tamamlandı.', devices);
       setChatHistory([{ role: 'ai', text: humanSummary }]);
       setFilterOpen(false);
@@ -776,8 +1022,7 @@ SADECE JSON: {"insights":[{"deviceId":"89","title":"BAŞLIK","value":"DEĞER","d
     setChatInput('');
     const newHistory = [...chatHistory, { role: 'user', text: msg }];
     setChatHistory(newHistory);
-    //setIsAnalyzing(true);
-    setIsChatLoading(true); // ← isAnalyzing değil
+    setIsChatLoading(true);
 
     try {
       const systemMsg = {
@@ -785,8 +1030,8 @@ SADECE JSON: {"insights":[{"deviceId":"89","title":"BAŞLIK","value":"DEĞER","d
         content: `TakipOn asistanısın. SADECE şu verilere dayan:
 insights: ${JSON.stringify(insights.map(i => ({ deviceId: i.deviceId, value: i.value, desc: i.desc })))}
 events: ${JSON.stringify(minimizeEventsForAI(rawEventsState))}
-trips: ${JSON.stringify(minimizeTripsForAI(rawTripsState, devices))}
-Yanıtlarında araçlara doğrudan kendi adlarıyla hitap et; ID veya "Cihaz X" biçimini KULLANMA.
+trips: ${JSON.stringify(minimizeSummaryForAI(rawSummaryState, devices))}
+Yanıtlarında belirli bir araçtan bahsetmen gerekirse cümle içinde [[deviceId]] veya [[170]] formatını kullan.
 `,
       };
       const response = await fetch(AI_API_URL, {
@@ -799,22 +1044,19 @@ Yanıtlarında araçlara doğrudan kendi adlarıyla hitap et; ID veya "Cihaz X" 
         }),
       });
       const data = await response.json();
-      // AI bazen yine de ID yazar — fallback olarak yine replace et
       const raw = data.choices[0].message.content;
       const cleaned = replaceIdsWithNames(raw, devices);
       setChatHistory(prev => [...prev, { role: 'ai', text: cleaned }]);
     } catch {
       setChatHistory(prev => [...prev, { role: 'ai', text: 'Bir hata oluştu.' }]);
     } finally {
-      //setIsAnalyzing(false);
-      setIsChatLoading(false); // ← isAnalyzing değil
-
+      setIsChatLoading(false);
     }
   };
 
   // Fleet KPIs
-  const totalDist = useMemo(() => rawTripsState.reduce((s, t) => s + (t.distance || 0), 0), [rawTripsState]);
-  const totalTrips = rawTripsState.length;
+  const totalDist = useMemo(() => rawSummaryState.reduce((s, t) => s + (t.distance || 0), 0), [rawSummaryState]);
+  const totalTrips = rawSummaryState.length;
   const totalEvents = rawEventsState.length;
   const totalOverspd = rawEventsState.filter(e => e.type === 'deviceOverspeed').length;
   const hasCritical = insights.filter(i => i.color === 'error').length;
@@ -873,9 +1115,12 @@ Yanıtlarında araçlara doğrudan kendi adlarıyla hitap et; ID veya "Cihaz X" 
                     renderInput={params => (
                       <TextField {...params} placeholder={selectionType === 'device' ? 'Araç seçin...' : 'Grup seçin...'} />
                     )}
-                    renderTags={(value, getTagProps) => value.map((option, index) => (
-                      <Chip label={option.name} size="small" {...getTagProps({ index })} sx={{ height: 22, fontSize: 11 }} />
-                    ))}
+                    renderTags={(value, getTagProps) => value.map((option, index) => {
+                      const { key, ...tagProps } = getTagProps({ index });
+                      return (
+                        <Chip key={key} label={option.name} size="small" {...tagProps} sx={{ height: 22, fontSize: 11 }} />
+                      );
+                    })}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }} >
@@ -917,6 +1162,7 @@ Yanıtlarında araçlara doğrudan kendi adlarıyla hitap et; ID veya "Cihaz X" 
           {isAnalyzing && <LinearProgress sx={{ height: 2 }} />}
         </Paper>
 
+        {/* ─── KPI CARDS ─── */}
         {(insights.length > 0 || isAnalyzing) && (
           <Grid container spacing={2} mb={3}>
             {isAnalyzing ? (
@@ -926,28 +1172,34 @@ Yanıtlarında araçlara doğrudan kendi adlarıyla hitap et; ID veya "Cihaz X" 
                 </Grid>
               ))
             ) : [
-              { icon: RouteIcon, label: 'Toplam Mesafe', value: `${Math.round(totalDist / 1000)} km`, color: '#6366f1' },
-              { icon: DirectionsCarIcon, label: 'Toplam Seyahat', value: `${totalTrips}`, color: '#10b981' },
+              {
+                icon: RouteIcon,
+                label: 'Toplam Mesafe / Detaylar için tıkla!',
+                value: `${Math.round(totalDist / 1000)} km`,
+                color: '#6366f1',
+                // ↓ Toplam Mesafe kartına tıklanınca fleet dialog açılır
+                onClick: rawSummaryState.length > 0 ? () => setFleetDistOpen(true) : undefined,
+              },
+              { icon: DirectionsCarIcon, label: 'Toplam Günlük Özet', value: `${totalTrips}`, color: '#10b981' },
               { icon: NotificationsActiveIcon, label: 'Toplam Olay', value: `${totalEvents}`, color: '#f59e0b' },
               { icon: SpeedIcon, label: 'Hız Aşımı', value: `${totalOverspd}`, color: '#ef4444' },
-            ].map(({ icon, label, value, color }) => (
+            ].map(({ icon, label, value, color, onClick }) => (
               <Grid size={{ xs: 6, sm: 3 }} key={label}>
-                <KpiCard icon={icon} label={label} value={value} color={color} />
+                <KpiCard icon={icon} label={label} value={value} color={color} onClick={onClick} />
               </Grid>
             ))}
           </Grid>
         )}
 
         {/* ─── OVERVIEW CHARTS ─── */}
-        {!isAnalyzing && rawTripsState.length > 0 && (
-          <OverviewCharts insights={insights} rawTrips={rawTripsState} rawEvents={rawEventsState} devices={devices} />
+        {!isAnalyzing && rawSummaryState.length > 0 && (
+          <OverviewCharts insights={insights} rawSummary={rawSummaryState} rawEvents={rawEventsState} devices={devices} />
         )}
         <Typography variant="subtitle2" sx={{ fontSize: "9px" }} fontWeight={300}>Aşağıdaki yorumlar AI Asistanı tarafından oluşturulmaktadır. Yapay zeka yorumlarda hata yapabilir. Bu nedenle aşağıdaki yorumlara ilişkin sorumluluk firmamıza ait değildir. Yapay zekaya Araç plakası veya sürücü adı gibi bilgiler gönderilmez, veriler Anonim olarak işlenmektedir.</Typography>
 
         {/* ─── INSIGHT CARDS ─── */}
         {insights.length > 0 && !isAnalyzing && (
           <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-
             <Typography variant="subtitle2" color="text.secondary"
               sx={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 700 }}>
               AI İçgörüler
@@ -981,13 +1233,23 @@ Yanıtlarında araçlara doğrudan kendi adlarıyla hitap et; ID veya "Cihaz X" 
         )}
       </Container>
 
-      {/* ─── DETAIL DIALOG ─── */}
+      {/* ─── FLEET DISTANCE DIALOG ─── */}
+      <FleetDistDialog
+        open={fleetDistOpen}
+        onClose={() => setFleetDistOpen(false)}
+        rawSummary={rawSummaryState}
+        rawEvents={rawEventsState}
+        devices={devices}
+        insights={insights}
+      />
+
+      {/* ─── INSIGHT DETAIL DIALOG ─── */}
       <InsightDialog
         open={Boolean(dialogItem)}
         onClose={() => setDialogItem(null)}
         item={dialogItem}
         devices={devices}
-        rawTrips={rawTripsState}
+        rawSummary={rawSummaryState}
         rawEvents={rawEventsState}
       />
 

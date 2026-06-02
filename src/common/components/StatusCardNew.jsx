@@ -525,15 +525,6 @@ const StatusCardNew = ({ deviceId, position, onClose, disableActions, desktopPad
                       <ExpandMoreIcon sx={{ fontSize: 20, transition: '0.3s', transform: expanded ? 'rotate(180deg)' : 'none' }} />
                     </IconButton>
                   </Tooltip>
-
-                  {admin && (
-                    <Tooltip title={t('sharedEdit')}>
-                      <IconButton size="small" className={classes.actionIcon} sx={{ flex: 1 }} onClick={() => navigate(`/settings/device/${deviceId}`)}>
-                        <EditIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-
                   <Tooltip title={t('sharedMore')}>
                     <IconButton size="small" className={classes.actionIcon} sx={{ flex: 1 }} onClick={(e) => setAnchorEl(e.currentTarget)}>
                       <PendingIcon sx={{ fontSize: 18 }} />
@@ -638,7 +629,16 @@ const StatusCardNew = ({ deviceId, position, onClose, disableActions, desktopPad
         <MenuItem onClick={() => { setAnchorEl(null); handleGeofence(); }} sx={{ fontSize: '0.85rem' }}>{t('sharedCreateGeofence')}</MenuItem>
         <Divider />
         {admin && (
-          <MenuItem onClick={() => navigate(`/position/${position.id}`)} sx={{ fontSize: '0.85rem' }}>{t('sharedShowDetails')}</MenuItem>
+          <MenuItem onClick={() => navigate(`/position/${position.id}`)} sx={{ color: 'success.main', fontSize: '0.85rem' }}>{t('sharedShowDetails')}</MenuItem>
+        )}
+        {admin && (
+          <MenuItem onClick={() => navigate(`/settings/device/${deviceId}`)} sx={{ color: 'warning.dark', fontSize: '0.85rem' }}>{t('sharedEdit')}</MenuItem>
+        )}
+        {admin && (
+          <MenuItem onClick={() => navigate(`/settings/device/${deviceId}/connections`)} sx={{ color: 'warning.main', fontSize: '0.85rem' }}>{t('sharedConnections')}</MenuItem>
+        )}
+        {admin && (
+          <Divider />
         )}
         <MenuItem component="a" target="_blank" href={`https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}`} sx={{ fontSize: '0.85rem' }}>{t('linkGoogleMaps')}</MenuItem>
         <MenuItem component="a" target="_blank" href={`http://maps.apple.com/?ll=${position.latitude},${position.longitude}`} sx={{ fontSize: '0.85rem' }}>{t('linkAppleMaps')}</MenuItem>

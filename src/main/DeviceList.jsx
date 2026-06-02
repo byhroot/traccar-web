@@ -8,7 +8,7 @@ import { devicesActions } from '../store';
 import { useEffectAsync } from '../reactHelper';
 import DeviceRow from './DeviceRow';
 import fetchOrThrow from '../common/util/fetchOrThrow';
-import { Dialog, Stack, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from "@mui/material";
+import { Dialog, Stack, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Chip } from "@mui/material";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs"; // import ekle
@@ -109,77 +109,213 @@ const DeviceList = ({ devices }) => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            maxHeight: '90vh' // Mobilde ekranın dışına taşmaması için
-          }
+            borderRadius: 5,
+            overflow: 'hidden',
+            backdropFilter: 'blur(12px)',
+            backgroundImage: 'none',
+            bgcolor: 'background.paper',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark'
+                ? '0 12px 40px rgba(0,0,0,0.45)'
+                : '0 12px 40px rgba(0,0,0,0.12)',
+          },
         }}
       >
-        <DialogTitle sx={{ pb: 1, pt: 2 }}>
-          <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
-            <WarningAmberIcon sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-            <Typography variant="subtitle1" fontWeight="900" sx={{ color: 'text.primary', lineHeight: 1.2 }}>
-              {t("paketAlertgecmis")}
-            </Typography>
-          </Box>
-        </DialogTitle>
+        {/* HEADER */}
+        <Box
+          sx={{
+            px: 2.2,
+            pt: 2.2,
+            pb: 1.8,
+            background: (theme) =>
+              theme.palette.mode === 'dark'
+                ? 'linear-gradient(180deg, rgba(255,152,0,0.14) 0%, rgba(255,152,0,0.02) 100%)'
+                : 'linear-gradient(180deg, rgba(255,152,0,0.12) 0%, rgba(255,152,0,0.03) 100%)',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 3,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'warning.main',
+                color: '#fff',
+                flexShrink: 0,
+                boxShadow: '0 6px 16px rgba(255,152,0,0.35)',
+              }}
+            >
+              <WarningAmberIcon sx={{ fontSize: 28 }} />
+            </Box>
 
-        <DialogContent dividers sx={{ px: 2, py: 0.5 }}> {/* Padding'i minimuma indirdik */}
-          <Stack spacing={0.5} sx={{ mt: 1, mb: 1 }}>
-            {expiringDevices.map((d, i) => (
-              <Box
-                key={i}
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={900}
                 sx={{
-                  p: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  '&:last-child': { borderBottom: 'none' }
+                  lineHeight: 1.1,
+                  color: 'text.primary',
                 }}
               >
-                <Stack direction="row" spacing={1} alignItems="baseline" sx={{ width: '100%' }}>
-                  <Typography
-                    variant="body2"
-                    fontWeight="800"
-                    sx={{ color: 'text.primary', fontSize: '0.85rem' }}
+                {t("paketAlertgecmis")}
+              </Typography>
+
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  display: 'block',
+                  mt: 0.4,
+                }}
+              >
+                {expiringDevices.length} araç için işlem gerekli
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
+
+        {/* CONTENT */}
+        <DialogContent
+          sx={{
+            px: 1.2,
+            py: 1.2,
+            maxHeight: '55vh',
+            overflowY: 'auto',
+
+            '&::-webkit-scrollbar': {
+              width: 6,
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'divider',
+              borderRadius: 10,
+            },
+          }}
+        >
+          <Stack spacing={1}>
+            {expiringDevices.map((d, i) => {
+              const expired = dayjs(d.expirationTime).isBefore(dayjs());
+
+              return (
+                <Box
+                  key={i}
+                  sx={{
+                    p: 1.2,
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: expired ? 'error.main' : 'warning.main',
+                    bgcolor: expired
+                      ? 'error.light'
+                      : 'warning.main',
+                    opacity: 0.92,
+                    color: '#fff',
+                    transition: '0.2s',
+
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                      opacity: 1,
+                    },
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    spacing={1}
                   >
-                    • {d.name}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: 'error.main', fontSize: '0.75rem', fontWeight: '600', opacity: 0.9 }}
-                  >
-                    ({dayjs(d.expirationTime).format("DD/MM/YYYY")})
-                  </Typography>
-                </Stack>
-              </Box>
-            ))}
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={800}
+                        noWrap
+                        sx={{
+                          fontSize: '0.85rem',
+                        }}
+                      >
+                        {d.name}
+                      </Typography>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          opacity: 0.9,
+                          fontWeight: 600,
+                          fontSize: '0.72rem',
+                        }}
+                      >
+                        Son Tarih:{" "}
+                        {dayjs(d.expirationTime).format("DD/MM/YYYY")}
+                      </Typography>
+                    </Box>
+
+                    <Chip
+                      size="small"
+                      label={expired ? 'Süresi Geçti' : 'Yaklaşıyor'}
+                      color={expired ? 'error' : 'warning'}
+                      sx={{
+                        fontWeight: 700,
+                        height: 24,
+                        bgcolor: 'rgba(255,255,255,0.18)',
+                        color: '#fff',
+                        backdropFilter: 'blur(6px)',
+
+                        '& .MuiChip-label': {
+                          px: 1,
+                        },
+                      }}
+                    />
+                  </Stack>
+                </Box>
+              );
+            })}
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ p: 2, flexDirection: 'column', gap: 0.5 }}>
+        {/* ACTIONS */}
+        <DialogActions
+          sx={{
+            p: 1.5,
+            pt: 1,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            gap: 1,
+            flexDirection: 'column',
+          }}
+        >
           <Button
             fullWidth
             onClick={() => navigate("/settings/paymentpage")}
             variant="contained"
-            color="primary"
+            size="large"
             sx={{
-              borderRadius: '10px',
-              py: 1,
-              fontWeight: 'bold',
+              borderRadius: 3,
+              py: 1.2,
+              fontWeight: 800,
               textTransform: 'none',
-              fontSize: '0.9rem'
+              fontSize: '0.92rem',
+              boxShadow: 'none',
             }}
           >
             {t("userBilling")}
           </Button>
+
           <Button
             fullWidth
             onClick={() => setDialogOpen(false)}
+            variant="text"
             sx={{
-              color: 'text.secondary',
-              fontSize: '0.75rem',
+              borderRadius: 3,
               textTransform: 'none',
-              minHeight: '32px'
+              color: 'text.secondary',
+              fontWeight: 700,
             }}
           >
             {t("sharedCancel")}

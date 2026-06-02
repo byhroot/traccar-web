@@ -28,20 +28,24 @@ const minimizeEventsForAI = (events = []) =>
     type: e.type,
     time: e.eventTime,
     attr: e.attributes?.alarm || e.attributes?.status || '',
+    ...(e.type === 'deviceOverspeed' && e.attributes?.speed != null && {
+      speed: Math.round(e.attributes.speed * 1.852),
+      limit: Math.round(e.attributes.speedLimit * 1.852),
+    }),
   })).slice(0, 50);
 
-const minimizeTripsForAI = (trips = [], devices = []) =>
-  trips.map(t => {
-    const dev = devices.find(d => String(d.id) === String(t.deviceId));
+// minimizeTripsForAI → minimizeSummaryForAI olarak değiştir
+const minimizeSummaryForAI = (summaries = [], devices = []) =>
+  summaries.map(s => {
+    const dev = devices.find(d => String(d.id) === String(s.deviceId));
     return {
-      deviceId: t.deviceId,
+      deviceId: s.deviceId,
       category: dev?.category || 'car',
-      dist: Math.round(t.distance / 1000),
-      avg: Math.round(t.averageSpeed * 1.852),
-      max: Math.round(t.maxSpeed * 1.852),
-      tripTime: Math.floor(t.duration / 60000),
-      startTime: t.startTime,
-      endTime: t.endTime,
+      dist_km: Math.round((s.distance || 0) / 1000),
+      avg_kmh: Math.round((s.averageSpeed || 0) * 1.852),
+      max_kmh: Math.round((s.maxSpeed || 0) * 1.852),
+      startTime: s.startTime,
+      endTime: s.endTime,
     };
   }).slice(0, 50);
 
@@ -65,7 +69,7 @@ const ReportsMenuNewAICard = () => {
   useEffect(() => {
     const cached = localStorage.getItem('aiAnalysisCache');
     const cacheTime = localStorage.getItem('aiAnalysisCacheTime');
-    const CACHE_HOUR = 1000 * 60 * 60 * 72; // 72 saat
+    const CACHE_HOUR = 1000 * 60 * 60 * 24; // 24 saat
 
     if (cached && cacheTime && Date.now() - Number(cacheTime) < CACHE_HOUR) {
       const parsed = JSON.parse(cached);
@@ -95,13 +99,13 @@ const ReportsMenuNewAICard = () => {
 
       const [eventRes, tripRes] = await Promise.allSettled([
         fetch(`/api/reports/events?from=${dates.start}&to=${dates.end}&${eventQuery}`),
-        fetch(`/api/reports/trips?from=${dates.start}&to=${dates.end}&${eventQuery}`, {
+        fetch(`/api/reports/summary?from=${dates.start}&to=${dates.end}&${eventQuery}&daily=true`, {
           headers: { Accept: 'application/json' },
         }),
       ]);
 
       const rawEvents = eventRes.status === 'fulfilled' ? await eventRes.value.json() : [];
-      const rawTrips = tripRes.status === 'fulfilled' ? await tripRes.value.json() : [];
+      const rawSummary = tripRes.status === 'fulfilled' ? await tripRes.value.json() : [];
 
       const payload = {
         model: 'gpt-4.1-mini',
@@ -111,14 +115,17 @@ const ReportsMenuNewAICard = () => {
             role: 'system',
             content: `Sen bir araç ve motosiklet filo takip uzmanısın. Türkçe yanıt ver. Ham veriler GMT+0 'a göredir. Sen yanıt üretirken türkiye zaman dilimine (GMT+3) göre yanıt ver.
 trips içindeki her kayıtta category alanı vardır, bu araç tipini gösterir (örneğin "car" veya "motorcycle")
-
-Hız limiti aşımları(deviceOverspeed), ani hızlanmalar(hardAcceleration), ani frenlemeler(hardBraking), sert virajlar(hardCornering) gibi olaylar önemlidir.
-Akü Bağlantısı Kesilmesi(Alarm>powerCut) olayı çok kritiktir.
-Akü Bağlantısı Kesilmesi(powerCut) olayından sonra seyahat veya yolculuk varsa hırsızlık girişimi veya yetkisiz kullanım olabilir, bu kritik bir durumdur.
-Olaylarda 
+Events listesinde eğer Alarm varsa attribute alarnlarındaki;
+-'powerCut' olan olay varsa Cihaz Akü Bağlantısı Sökülmüştür, Olası müdahale veya yetkisiz kullanım olabilir(Kritik).
+-'lowPower' olayları aracın Akü sağlığı ile ilgili olabilir(uyarı).
+-'vibration' olayları motosiklet gibi araçlarda gündüz saatlerinde  olağan karşılanabilir.
+Titreşim alarmları genellikle aracın park halindeyken sarsıntı tespit ettiği durumları gösterir. Bu durum sabit bir nesneye çarpma, rüzgar etkisi veya başka bir dış faktörden kaynaklanıyor olabilir.
+Birden fazla araç varsa, mümkünse her araç için en az 1 insight üret.
+Summary Türkçe ve kısa olsun. olumlama yap genel olarak
 Veriler:
-Trips: dist(km), avg(km/h), max(km/h), tripTime(DAKİKA), startTime, endTime
-Avg, yolculuk süresi, mesafe ve araç tipine göre verimlilik analizi yapabilirsin.
+Trips: dist(km), avg(km/h), max(km/h bu hız limiti değil), tripTime(DAKİKA), startTime, endTime
+Events: type, time, attr (alarm veya status bilgisi), overspeed ise speed ve limit bilgisi
+Mesafe, Avg, yolculukta ulaşılan max hız, yolculuk süresi ve araç tipine göre anlaşılır verimlilik yorumları yapabilirsin.
 Her insight'a 'deviceId' ekle.
 SADECE JSON: {"insights":[{"deviceId":"89","title":"BAŞLIK","value":"DEĞER","desc":"AÇIKLAMA","color":"success|warning|error"}],"summary":"Genel özet"}`,
           },
@@ -126,7 +133,7 @@ SADECE JSON: {"insights":[{"deviceId":"89","title":"BAŞLIK","value":"DEĞER","d
             role: 'user',
             content: JSON.stringify({
               events: minimizeEventsForAI(rawEvents),
-              trips: minimizeTripsForAI(rawTrips, devices),
+              trips: minimizeSummaryForAI(rawSummary, devices),
             }),
           },
         ],
@@ -155,8 +162,8 @@ SADECE JSON: {"insights":[{"deviceId":"89","title":"BAŞLIK","value":"DEĞER","d
       localStorage.setItem('aiAnalysisCache', JSON.stringify(mappedInsights));
       localStorage.setItem('aiAnalysisCacheTime', String(Date.now()));
       localStorage.setItem('aiAnalysisSummary', result.summary || '');
-      localStorage.setItem('rawTripsCache', JSON.stringify(rawTrips));   // ← ekle
       localStorage.setItem('rawEventsCache', JSON.stringify(rawEvents)); // ← ekle
+      localStorage.setItem('rawSummaryCache', JSON.stringify(rawSummary)); // ← ekle
 
       setSummary(result.summary || 'Analiz tamamlandı.');
       setInsightCount(mappedInsights.length);

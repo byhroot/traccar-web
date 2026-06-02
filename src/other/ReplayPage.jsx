@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { IconButton, Paper, Slider, Toolbar, Typography } from '@mui/material';
+import { IconButton, Paper, Slider, Toolbar, Typography, Tooltip, Link as MuiLink, } from '@mui/material';
 import { makeStyles } from 'tss-react/mui';
 import TuneIcon from '@mui/icons-material/Tune';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -11,6 +11,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import MapView from '../map/core/MapView';
 import MapRoutePath from '../map/MapRoutePath';
+import MapRouteEvents from '../map/MapRouteEvents';
 import MapRoutePoints from '../map/MapRoutePoints';
 import MapPositions from '../map/MapPositions';
 import { formatTime } from '../common/util/formatter';
@@ -26,6 +27,10 @@ import fetchOrThrow from '../common/util/fetchOrThrow';
 import MapOverlay from '../map/overlay/MapOverlay';
 import StatusCardNew from '../common/components/StatusCardNew';
 import { useAttributePreference } from '../common/util/preferences';
+import { Menu, MenuItem, ListItemIcon, ListItemText, Checkbox } from '@mui/material';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import ReportPageAnime from '../reports/components/ReportPageAnime';
 
 const useStyles = makeStyles()((theme) => ({
   root: {
@@ -85,12 +90,12 @@ const ReplayPage = () => {
   const { classes } = useStyles();
   const navigate = useNavigate();
   const timerRef = useRef();
-
+  const [tooltipOpen, setTooltipOpen] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
-
+  const [playSpeed, setPlaySpeed] = useState(2);
   const defaultDeviceId = useSelector((state) => state.devices.selectedId);
   const oldMenu = useAttributePreference('oldStatusCard', false);
-
+  const [confirmDialog, setConfirmDialog] = useState(null); // null | 'warn' | 'block'
   const [positions, setPositions] = useState([]);
   const [index, setIndex] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState(defaultDeviceId);
@@ -99,7 +104,16 @@ const ReplayPage = () => {
   const to = searchParams.get('to');
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const [events, setEvents] = useState([]);
+  const [eventFilters, setEventFilters] = useState({
+    alarm: true,
+    ignition: true,
+    movement: false,
+    geofence: false,
+    speed: false,
+    other: false,
+  });
+  const [filterAnchor, setFilterAnchor] = useState(null);
   const loaded = Boolean(from && to && !loading && positions.length);
 
   const deviceName = useSelector((state) => {
@@ -113,22 +127,27 @@ const ReplayPage = () => {
   });
 
   useEffect(() => {
-    if (!from && !to) {
-      setPositions([]);
-    }
-  }, [from, to, setPositions]);
-
-  useEffect(() => {
-    if (playing && positions.length > 0) {
-      timerRef.current = setInterval(() => {
-        setIndex((index) => index + 1);
-      }, 500);
-    } else {
+    if (!playing || positions.length === 0) {
       clearInterval(timerRef.current);
+      return;
     }
+
+    // Önce eskiyi temizle
+    clearInterval(timerRef.current);
+
+    timerRef.current = setInterval(() => {
+      setIndex((prev) => {
+        if (prev >= positions.length - 1) {
+          clearInterval(timerRef.current);
+          setPlaying(false);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 2000 / playSpeed);
 
     return () => clearInterval(timerRef.current);
-  }, [playing, positions]);
+  }, [playing, playSpeed]); // positions KALDIRILDI
 
   useEffect(() => {
     if (index >= positions.length - 1) {
@@ -136,6 +155,23 @@ const ReplayPage = () => {
       setPlaying(false);
     }
   }, [index, positions]);
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        clearInterval(timerRef.current);
+        setPlaying(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+  useEffect(() => {
+    if (tooltipOpen) {
+      const timer = setTimeout(() => setTooltipOpen(false), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [tooltipOpen]);
 
   const onPointClick = useCallback(
     (_, index) => {
@@ -159,16 +195,48 @@ const ReplayPage = () => {
     try {
       const response = await fetchOrThrow(`/api/positions?${query.toString()}`);
       setIndex(0);
-      const positions = await response.json();
-      setPositions(positions);
-      if (!positions.length) {
-        throw Error(t('sharedNoData'));
+      const raw = await response.json();
+
+      if (!raw.length) throw Error(t('sharedNoData'));
+
+      // Events'i önceden çek ki dialog açılmadan önce elimizde olsun
+      const eventsQuery = new URLSearchParams({ deviceId, from, to, type: 'allEvents' });
+      let fetchedEvents = [];
+      try {
+        const eventsRes = await fetchOrThrow(`/api/reports/events?${eventsQuery.toString()}`, {
+          headers: { Accept: 'application/json' },
+        });
+        fetchedEvents = await eventsRes.json();
+        setEvents(fetchedEvents);
+      } catch {
+        // events gelmese de devam
       }
+
+      if (raw.length > 6000) {
+        setConfirmDialog('block');
+        return;
+      }
+
+      if (raw.length > 2000) {
+        setConfirmDialog({ type: 'warn', positions: raw, events: fetchedEvents }); // ← events'i dialog'a taşı
+        return;
+      }
+
+      setPositions(raw);
     } finally {
       setLoading(false);
     }
+
   });
 
+
+  // useEffect ile from/to sıfırlanınca events'i de temizle
+  useEffect(() => {
+    if (!from && !to) {
+      setPositions([]);
+      setEvents([]);   // ← eklendi
+    }
+  }, [from, to]);
   const handleDownload = () => {
     const query = new URLSearchParams({ deviceId: selectedDeviceId, from, to });
     window.location.assign(`/api/positions/kml?${query.toString()}`);
@@ -180,6 +248,8 @@ const ReplayPage = () => {
         <MapOverlay />
         <MapGeofence />
         <MapRoutePath positions={positions} />
+        <MapRouteEvents positions={positions} events={events} filters={eventFilters} />
+
         <MapRoutePoints positions={positions} onClick={onPointClick} showSpeedControl />
         {index < positions.length && (
           <MapPositions
@@ -197,7 +267,8 @@ const ReplayPage = () => {
             <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
               <BackIcon />
             </IconButton>
-            <Typography variant="h6" className={classes.title}>
+            <Typography sx={{ fontSize: 14 }}
+              className={classes.title}>
               {t('reportReplay')}
             </Typography>
             {loaded && (
@@ -205,6 +276,11 @@ const ReplayPage = () => {
                 <IconButton onClick={handleDownload}>
                   <DownloadIcon />
                 </IconButton>
+                <Tooltip title="Olayları filtreleyebilirsiniz" arrow open={!filterAnchor && tooltipOpen} onClose={() => setTooltipOpen(false)}>
+                  <IconButton onClick={(e) => { setFilterAnchor(e.currentTarget); setTooltipOpen(false); }}>
+                    <FilterListIcon sx={{ color: 'primary.main' }} />
+                  </IconButton>
+                </Tooltip>
                 <IconButton
                   edge="end"
                   onClick={() => updateReportParams(searchParams, setSearchParams, 'ignore', [])}
@@ -214,13 +290,42 @@ const ReplayPage = () => {
               </>
             )}
           </Toolbar>
+          {/* Menü — Toolbar dışına, ama aynı return içine */}
+          <Menu
+            anchorEl={filterAnchor}
+            open={Boolean(filterAnchor)}
+            onClose={() => setFilterAnchor(null)}
+          >
+            {[
+              { key: 'alarm', label: 'Alarmlar', color: '#f44336' },
+              { key: 'ignition', label: 'Kontak', color: '#4caf50' },
+              { key: 'movement', label: 'Hareket', color: '#2196f3' },
+              { key: 'speed', label: 'Speed Limit', color: '#9c27b0' },
+              { key: 'geofence', label: 'Geofence', color: '#9c27b0' },
+              { key: 'other', label: 'Tümü', color: '#9c27b0' },
+
+            ].map(({ key, label, color }) => (
+              <MenuItem
+                key={key}
+                onClick={() => setEventFilters((f) => ({ ...f, [key]: !f[key] }))}
+                dense
+              >
+                <ListItemIcon>
+                  <Checkbox
+                    checked={eventFilters[key]}
+                    size="small"
+                    sx={{ color, '&.Mui-checked': { color } }}
+                  />
+                </ListItemIcon>
+                <ListItemText primary={label} />
+              </MenuItem>
+            ))}
+          </Menu>
         </Paper>
         <Paper className={classes.content} square>
           {loaded && (
             <>
-              <Typography variant="subtitle1" align="center">
-                {deviceName}
-              </Typography>
+
               <Slider
                 className={classes.slider}
                 max={positions.length - 1}
@@ -230,27 +335,68 @@ const ReplayPage = () => {
                 onChange={(_, index) => setIndex(index)}
               />
               <div className={classes.controls}>
-                {`${index + 1}/${positions.length}`}
-                <IconButton
-                  onClick={() => setIndex((index) => index - 1)}
-                  disabled={playing || index <= 0}
-                >
-                  <FastRewindIcon />
-                </IconButton>
-                <IconButton
-                  onClick={() => setPlaying(!playing)}
-                  disabled={index >= positions.length - 1}
-                >
-                  {playing ? <PauseIcon /> : <PlayArrowIcon />}
-                </IconButton>
-                <IconButton
-                  onClick={() => setIndex((index) => index + 1)}
-                  disabled={playing || index >= positions.length - 1}
-                >
-                  <FastForwardIcon />
-                </IconButton>
-                {/* positions[index] varsa formatla, yoksa '-' veya boşluk koy */}
-                {positions && positions[index]
+                <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', minWidth: 52 }}>
+                  {`${index + 1}/${positions.length}`}
+                </span>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <IconButton
+                    onClick={() => setIndex((i) => i - 1)}
+                    disabled={playing || index <= 0}
+                    size="small"
+                  >
+                    <FastRewindIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setPlaying(!playing)}
+                    disabled={index >= positions.length - 1}
+                    size="small"
+                    sx={{
+                      backgroundColor: 'primary.main',
+                      color: 'white',
+                      '&:hover': { backgroundColor: 'primary.dark' },
+                      '&.Mui-disabled': { backgroundColor: 'action.disabledBackground' },
+                      width: 36,
+                      height: 36,
+                    }}
+                  >
+                    {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setIndex((i) => i + 1)}
+                    disabled={playing || index >= positions.length - 1}
+                    size="small"
+                  >
+                    <FastForwardIcon fontSize="small" />
+                  </IconButton>
+                </div>
+
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {[2, 4, 8, 16].map((speed) => (
+                    <button
+                      key={speed}
+                      onClick={() => setPlaySpeed(speed)}
+                      style={{
+                        fontSize: 11,
+                        fontWeight: playSpeed === speed ? 700 : 400,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        border: '1px solid',
+                        borderColor: playSpeed === speed ? 'transparent' : '#ccc',
+                        backgroundColor: playSpeed === speed ? '#1976d2' : 'transparent',
+                        color: playSpeed === speed ? '#fff' : 'inherit',
+                        cursor: 'pointer',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {speed}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ fontSize: 12, textAlign: 'center', color: 'var(--color-text-secondary)', marginTop: 4 }}>
+                {deviceName} - {positions && positions[index]
                   ? formatTime(positions[index]?.fixTime, 'seconds')
                   : '--:--'}
               </div>
@@ -259,6 +405,8 @@ const ReplayPage = () => {
           <div style={{ display: loaded ? 'none' : 'block' }}>
             <ReportFilter onShow={onShow} deviceType="single" loading={loading} />
           </div>
+          {!loading && !loaded && <ReportPageAnime />}
+
         </Paper>
       </div>
       {showCard && index < positions.length && (
@@ -281,6 +429,114 @@ const ReplayPage = () => {
 
 
       )}
+
+
+
+      <Dialog open={!!confirmDialog}>
+
+        <DialogTitle>⚠️ Çok Fazla Veri</DialogTitle>
+
+        <DialogContent>
+          <DialogContentText>
+
+            {confirmDialog === 'block' ? (
+              <>
+                6000&apos;den fazla konum verisi mevcut. Lütfen sorgu aralığını daraltınız.
+                <br /><br />
+                Detaylı Rota geçmişi için;
+                <MuiLink
+                  component="button"
+                  underline="hover"
+                  onClick={() => {
+                    navigate(`/reports/trips?deviceId=${selectedDeviceId}`);
+                    setConfirmDialog(null);
+                  }}
+                >
+                  Raporlar &gt; Yolculuklar
+                </MuiLink>{' '}
+                bölümünü kullanmanız daha sağlıklı olacaktır.
+
+                Uzun aralıklı olay haritası görünümü için{' '}
+                <MuiLink
+                  component="button"
+                  underline="hover"
+                  onClick={() => {
+                    navigate(`/reports/combined?deviceId=${selectedDeviceId}`);
+                    setConfirmDialog(null);
+                  }}
+                >
+                  Raporlar &gt; Kombine
+                </MuiLink>{' '}
+                sayfasını ziyaret edebilirsiniz.
+              </>
+            ) : (
+              <>
+                {confirmDialog?.positions?.length} konum verisi mevcut.
+                Performans için bazı konumlar sadeleştirilecek,
+                rota atlamalı görüntülenebilir.
+                <br /><br />
+
+                Daha sağlıklı görüntüleme için{' '}
+                <MuiLink
+                  component="button"
+                  underline="hover"
+                  onClick={() => {
+                    navigate(`/reports/trips?deviceId=${selectedDeviceId}`);
+                    setConfirmDialog(null);
+                  }}
+                >
+                  Raporlar &gt; Yolculuklar
+                </MuiLink>{' '}
+                bölümünü kullanabilirsiniz.
+                <br /><br />
+
+                Yine de görüntülemek istiyor musunuz?
+              </>
+            )}
+
+          </DialogContentText>
+        </DialogContent>
+
+        <DialogActions>
+
+          {confirmDialog !== 'block' && (
+            <Button
+              onClick={() => {
+                const raw = confirmDialog.positions;
+
+                const eventPositionIds = new Set(
+                  confirmDialog.events
+                    .map((e) => e.positionId)
+                    .filter(Boolean)
+                );
+
+                const step = Math.ceil(raw.length / 1500);
+
+                setPositions(
+                  raw.filter((_, i) =>
+                    i % step === 0 ||
+                    i === raw.length - 1 ||
+                    eventPositionIds.has(raw[i].id)
+                  )
+                );
+
+                setConfirmDialog(null);
+              }}
+            >
+              Yine de Görüntüle
+            </Button>
+          )}
+
+          <Button
+            onClick={() => setConfirmDialog(null)}
+            color={confirmDialog === 'block' ? 'primary' : 'error'}
+          >
+            {confirmDialog === 'block' ? 'Tamam' : 'İptal'}
+          </Button>
+
+        </DialogActions>
+
+      </Dialog>
     </div>
   );
 };

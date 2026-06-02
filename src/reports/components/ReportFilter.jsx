@@ -15,7 +15,7 @@ import { useTranslation } from '../../common/components/LocalizationProvider';
 import useReportStyles from '../common/useReportStyles';
 import SplitButton from '../../common/components/SplitButton';
 import SelectField from '../../common/components/SelectField';
-import { useRestriction } from '../../common/util/permissions';
+import { useAdministrator, useRestriction } from '../../common/util/permissions';
 
 export const updateReportParams = (searchParams, setSearchParams, key, values) => {
   const newParams = new URLSearchParams(searchParams);
@@ -30,7 +30,12 @@ export const updateReportParams = (searchParams, setSearchParams, key, values) =
 const DeviceGroupSelect = React.memo(({ deviceType, deviceIds, groupIds, searchParams, setSearchParams }) => {
   const t = useTranslation();
   const { classes } = useReportStyles();
-
+  const selectedDeviceId = useSelector((state) => state?.devices?.selectedId); // Redux'tan seçili cihaz ID'sini alır
+  useEffect(() => {
+    if (deviceType !== 'none' && selectedDeviceId && deviceIds?.length === 0) {
+      updateReportParams(searchParams, setSearchParams, 'deviceId', [selectedDeviceId]);
+    }
+  }, []);
   // ARTIK REDUX'TAN BİR ŞEY ÇEKMİYORUZ! 
   // useSelector BAĞLANTISINI KOPARDIK.
 
@@ -88,10 +93,17 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
   const [selectedOption, setSelectedOption] = useState('json');
   const [description, setDescription] = useState();
   const [calendarId, setCalendarId] = useState();
+  const admin = useAdministrator();
 
+  // ReportFilter'da evaluateDisabled'a ekle:
   const evaluateDisabled = () => {
     if (deviceType === 'single' && !deviceIds.length) return true;
     if (selectedOption === 'schedule' && (!description || !calendarId)) return true;
+    // custom seçimde 1 günden fazlaysa devre dışı
+    if (deviceType === 'single' && period === 'custom') {
+      const diff = dayjs(customTo).diff(dayjs(customFrom), 'hour');
+      if (diff > 72) return true;
+    }
     return loading;
   };
   const disabled = evaluateDisabled();
@@ -190,6 +202,7 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
         searchParams={searchParams}
         setSearchParams={setSearchParams}
       />
+
       {selectedOption !== 'schedule' ? (
         <>
           <div className={classes.filterItem}>
@@ -202,14 +215,24 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
               >
                 <MenuItem value="today">{t('reportToday')}</MenuItem>
                 <MenuItem value="yesterday">{t('reportYesterday')}</MenuItem>
-                <MenuItem value="thisWeek">{t('reportThisWeek')}</MenuItem>
-                <MenuItem value="previousWeek">{t('reportPreviousWeek')}</MenuItem>
-                <MenuItem value="thisMonth">{t('reportThisMonth')}</MenuItem>
-                <MenuItem value="previousMonth">{t('reportPreviousMonth')}</MenuItem>
+                {<MenuItem value="thisWeek">{t('reportThisWeek')}</MenuItem>}
+                {<MenuItem value="previousWeek">{t('reportPreviousWeek')}</MenuItem>}
+                {deviceType !== 'single' && <MenuItem value="thisMonth">{t('reportThisMonth')}</MenuItem>}
+                {deviceType !== 'single' && <MenuItem value="previousMonth">{t('reportPreviousMonth')}</MenuItem>}
                 <MenuItem value="custom">{t('reportCustom')}</MenuItem>
               </Select>
             </FormControl>
           </div>
+          {period === 'custom' && !admin && deviceType === 'single' && (
+            (() => {
+              const diff = dayjs(customTo).diff(dayjs(customFrom), 'hour');
+              return diff > 72 ? (
+                <Typography variant="caption" color="error" sx={{ px: 1 }}>
+                  ⚠️ Animasyonlu İzleme için maksimum 3 günlük aralık seçilebilir., Rota geçmişi için Raporlar-Yolculuklar veya Kombine Raporlar sayfasından Haftalık yada Aylık rota geçmişini önizleyebilirsiniz.
+                </Typography>
+              ) : null;
+            })()
+          )}
           {period === 'custom' && (
             <div className={classes.filterItem}>
               <TextField

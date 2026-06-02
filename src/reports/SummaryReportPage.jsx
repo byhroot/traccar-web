@@ -33,7 +33,7 @@ import TableShimmer from '../common/components/TableShimmer';
 import scheduleReport from './common/scheduleReport';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 import exportExcel from '../common/util/exportExcel';
-
+import ReportPageAnime from './components/ReportPageAnime';
 const columnsArray = [
   ['startTime', 'reportStartDate'],
   ['distance', 'sharedDistance'],
@@ -170,6 +170,8 @@ const SummaryReportPage = () => {
           <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
         </ReportFilter>
       </div>
+      {items.length === 0 && !loading && <ReportPageAnime />}
+
       <Table>
         <TableHead>
           <TableRow>

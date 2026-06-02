@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Chip, alpha } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useTranslation } from '../common/components/LocalizationProvider';
 
@@ -28,8 +28,7 @@ import AirlineStopsIcon from '@mui/icons-material/AirlineStops';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import LocalParkingIcon from '@mui/icons-material/LocalParking';
 
-/* severity: 'error' | 'warning' | 'success' | 'info' | 'default' */
-const EVENT_CONFIG = {
+const EVENT_CFG = {
   deviceMoving: { Icon: SpeedIcon, severity: 'success' },
   deviceStopped: { Icon: StopIcon, severity: 'default' },
   deviceOverspeed: { Icon: SpeedIcon, severity: 'warning' },
@@ -66,33 +65,41 @@ const EVENT_CONFIG = {
   alarm: { Icon: NotificationsActiveIcon, severity: 'error' },
 };
 
-const getConfig = (event) => {
+const getCfg = (event) => {
   if (event.type === 'alarm' && event.attributes?.alarm) {
     const key = `alarm${event.attributes.alarm.charAt(0).toUpperCase()}${event.attributes.alarm.slice(1)}`;
-    return EVENT_CONFIG[key] || EVENT_CONFIG.alarm;
+    return EVENT_CFG[key] || EVENT_CFG.alarm;
   }
-  return EVENT_CONFIG[event.type] || EVENT_CONFIG.alarm;
+  return EVENT_CFG[event.type] || EVENT_CFG.alarm;
 };
 
-const formatTime = (str) => {
+const fmtTime = (str) => {
   const d = new Date(str);
   const h = d.getHours();
   const m = d.getMinutes();
   return `${h}:${m < 10 ? '0' + m : m}`;
 };
 
+const fmtDate = (str) => {
+  const d = new Date(str);
+  const date = d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+  const h = d.getHours();
+  const m = d.getMinutes();
+  return `${date} ${h}:${m < 10 ? '0' + m : m}`;
+};
+
 const EventListCard = ({ events, deviceDetails }) => {
-  const [blinkingRows, setBlinkingRows] = useState(new Set());
+  const [blinking, setBlinking] = useState(new Set());
   const t = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
 
   const sc = {
-    error: { bg: theme.palette.error.main, color: theme.palette.error.main, light: theme.palette.error.light },
-    warning: { bg: theme.palette.warning.main, color: theme.palette.warning.dark, light: theme.palette.warning.light },
-    success: { bg: theme.palette.success.main, color: theme.palette.success.dark, light: theme.palette.success.light },
-    info: { bg: theme.palette.info.main, color: theme.palette.info.dark, light: theme.palette.info.light },
-    default: { bg: theme.palette.text.secondary, color: theme.palette.text.secondary, light: theme.palette.action.hover },
+    error: { bg: theme.palette.error.main, light: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main },
+    warning: { bg: theme.palette.warning.main, light: alpha(theme.palette.warning.main, 0.1), color: theme.palette.warning.dark },
+    success: { bg: theme.palette.success.main, light: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.dark },
+    info: { bg: theme.palette.info.main, light: alpha(theme.palette.info.main, 0.1), color: theme.palette.info.dark },
+    default: { bg: theme.palette.text.secondary, light: theme.palette.action.hover, color: theme.palette.text.secondary },
   };
 
   const getLabel = (event) => {
@@ -105,73 +112,73 @@ const EventListCard = ({ events, deviceDetails }) => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setBlinkingRows((prev) => {
+      setBlinking(prev => {
         const next = new Set(prev);
         const now = new Date();
-        events
-          .filter((e) => now - new Date(e.eventTime) <= 60000)
-          .forEach((e) => { if (next.has(e.id)) next.delete(e.id); else next.add(e.id); });
+        events.filter(e => now - new Date(e.eventTime) <= 60000)
+          .forEach(e => { if (next.has(e.id)) next.delete(e.id); else next.add(e.id); });
         return next;
       });
     }, 1000);
-    const stop = setTimeout(() => clearInterval(interval), 5000);
+    const stop = setTimeout(() => clearInterval(interval), 10000);
     return () => { clearInterval(interval); clearTimeout(stop); };
   }, [events]);
 
-  return (
-    <Box sx={{ borderRadius: 3, overflow: 'hidden', border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }}>
+  if (!events.length) return (
+    <Box sx={{ textAlign: 'center', py: 4, color: 'text.disabled' }}>
+      <Typography variant="body2">Bu dönemde olay kaydı bulunamadı.</Typography>
+    </Box>
+  );
 
-      {/* Başlık */}
-      <Box sx={{ px: 2, py: 1.2, display: 'flex', alignItems: 'center', borderBottom: `1px solid ${theme.palette.divider}` }}>
-        <Typography variant="body2" fontWeight={500}>Son Olaylar</Typography>
-        <Box sx={{ ml: 'auto', fontSize: '0.72rem', color: 'text.secondary', backgroundColor: theme.palette.action.hover, px: 1, py: 0.3, borderRadius: 10 }}>
+  return (
+    <Box sx={{ borderRadius: 2, overflow: 'hidden', border: `1px solid ${alpha(theme.palette.divider, 1)}`, bgcolor: 'background.paper' }}>
+      {/* header */}
+      <Box sx={{ px: 2, py: 1, display: 'flex', alignItems: 'center', borderBottom: `1px solid ${alpha(theme.palette.divider, 1)}` }}>
+        <Typography variant="body2" fontWeight={600} sx={{ fontSize: 12 }}>Son Olaylar</Typography>
+        <Box sx={{ ml: 'auto', fontSize: 11, color: 'text.secondary', bgcolor: 'action.hover', px: 1, py: 0.3, borderRadius: 10 }}>
           {events.length} olay
         </Box>
       </Box>
 
-      {/* Satırlar */}
       {events.map((event) => {
-        const { Icon, severity } = getConfig(event);
+        const { Icon, severity } = getCfg(event);
         const s = sc[severity];
-        const isBlinking = blinkingRows.has(event.id);
-        const deviceName = deviceDetails.find((d) => d.id === event.deviceId)?.name || event.deviceId;
+        const isNew = blinking.has(event.id);
+        const deviceName = deviceDetails.find(d => d.id === event.deviceId)?.name || `#${event.deviceId}`;
+        const isToday = new Date(event.eventTime).toDateString() === new Date().toDateString();
 
         return (
           <Box
             key={event.id}
             onClick={() => navigate(`/event/${event.id}`)}
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              px: 2,
-              py: 1,
+              display: 'flex', alignItems: 'center', gap: 1.25, px: 2, py: 0.9,
               cursor: 'pointer',
-              borderBottom: `1px solid ${theme.palette.divider}`,
-              backgroundColor: isBlinking ? theme.palette.action.selected : 'transparent',
-              transition: 'background 0.15s',
+              borderBottom: `1px solid ${alpha(theme.palette.divider, 1)}`,
+              bgcolor: isNew ? alpha(s.bg, 0.08) : 'transparent',
+              transition: 'background .15s',
               '&:last-child': { borderBottom: 'none' },
-              '&:hover': { backgroundColor: theme.palette.action.hover },
+              '&:hover': { bgcolor: 'action.hover' },
             }}
           >
-            {/* İkon dairesi */}
-            <Box sx={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: s.bg + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Icon sx={{ fontSize: 16, color: s.bg }} />
+            {/* icon dot */}
+            <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: s.light, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Icon sx={{ fontSize: 15, color: s.bg }} />
             </Box>
 
-            {/* Olay adı */}
-            <Typography variant="body2" sx={{ flex: 1, fontSize: '0.82rem', color: s.color, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {/* label */}
+            <Typography variant="body2" sx={{ flex: 1, fontSize: 12.5, color: s.color, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {getLabel(event)}
             </Typography>
 
-            {/* Araç */}
-            <Typography variant="caption" sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 500, whiteSpace: 'nowrap' }}>
+            {/* device */}
+            <Typography variant="caption" sx={{ fontSize: 11.5, color: 'text.secondary', fontWeight: 500, whiteSpace: 'nowrap', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {deviceName}
             </Typography>
 
-            {/* Saat */}
-            <Typography variant="caption" sx={{ fontSize: '0.75rem', color: 'text.disabled', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', minWidth: 32, textAlign: 'right' }}>
-              {formatTime(event.eventTime)}
+            {/* time */}
+            <Typography variant="caption" sx={{ fontSize: 11, color: 'text.disabled', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', minWidth: 36, textAlign: 'right' }}>
+              {isToday ? fmtTime(event.eventTime) : fmtDate(event.eventTime)}
             </Typography>
           </Box>
         );

@@ -33,7 +33,7 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 import exportExcel from '../common/util/exportExcel';
-
+import ReportPageAnime from './components/ReportPageAnime';
 const columnsArray = [
   ['startTime', 'reportStartTime'],
   ['startOdometer', 'reportStartOdometer'],
@@ -118,7 +118,8 @@ const TripReportPage = () => {
       const response = await fetchOrThrow(`/api/reports/trips?${query.toString()}`, {
         headers: { Accept: 'application/json' },
       });
-      setItems(await response.json());
+      const data = await response.json();
+      setItems(data.sort((a, b) => new Date(b.startTime) - new Date(a.startTime)));
     } finally {
       setLoading(false);
     }
@@ -244,6 +245,8 @@ const TripReportPage = () => {
               <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
             </ReportFilter>
           </div>
+          {items.length === 0 && !loading && <ReportPageAnime />}
+
           <Table>
             <TableHead>
               <TableRow>
@@ -257,7 +260,20 @@ const TripReportPage = () => {
             <TableBody>
               {!loading ? (
                 items.map((item) => (
-                  <TableRow key={item.startPositionId}>
+                  <TableRow
+                    key={item.startPositionId}
+                    onClick={() => setSelectedItem(selectedItem === item ? null : item)}
+                    sx={{
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'action.hover'
+                      },
+                      ...(selectedItem === item && {
+                        backgroundColor: 'action.selected',
+                        '&:hover': { backgroundColor: 'action.selected' }
+                      })
+                    }}
+                  >
                     <TableCell className={classes.columnAction} padding="none">
                       <div className={classes.columnActionContainer}>
                         {selectedItem === item ? (
@@ -271,13 +287,7 @@ const TripReportPage = () => {
                               sx={{
                                 // Renk Ayarı
 
-                                // Yanıp Sönme Animasyonu
-                                animation: 'blink 2s infinite ease-in-out',
-                                '@keyframes blink': {
-                                  '0%': { opacity: 1 },
-                                  '50%': { opacity: 0.3 },
-                                  '100%': { opacity: 1 },
-                                },
+
                               }}
                             />
                           </IconButton>

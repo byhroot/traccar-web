@@ -28,7 +28,7 @@ import {
 } from '../common/util/converter';
 import useReportStyles from './common/useReportStyles';
 import fetchOrThrow from '../common/util/fetchOrThrow';
-
+import ReportPageAnime from './components/ReportPageAnime';
 const ChartReportPage = () => {
   const { classes } = useReportStyles();
   const theme = useTheme();
@@ -160,6 +160,8 @@ const ChartReportPage = () => {
           </FormControl>
         </div>
       </ReportFilter>
+      {items.length === 0 && < ReportPageAnime />}
+
       {items.length > 0 && (
         <div className={classes.chart}>
           <ResponsiveContainer>

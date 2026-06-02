@@ -294,7 +294,7 @@ const CommandDevicePageUsers = () => {
       action: () => setVibrationOpen(true)
     },
     { label: t("sharedDriver"), disabled: Servis, icon: <PersonIcon sx={{ fontSize: 32 }} />, desc: t("eventDriverChanged"), color: colors.primary, action: () => setDriverOpen(true) },
-    { label: t("reportConfigure"), disabled: Servis, icon: <SettingsApplicationsIcon sx={{ fontSize: 32 }} />, color: colors.primary, desc: t("attributeSpeedLimit") + ", " + t("deviceContact") + ", " + t("deviceCategory"), action: () => setInsuranceOpen(true) },
+    { label: t("reportConfigure"), disabled: Servis, icon: <SettingsApplicationsIcon sx={{ fontSize: 32 }} />, color: colors.primary, desc: t("attributeSpeedLimit") + ", " + t("deviceContact") + ",.. ", action: () => setInsuranceOpen(true) },
     { label: t("sharedGeofences"), disabled: Servis, icon: <MapIcon sx={{ fontSize: 32 }} />, color: colors.primary, desc: t("sharedGeofences"), action: () => setGeofenceOpen(true) },
     { label: t("sharedMaintenance"), disabled: Servis, icon: <BuildIcon sx={{ fontSize: 32 }} />, color: colors.primary, desc: t("sharedNotification"), action: () => setMaintenanceOpen(true) },
     { label: t("eventMaintenance"), disabled: Servis, icon: <NoteAltIcon sx={{ fontSize: 32 }} />, color: colors.primary, desc: t("notes"), action: () => setNotesOpen(true) },

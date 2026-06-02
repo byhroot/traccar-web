@@ -39,7 +39,7 @@ import SelectField from '../common/components/SelectField';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 import exportExcel from '../common/util/exportExcel';
 import AddressValue from '../common/components/AddressValue';
-
+import ReportPageAnime from './components/ReportPageAnime';
 const columnsArray = [
   ['eventTime', 'positionFixTime'],
   ['type', 'sharedType'],
@@ -300,6 +300,8 @@ const EventReportPage = () => {
               <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
             </ReportFilter>
           </div>
+          {items.length === 0 && !loading && <ReportPageAnime />}
+
           <Table>
             <TableHead>
               <TableRow>

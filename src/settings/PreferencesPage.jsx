@@ -117,7 +117,7 @@ const PreferencesPage = () => {
   const versionApp = import.meta.env.VITE_APP_VERSION;
   const versionServer = useSelector((state) => state.session.server.version);
   const socket = useSelector((state) => state.session.socket);
-
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [token, setToken] = useState(null);
   const [tokenExpiration, setTokenExpiration] = useState(
     dayjs().add(1, 'week').locale('en').format('YYYY-MM-DD'),
@@ -598,6 +598,97 @@ const PreferencesPage = () => {
                     </Stack>
                   )}
                 </Stack>
+                {/* 🧹 LOCAL STORAGE TEMİZLEME */}
+                {/* 🧹 LOCAL STORAGE TEMİZLEME */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    mt: 3,
+                    borderRadius: 4,
+                    border: `1px solid ${theme.palette.divider}`,
+                    bgcolor: theme.palette.background.paper,
+                  }}
+                >
+                  <Stack spacing={2}>
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                      <InfoIcon color="warning" />
+                      <Typography variant="subtitle1" fontWeight="600">
+                        Yerel Verileri Temizle
+                      </Typography>
+                    </Box>
+
+                    <Typography variant="body2" color="text.secondary">
+                      Uygulamada cihazda saklanan tüm geçici veriler temizlenir.
+                      Sonrasında uygulamayı yeniden başlatmanız gerekebilir.
+                    </Typography>
+
+                    {!showClearConfirm ? (
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => setShowClearConfirm(true)}
+                        sx={{
+                          borderRadius: 3,
+                          py: 1.2,
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        Tüm Verileri Temizle
+                      </Button>
+                    ) : (
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderRadius: 3,
+                          bgcolor:
+                            theme.palette.mode === 'dark'
+                              ? 'rgba(244,67,54,0.08)'
+                              : 'rgba(244,67,54,0.04)',
+                        }}
+                      >
+                        <Stack spacing={2}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                          >
+                            Bu işlem geri alınamaz. Tüm localStorage ve
+                            sessionStorage verileri silinecek.
+                          </Typography>
+
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              onClick={() => setShowClearConfirm(false)}
+                              sx={{ borderRadius: 3 }}
+                            >
+                              Vazgeç
+                            </Button>
+
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              color="error"
+                              onClick={() => {
+                                localStorage.clear();
+                                sessionStorage.clear();
+                                window.location.reload();
+                              }}
+                              sx={{
+                                borderRadius: 3,
+                                fontWeight: 'bold',
+                              }}
+                            >
+                              Evet, Temizle
+                            </Button>
+                          </Stack>
+                        </Stack>
+                      </Paper>
+                    )}
+                  </Stack>
+                </Paper>
               </AccordionDetails>
             </Accordion>
 

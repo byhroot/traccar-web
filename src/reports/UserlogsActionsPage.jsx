@@ -4,7 +4,9 @@ import {
   FormControl, InputLabel, Select, MenuItem,
   Dialog, DialogTitle, DialogContent, DialogActions,
   Typography, IconButton, Button, Box, Chip, Paper,
-  Grid, Divider, Tooltip, Badge, OutlinedInput
+  Grid, Divider, Tooltip, Badge, OutlinedInput, Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { useSelector } from 'react-redux';
@@ -22,13 +24,13 @@ import useReportStyles from './common/useReportStyles';
 import TableShimmer from '../common/components/TableShimmer';
 import SearchHeader, { filterByKeyword } from '../settings/components/SearchHeader';
 import UserLogsActionPageCard from './UserLogsActionPageCard';
-
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 const ACTION_META = {
   login: { color: 'success', label: 'Giriş', hex: '#22c55e' },
   socketlogin: { color: 'success', label: 'Socket Giriş', hex: '#16a34a' },
   logout: { color: 'default', label: 'Çıkış', hex: '#64748b' },
   create: { color: 'primary', label: 'Oluşturuldu', hex: '#3b82f6' },
-  edit: { color: 'info', label: 'Düzenlendi', hex: '#06b6d4' },
+  edit: { color: 'warning', label: 'Düzenlendi', hex: '#f59e0b' },
   remove: { color: 'error', label: 'Silindi', hex: '#ef4444' },
   denied: { color: 'error', label: 'Reddedildi', hex: '#dc2626' },
   link: { color: 'secondary', label: 'Bağlandı', hex: '#8b5cf6' },
@@ -315,6 +317,27 @@ const ActionsPage = () => {
   const [selectedObjectType, setSelectedObjectType] = useState('');
   const [selectedObjectId, setSelectedObjectId] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [hiddenUserIds, setHiddenUserIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('actions-hidden-users') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    localStorage.setItem(
+      'actions-hidden-users',
+      JSON.stringify(hiddenUserIds)
+    );
+  }, [hiddenUserIds]);
+
+  const toggleHiddenUser = (userId) => {
+    setHiddenUserIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
 
   // Dialoglar
   const [statsOpen, setStatsOpen] = useState(false);
@@ -445,15 +468,38 @@ const ActionsPage = () => {
               ? Object.entries(calendarNames).map(([id, name]) => ({ id: Number(id), name }))
               : [];
 
-  const filteredItems = items.filter(filterByKeyword(searchKeyword));
+  const filteredItems = items
+    .filter((item) => !hiddenUserIds.includes(item.userId))
+    .filter(filterByKeyword(searchKeyword));
   const [logsCardOpen, setLogsCardOpen] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
+  const logUsers = [...new Set(items.map(i => i.userId))]
+    .map(id => ({
+      id,
+      name: userNames[id] || `#${id}`
+    }));
   return (
     <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'actionsTitle']}>
+      <Accordion sx={{ mb: 2 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          Kullanıcı Filtreleri ({hiddenUserIds.length} gizli)
+        </AccordionSummary>
 
+        <AccordionDetails>
+          <Box display="flex" gap={1} flexWrap="wrap">
+            {logUsers.map((u) => (
+              <Chip
+                key={u.id}
+                label={u.name}
+                onClick={() => toggleHiddenUser(u.id)}
+                color={hiddenUserIds.includes(u.id) ? 'default' : 'primary'}
+              />
+            ))}
+          </Box>
+        </AccordionDetails>
+      </Accordion>
       {items.length > 0 && (
         <Box sx={{ px: 2, pt: 1 }}>
           <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" mb={2}>
@@ -543,7 +589,16 @@ const ActionsPage = () => {
       >
         <TableHead>
           <TableRow>
-            {!isMobile && <TableCell sx={{ width: 145, fontWeight: 700, fontSize: '0.75rem', color: '#90cdf4' }}>Tarih</TableCell>}
+            <TableCell
+              sx={{
+                width: isMobile ? 52 : 145,
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                color: '#90cdf4'
+              }}
+            >
+              Tarih
+            </TableCell>
             {!isMobile && <TableCell sx={{ width: 115, fontWeight: 700, fontSize: '0.75rem', color: '#90cdf4' }}>IP</TableCell>}
             <TableCell sx={{ width: isMobile ? 90 : 140, fontWeight: 700, fontSize: '0.75rem', color: '#90cdf4' }}>Kullanıcı</TableCell>
             <TableCell sx={{ width: 95, fontWeight: 700, fontSize: '0.75rem', color: '#90cdf4' }}>İşlem</TableCell>
@@ -575,8 +630,32 @@ const ActionsPage = () => {
               }}
               sx={{ cursor: isMobile ? 'pointer' : 'default', '&:hover': { bgcolor: 'rgba(99,179,237,0.04)' } }}
             >
-              {!isMobile && <TableCell sx={{ width: 145, fontSize: '0.72rem', color: '#a0aec0' }}>{item.actionTime ? formatTime(item.actionTime, isMobile ? 'DD.MM HH:mm' : 'DD.MM.YYYY HH:mm:ss') : '-'}</TableCell>}
-
+              <TableCell
+                sx={{
+                  width: isMobile ? 55 : 145,
+                  fontSize: '0.72rem',
+                  color: '#a0aec0',
+                  lineHeight: 1.1,
+                }}
+              >
+                {item.actionTime ? (
+                  isMobile ? (
+                    <>
+                      {new Date(item.actionTime).toLocaleDateString('tr-TR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                      })}
+                      <br />
+                      {new Date(item.actionTime).toLocaleTimeString('tr-TR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </>
+                  ) : (
+                    formatTime(item.actionTime, 'DD.MM.YYYY HH:mm:ss')
+                  )
+                ) : '-'}
+              </TableCell>
               {!isMobile && <TableCell sx={{ width: 115, fontSize: '0.72rem', fontFamily: 'monospace', color: '#718096' }}>{item.address || '-'}</TableCell>}
 
               <TableCell sx={{ width: isMobile ? 90 : 140, fontSize: '0.75rem', fontWeight: 600 }}>

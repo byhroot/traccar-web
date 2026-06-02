@@ -60,7 +60,7 @@ const MapView = ({ children }) => {
   const mapStyles = useMapStyles();
   const activeMapStyles = useAttributePreference(
     'activeMapStyles',
-    'custom,darkCarto,googleRoad,googleHybrid,googleSatellite,carto,openTopoMap,locationIqStreets,locationIqDark,osm,yandexMap,openFreeMap',
+    'custom,darkCarto,googleRoad,googleHybrid,googleSatellite,carto,openTopoMap,locationIqStreets,locationIqDark,osm,yandexMap',
   );
   const [defaultMapStyle] = usePersistedState(
     'selectedMapStyle',

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle,
   IconButton, Typography, Paper, useMediaQuery, useTheme, TextField,
-  InputAdornment, Fab, Accordion, AccordionSummary, AccordionDetails,
-  Badge, Stack, Divider, Fade, Zoom, Card, CardContent, CircularProgress, Collapse
+  InputAdornment, Accordion, AccordionSummary, AccordionDetails,
+  Badge, Stack, Divider, Slide, Zoom, Card, CardContent, CircularProgress,
+  Collapse,
 } from "@mui/material";
 
-// Icons
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SearchIcon from "@mui/icons-material/Search";
 import ShoppingCartCheckoutIcon from "@mui/icons-material/ShoppingCartCheckout";
@@ -15,9 +15,8 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import SelectAllIcon from "@mui/icons-material/SelectAll";
 import { Add, Remove, CheckCircle, TimeToLeave, Cancel, InfoOutlined, Visibility, VisibilityOff } from "@mui/icons-material";
-import StarIcon from '@mui/icons-material/Star';
+import StarIcon from "@mui/icons-material/Star";
 
-// ... (Category Icons aynı kalıyor)
 import PetsIcon from "@mui/icons-material/Pets";
 import DirectionsBikeIcon from "@mui/icons-material/DirectionsBike";
 import DirectionsBoatIcon from "@mui/icons-material/DirectionsBoat";
@@ -38,20 +37,22 @@ import AgricultureIcon from "@mui/icons-material/Agriculture";
 import TrainIcon from "@mui/icons-material/Train";
 import TramIcon from "@mui/icons-material/Tram";
 import DirectionsTransitFilledIcon from "@mui/icons-material/DirectionsTransitFilled";
-
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import PageLayout from "../common/components/PageLayout";
 import { useManager } from "../common/util/permissions";
 import PaymentStatusCard from "./PaymentStatusCard";
 import PaymentPricesCard from "./PaymentPricesCard";
+import { useAdministrator } from "../common/util/permissions";
+import PaymentStatusAdminCard from "./PaymentStatusAdminCard";
 
 const PaymentPage = () => {
   const [devices, setDevices] = useState([]);
   const [selectedDevices, setSelectedDevices] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [search, setSearch] = useState("");
-  const [showDeviceList, setShowDeviceList] = useState(false); // Özet ekranı için
+  const [showDeviceList, setShowDeviceList] = useState(false);
   const theme = useTheme();
-
+  const admin = useAdministrator();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [packageType, setPackageType] = useState("standard");
   const [proCount, setProCount] = useState(1);
@@ -75,7 +76,6 @@ const PaymentPage = () => {
     van: <AirportShuttleIcon />,
   };
 
-  // fetchPrices useEffect'ine loyalty çağrısını ekle
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -141,8 +141,7 @@ const PaymentPage = () => {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       setResultDialog({ open: true, success: response.ok });
-      if (response.ok)
-        setRefreshKey(prev => prev + 1);
+      if (response.ok) setRefreshKey(prev => prev + 1);
     } catch (err) {
       setResultDialog({ open: true, success: false });
     } finally {
@@ -152,11 +151,9 @@ const PaymentPage = () => {
   };
 
   const totalPrice = (selectedDevices.length * packagePrices.yillik) + (packageType === "pro" ? packagePrices.pro * proCount : 0);
-
-  // totalPrice hesabını güncelle (mevcut satırın yerine)
   const discountedPrice = Math.max(0, totalPrice - loyalty.discountTL);
-
-  // --- Yardımcı Paket Kartı ---
+  const [couponDismissed, setCouponDismissed] = useState(false);
+  // --- Paket Kartı ---
   const PackageOption = ({ type, title, price, features, icon: Icon, isPro, badge }) => {
     const selected = packageType === type;
     const color = isPro ? theme.palette.warning.main : theme.palette.primary.main;
@@ -164,28 +161,37 @@ const PaymentPage = () => {
       <Paper
         onClick={() => setPackageType(type)}
         sx={{
-          p: 2.5, borderRadius: 4, cursor: 'pointer', flex: 1, position: 'relative',
+          p: 2.5, borderRadius: 4, cursor: "pointer", flex: 1, position: "relative",
           border: `2.5px solid ${selected ? color : theme.palette.divider}`,
-          bgcolor: selected ? (theme.palette.mode === 'dark' ? `${color}15` : `${color}05`) : 'background.paper',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: selected ? 'scale(1.02)' : 'scale(1)',
-          '&:hover': { borderColor: color }
+          bgcolor: selected ? (theme.palette.mode === "dark" ? `${color}15` : `${color}05`) : "background.paper",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          transform: selected ? "scale(1.02)" : "scale(1)",
+          "&:hover": { borderColor: color },
         }}
       >
         {badge && (
-          <Box sx={{ position: 'absolute', top: -12, right: 20, bgcolor: color, color: '#fff', px: 1.5, py: 0.5, borderRadius: 2, fontSize: '0.65rem', fontWeight: '900', boxShadow: 3 }}>
+          <Box sx={{
+            position: "absolute", top: -12, right: 20, bgcolor: color, color: "#fff",
+            px: 1.5, py: 0.5, borderRadius: 2, fontSize: "0.65rem", fontWeight: "900", boxShadow: 3,
+          }}>
             {badge}
           </Box>
         )}
         <Stack direction="row" spacing={2} alignItems="center" mb={2}>
-          <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${color}20`, display: 'flex' }}>
+          <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${color}20`, display: "flex" }}>
             <Icon sx={{ color: color, fontSize: 32 }} />
           </Box>
           <Box>
             <Typography variant="subtitle2" fontWeight="900" sx={{ opacity: 0.8 }}>{title}</Typography>
-            <Typography variant="h5" fontWeight="900" color={color}> {type === "pro" ? `+${price}₺` : `${price}₺`} <Typography component="span" variant="caption" color="text.secondary">/ {isPro ? 'Fiyata Ek Hizmet Bedeli' : 'Araç - Adet Yıllık'}</Typography></Typography>
+            <Typography variant="h5" fontWeight="900" color={color}>
+              {type === "pro" ? `+${price}₺` : `${price}₺`}
+              <Typography component="span" variant="caption" color="text.secondary">
+                {" / "}{isPro ? "hesap · yıllık" : "araç · yıllık"}
+              </Typography>
+            </Typography>
           </Box>
         </Stack>
+
         <Stack spacing={1.2}>
           {features.map((f, i) => (
             <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
@@ -194,34 +200,132 @@ const PaymentPage = () => {
             </Stack>
           ))}
         </Stack>
+
+        {/* Pro "hesap başına" vurgusu */}
+        {isPro && (
+          <Box sx={{
+            mt: 2, p: 1.2, borderRadius: 2,
+            bgcolor: theme.palette.mode === "dark" ? "rgba(255,183,77,0.12)" : "#FFF8E1",
+            border: `1px dashed ${theme.palette.success.main}`,
+            display: "flex", gap: 1, alignItems: "flex-start",
+          }}>
+            <InfoOutlined sx={{ fontSize: 14, color: "success.dark", mt: 0.2, flexShrink: 0 }} />
+            <Typography variant="caption" sx={{ color: "success.dark", fontWeight: 600, lineHeight: 1.4 }}>
+              Kaç aracınız olursa olsun, Pro paket ücreti hesabınız için <strong>yalnızca 1 kez</strong> ücretlendirilir.
+            </Typography>
+          </Box>
+        )}
       </Paper>
     );
   };
 
+  // --- Sticky Bar fiyat breakdown metni ---
+  const barBreakdown = [
+    `${selectedDevices.length} araç × ${packagePrices.yillik.toLocaleString("tr-TR")} ₺`,
+    packageType === "pro" ? `Pro: ${(packagePrices.pro * proCount).toLocaleString("tr-TR")} ₺` : null,
+    loyalty.discountTL > 0 ? `-${loyalty.discountTL.toLocaleString("tr-TR")} ₺ puan` : null,
+  ].filter(Boolean).join(" · ");
+
   return (
     <PageLayout breadcrumbs={["sharedSettings", "records"]}>
-      <Box sx={{ width: '100%', maxWidth: 1200, mx: 'auto', px: { xs: 1.5, md: 3 }, pb: 12, overflowX: 'hidden' }}>
-
+      {/* pb: 10 → sticky bar yüksekliği kadar boşluk bırakır */}
+      <Box sx={{ width: "100%", maxWidth: 1200, mx: "auto", px: { xs: 1.5, md: 3 }, pb: 14, overflowX: "hidden" }}>
         <PaymentPricesCard refreshKey={refreshKey} />
-        <PaymentStatusCard devices={devices} refreshKey={refreshKey} />
+        {loyalty.discountTL > 0 && !couponDismissed && (
+          <Zoom in>
+            <Box
+              sx={{
+                position: "fixed",
+                bottom: { xs: 72, md: 90 },
+                right: { xs: 12, md: 24 },
+                zIndex: 1300,
+                cursor: "pointer",
+              }}
+              onClick={() => setCouponDismissed(true)}            >
+              <Paper
+                elevation={6}
+                sx={{
+                  position: "relative",
+                  px: 2,
+                  py: 1.2,
+                  borderRadius: 4,
+                  overflow: "hidden",
+                  background: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+                  border: "1.5px solid #34d39950",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.2,
+                  // Shimmer
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: 0, left: 0, right: 0,
+                    height: "2px",
+                    background: "linear-gradient(90deg, transparent, #a7f3d0, transparent)",
+                    animation: "shimmerCoupon 2.5s ease-in-out infinite",
+                  },
+                  "@keyframes shimmerCoupon": {
+                    "0%": { transform: "translateX(-100%)" },
+                    "100%": { transform: "translateX(100%)" },
+                  },
+                }}
+              >
+                {/* Pulse ikon */}
+                <Box sx={{
+                  width: 30, height: 30, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  bgcolor: "rgba(255,255,255,0.15)",
+                  border: "1.5px solid rgba(255,255,255,0.4)",
+                  color: "#fff",
+                  animation: "pulseCoupon 2s ease-in-out infinite",
+                  "@keyframes pulseCoupon": {
+                    "0%, 100%": { boxShadow: "0 0 0 0 rgba(255,255,255,0.4)" },
+                    "50%": { boxShadow: "0 0 0 5px transparent" },
+                  },
+                  flexShrink: 0,
+                }}>
+                  <LocalOfferIcon sx={{ fontSize: 15 }} />
+                </Box>
 
-        {/* Arama Barı */}
-        <Paper elevation={0} sx={{ p: 2, borderRadius: 4, mb: 3, border: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper' }}>
+                <Box>
+                  <Typography sx={{ color: "rgba(255,255,255,0.8)", fontSize: "0.65rem", fontWeight: 700, lineHeight: 1 }}>
+                    İNDİRİM KUPONUNUZ VAR
+                  </Typography>
+                  <Typography sx={{ color: "#fff", fontSize: "0.95rem", fontWeight: 900, lineHeight: 1.3 }}>
+                    {loyalty.discountTL.toLocaleString("tr-TR")} ₺ indirim
+                  </Typography>
+                  <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: "0.65rem", fontWeight: 500 }}>
+                    {loyalty.points} puan · ödemede otomatik uygulanır
+                  </Typography>
+                </Box>
+              </Paper>
+            </Box>
+          </Zoom>
+        )}
+        <PaymentStatusCard devices={devices} refreshKey={refreshKey} />
+        {admin && <PaymentStatusAdminCard />}
+        {/* Arama + Tümünü Seç */}
+        <Paper elevation={0} sx={{
+          p: 2, borderRadius: 4, mb: 3,
+          border: `1px solid ${theme.palette.divider}`, bgcolor: "background.paper",
+        }}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
             <TextField
               placeholder="Araç veya Plaka Ara..."
               variant="outlined" size="small" fullWidth
               value={search} onChange={(e) => setSearch(e.target.value)}
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
             />
             <Button
-              variant={selectedDevices.length === filteredDevices.length ? "contained" : "outlined"}
+              variant={selectedDevices.length === filteredDevices.length && filteredDevices.length > 0 ? "contained" : "outlined"}
               startIcon={<SelectAllIcon />}
               onClick={handleToggleAll}
-              sx={{ borderRadius: 3, whiteSpace: 'nowrap', minWidth: { sm: 180 }, fontWeight: 'bold' }}
+              sx={{ borderRadius: 3, whiteSpace: "nowrap", minWidth: { sm: 180 }, fontWeight: "bold" }}
             >
-              {selectedDevices.length === filteredDevices.length ? "Seçimi Temizle" : "Tümünü Seç"}
+              {selectedDevices.length === filteredDevices.length && filteredDevices.length > 0
+                ? "Seçimi Temizle"
+                : "Tümünü Seç"}
             </Button>
           </Stack>
         </Paper>
@@ -239,24 +343,28 @@ const PaymentPage = () => {
                 key={device.id}
                 onClick={() => handleSelectDevice(device.id)}
                 sx={{
-                  borderRadius: 4, cursor: 'pointer', transition: '0.2s',
-                  border: `2px solid ${isSelected ? theme.palette.primary.main : 'transparent'}`,
-                  bgcolor: isSelected ? (theme.palette.mode === 'dark' ? 'rgba(0,149,158,0.1)' : 'rgba(0,149,158,0.05)') : 'background.paper',
-                  '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 }
+                  borderRadius: 4, cursor: "pointer", transition: "0.2s",
+                  border: `2px solid ${isSelected ? theme.palette.primary.main : "transparent"}`,
+                  bgcolor: isSelected
+                    ? (theme.palette.mode === "dark" ? "rgba(0,149,158,0.1)" : "rgba(0,149,158,0.05)")
+                    : "background.paper",
+                  "&:hover": { transform: "translateY(-3px)", boxShadow: 4 },
                 }}
               >
                 <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <Box sx={{
-                      width: 44, height: 44, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      bgcolor: isSelected ? 'primary.main' : 'action.hover', color: isSelected ? '#fff' : 'primary.main'
+                      width: 44, height: 44, borderRadius: 2,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      bgcolor: isSelected ? "primary.main" : "action.hover",
+                      color: isSelected ? "#fff" : "primary.main",
                     }}>
                       {React.cloneElement(categoryIcons[device.category] || categoryIcons.default, { sx: { fontSize: 24 } })}
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="subtitle2" fontWeight="800" noWrap>{device.name}</Typography>
-                      <Typography variant="caption" color={isSelected ? 'primary.main' : 'text.secondary'} fontWeight="600">
-                        Bitiş: {new Date(device.expirationTime).toLocaleDateString()}
+                      <Typography variant="caption" color={isSelected ? "primary.main" : "text.secondary"} fontWeight="600">
+                        Bitiş: {new Date(device.expirationTime).toLocaleDateString("tr-TR")}
                       </Typography>
                     </Box>
                     <Checkbox checked={isSelected} sx={{ p: 0 }} />
@@ -266,200 +374,300 @@ const PaymentPage = () => {
             );
           })}
         </Box>
-
-        {/* FAB */}
-        <Zoom in={selectedDevices.length > 0}>
-          <Fab
-            color="primary"
-            variant="extended"
-            onClick={() => { setStep(1); setOpenDialog(true); }}
-            sx={{
-              position: "fixed",
-              bottom: { xs: 60, md: 30 },
-              // left: "50%" yerine sadece 50 yazmak yeterlidir
-              left: 50 + "%",
-              // En kritik kısım: transform'un tam değerini korumak
-              transform: "translateX(-50%) !important",
-              zIndex: 1000,
-              px: 5,
-              py: 3,
-              borderRadius: '20px',
-              boxShadow: '0 8px 32px rgba(0,149,158,0.4)',
-              fontWeight: 'bold',
-              fontSize: '1rem',
-              // Mobilde butonun genişliğini kısıtlayarak taşmayı önleyelim
-              width: { xs: 'max-content', sm: 'auto' },
-              // Badge'in buton genişliğini bozmaması için:
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <Badge badgeContent={selectedDevices.length} color="error" sx={{ mr: 2 }}>
-              <ShoppingCartCheckoutIcon />
-            </Badge>
-            Ödeme
-          </Fab>
-        </Zoom>
-
-        {/* --- CHECKOUT DIALOG --- */}
-        <Dialog
-          open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth
-          PaperProps={{ sx: { borderRadius: 5, mx: 1 } }}
-        >
-          {step === 1 ? (
-            <>
-              <DialogTitle sx={{ textAlign: 'center', pt: 4 }}>
-                <StarIcon color="warning" sx={{ fontSize: 40, mb: 1 }} />
-                <Typography variant="h5" fontWeight="900">Hesabınızı Güçlendirin</Typography>
-                <Typography variant="caption" color="text.secondary">Tüm araçlarınız için geçerli ek avantajları keşfedin (Opsiyonel)</Typography>
-              </DialogTitle>
-              <DialogContent sx={{ px: { xs: 2, md: 4 } }}>
-                <Stack direction={{ xs: 'column', md: 'column' }} spacing={1} sx={{ mt: 1 }}>
-                  <PackageOption
-                    type="standard" title="STANDART PAKET" price={packagePrices.yillik} icon={DirectionsCarIcon} isPro={false}
-                    features={["Sınırsız Mobil & Web Takip", "Uygulama Anlık Bildirimler", "E-Posta Bildirimleri", "Tüm Sistem Özellikleri"]}
-                  />
-                  {/* Pro Paket Miktar Seçici */}
-                  <Collapse in={packageType === "pro" && manager}>
-                    <Paper sx={{ mt: 1, p: 2, borderRadius: 3, bgcolor: 'warning.light', color: 'warning.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0 }}>
-                        <InfoOutlined fontSize="small" />
-                        <Typography sx={{ fontSize: 13 }} fontWeight="bold">Kaç adet Pro paket lisansı istiyorsunuz? Alt Kullanıcılarınız için de Pro Paket Satın alabilirsiniz.</Typography>
-                      </Box>
-                      <Stack direction="row" alignItems="center" sx={{ bgcolor: 'background.paper', borderRadius: 2, p: 0.5 }}>
-                        <IconButton size="small" onClick={() => setProCount(Math.max(1, proCount - 1))}><Remove /></IconButton>
-                        <Typography sx={{ px: 2, fontWeight: '900', color: 'text.primary' }}>{proCount}</Typography>
-                        <IconButton size="small" onClick={() => setProCount(proCount + 1)}><Add /></IconButton>
-                      </Stack>
-                    </Paper>
-                  </Collapse>
-                  <PackageOption
-                    type="pro" title="PRO PLUS PAKET" price={packagePrices.pro} icon={AutoAwesomeIcon} isPro={true} badge="EN POPÜLER"
-                    features={["+3000 Adet SMS Bildirimi", "+750 Yapay Zeka Sesli Arama", "Bildirimlerinizi ayarlardan Özelleştirebilirsiniz.", "Bildirimlerinizi belirli saatlerde veya günlerde çalışacak şekilde zamanlayabilirsiniz.", "Yapay Zeka Sesli Arama bildirimleri sayesinde hiçbir önemli olayı kaçırmayın"]}
-                  />
-                </Stack>
-
-
-              </DialogContent>
-              <DialogActions sx={{ p: 4, pt: 0 }}>
-                <Button onClick={() => setOpenDialog(false)} sx={{ fontWeight: 'bold' }}>Vazgeç</Button>
-                <Button variant="contained" size="large" fullWidth sx={{ borderRadius: 3, fontWeight: '900' }} onClick={() => setStep(2)}>Özete Devam Et</Button>
-              </DialogActions>
-            </>
-          ) : (
-            <>
-              <DialogTitle sx={{ textAlign: 'center', pt: 4 }}>
-                <ReceiptLongIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
-                <Typography variant="h5" fontWeight="900">Sipariş Özeti</Typography>
-              </DialogTitle>
-              <DialogContent sx={{ px: { xs: 2, md: 5 } }}>
-                <Paper variant="outlined" sx={{ p: 3, borderRadius: 4, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : '#fcfcfc' }}>
-                  <Stack spacing={2}>
-                    {/* Seçili Araçlar Bölümü */}
-                    <Box>
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" fontWeight="800">Araç Yıllık Paket Yenileme (x{selectedDevices.length})</Typography>
-                        <Typography variant="subtitle1" fontWeight="900">{selectedDevices.length * packagePrices.yillik} ₺</Typography>
-                      </Box>
-                      <Button
-                        size="small"
-                        startIcon={showDeviceList ? <VisibilityOff /> : <Visibility />}
-                        onClick={() => setShowDeviceList(!showDeviceList)}
-                        sx={{ textTransform: 'none', mt: 0.5, fontWeight: 'bold' }}
-                      >
-                        {showDeviceList ? "Araçları Gizle" : "Seçilen Araçları Gör"}
-                      </Button>
-                      <Collapse in={showDeviceList}>
-                        <Box sx={{ mt: 1, p: 1.5, borderRadius: 2, bgcolor: 'action.hover', maxHeight: 150, overflowY: 'auto' }}>
-                          {selectedDevices.map(id => (
-                            <Typography key={id} variant="caption" sx={{ display: 'block', py: 0.2, borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                              • {devices.find(d => d.id === id)?.name}
-                            </Typography>
-                          ))}
-                        </Box>
-                      </Collapse>
-                    </Box>
-
-                    <Divider />
-
-                    {/* Paket Bölümü */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Typography variant="body2" fontWeight="800">Paket: {packageType === 'pro' ? 'Pro Plus (Yıllık)' : 'Standart (Ek Ücret Yok)'}</Typography>
-                        {packageType === 'pro' && <Typography variant="caption" color="text.secondary">{proCount} Adet Hesap İçin</Typography>}
-                      </Box>
-                      <Typography variant="subtitle1" fontWeight="900">{packageType === "pro" ? packagePrices.pro * proCount : 0} ₺</Typography>
-                    </Box>
-
-                    {/* Genel Toplam kutusunu bul ve şununla değiştir */}
-                    <Box sx={{ p: 2, borderRadius: 3, bgcolor: 'primary.main', color: '#fff', mt: 1 }}>
-                      {loyalty.discountTL > 0 && (
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-                          <Typography variant="caption" fontWeight="700">
-                            🎉 {loyalty.points} Puan İndirimi
-                          </Typography>
-                          <Typography variant="caption" fontWeight="700">
-                            -{loyalty.discountTL} ₺
-                          </Typography>
-                        </Stack>
-                      )}
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="h6" fontWeight="900">Genel Toplam</Typography>
-                        <Stack alignItems="flex-end">
-                          {loyalty.discountTL > 0 && (
-                            <Typography
-                              variant="caption"
-                              sx={{ textDecoration: 'line-through', fontSize: '0.85rem' }}
-                            >
-                              {totalPrice} ₺
-                            </Typography>
-                          )}
-                          <Typography variant="h5" fontWeight="1000">{discountedPrice} ₺</Typography>
-                        </Stack>
-                      </Stack>
-                    </Box>
-                  </Stack>
-                </Paper>
-
-                <Stack direction="row" spacing={1} sx={{ mt: 3, p: 1.5, borderRadius: 2, border: '1px dashed #ccc' }}>
-                  <InfoOutlined sx={{ fontSize: 18, color: 'text.secondary' }} />
-                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
-                    Sistemde kayıtlı GSM numaranıza SMS olarak veya E-posta adresinize Ödeme Linki gönderilecektir. Ödeme sonrası 24 saat içinde aktivasyon tamamlanır.
-                  </Typography>
-                </Stack>
-              </DialogContent>
-              <DialogActions sx={{ p: 4, pt: 2 }}>
-                <Button onClick={() => setStep(1)} sx={{ fontWeight: 'bold' }}>Paket Değiştir</Button>
-                <Button variant="contained" size="large" fullWidth sx={{ borderRadius: 3, fontWeight: '900' }} onClick={handleConfirmPayment}>
-                  Güvenli Ödeme Linki Oluştur
-                </Button>
-              </DialogActions>
-            </>
-          )}
-        </Dialog>
-
-        {/* Sonuç Modalı */}
-        <Dialog open={resultDialog.open} onClose={() => setResultDialog({ ...resultDialog, open: false })} PaperProps={{ sx: { borderRadius: 5 } }}>
-          <Box sx={{ p: 5, textAlign: 'center' }}>
-            {resultDialog.success ? <CheckCircle color="success" sx={{ fontSize: 80, mb: 2 }} /> : <Cancel color="error" sx={{ fontSize: 80, mb: 2 }} />}
-            <Typography variant="h5" fontWeight="900">{resultDialog.success ? "İşlem Başarılı!" : "Bir Sorun Oluştu"}</Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
-              {resultDialog.success ? "Ödeme linkiniz hazır! Lütfen cep telefonunuzu ve e-posta adresinizi kontrol edin." : "Sipariş oluşturulurken bir hata meydana geldi. Lütfen destek ekibiyle iletişime geçin."}
-            </Typography>
-            <Button variant="contained" size="large" onClick={() => setResultDialog({ ...resultDialog, open: false })} sx={{ borderRadius: 3, px: 6 }}>Anladım</Button>
-          </Box>
-        </Dialog>
-
-        {/* Loading */}
-        <Dialog open={loading} PaperProps={{ sx: { bgcolor: 'transparent', boxShadow: 'none' } }}>
-          <Box sx={{ p: 5, bgcolor: 'background.paper', borderRadius: 4, textAlign: 'center' }}>
-            <CircularProgress color="primary" size={60} thickness={4} />
-            <Typography sx={{ mt: 2, fontWeight: 'bold' }}>İşleminiz Yapılıyor...</Typography>
-          </Box>
-        </Dialog>
-
       </Box>
+
+      {/* ── STICKY BAR ── */}
+      <Slide direction="up" in={selectedDevices.length > 0} mountOnEnter unmountOnExit>
+        <Paper
+          elevation={8}
+          sx={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1200,
+            borderRadius: 0,
+            borderTop: `1px solid ${theme.palette.divider}`,
+            px: { xs: 2, md: 4 },
+            py: 1.5,
+          }}
+        >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+
+            {/* Sol — araç sayısı + paket */}
+            <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0, flex: 1 }}>
+              <Box sx={{
+                width: 40, height: 40, borderRadius: "50%",
+                bgcolor: "primary.main", display: "flex",
+                alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <DirectionsCarIcon sx={{ color: "#fff", fontSize: 20 }} />
+              </Box>
+
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="body2" fontWeight="700" noWrap>
+                  {selectedDevices.length} araç seçildi
+                </Typography>
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {packageType === "pro" ? `Standart + Pro ×${proCount}` : "Standart paket"}
+                </Typography>
+              </Box>
+
+              {!isMobile && (
+                <>
+                  <Divider orientation="vertical" flexItem />
+                  <Box>
+                    {loyalty.discountTL > 0 && (
+                      <Typography variant="caption" sx={{ textDecoration: "line-through", color: "text.disabled", display: "block", lineHeight: 1 }}>
+                        {totalPrice.toLocaleString("tr-TR")} ₺
+                      </Typography>
+                    )}
+                    <Typography variant="h6" fontWeight="900" color="primary.main" sx={{ lineHeight: 1.2 }}>
+                      {discountedPrice.toLocaleString("tr-TR")} ₺
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {barBreakdown}
+                    </Typography>
+                  </Box>
+                </>
+              )}
+            </Stack>
+
+            {/* Mobilde fiyat ortada */}
+            {isMobile && (
+              <Box sx={{ textAlign: "center" }}>
+                {loyalty.discountTL > 0 && (
+                  <Typography variant="caption" sx={{ textDecoration: "line-through", color: "text.disabled", display: "block", lineHeight: 1 }}>
+                    {totalPrice.toLocaleString("tr-TR")} ₺
+                  </Typography>
+                )}
+                <Typography variant="subtitle1" fontWeight="900" color="primary.main" sx={{ lineHeight: 1.2 }}>
+                  {discountedPrice.toLocaleString("tr-TR")} ₺
+                </Typography>
+              </Box>
+            )}
+
+            {/* Buton */}
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => { setStep(1); setOpenDialog(true); }}
+              startIcon={<ShoppingCartCheckoutIcon />}
+              sx={{ borderRadius: 3, fontWeight: "900", px: { xs: 2, md: 4 }, flexShrink: 0 }}
+            >
+              {isMobile ? "Devam" : "Ödeme Linkini Oluştur"}
+            </Button>
+
+          </Stack>
+        </Paper>
+      </Slide>
+
+      {/* ── CHECKOUT DIALOG ── */}
+      <Dialog
+        open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth
+        PaperProps={{ sx: { borderRadius: 5, mx: 1 } }}
+      >
+        {step === 1 ? (
+          <>
+            <DialogTitle sx={{ textAlign: "center", pt: 4 }}>
+              <StarIcon color="warning" sx={{ fontSize: 40, mb: 1 }} />
+              <Typography variant="h5" fontWeight="900">Hesabınızı Güçlendirin</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Tüm araçlarınız için geçerli ek avantajları keşfedin (Opsiyonel)
+              </Typography>
+            </DialogTitle>
+            <DialogContent sx={{ px: { xs: 2, md: 4 } }}>
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                <PackageOption
+                  type="standard" title="STANDART PAKET" price={packagePrices.yillik}
+                  icon={DirectionsCarIcon} isPro={false}
+                  features={["Sınırsız Mobil & Web Takip", "Uygulama Anlık Bildirimler", "E-Posta Bildirimleri", "Tüm Sistem Özellikleri"]}
+                />
+
+                <PackageOption
+                  type="pro" title="PRO PLUS PAKET" price={packagePrices.pro}
+                  icon={AutoAwesomeIcon} isPro={true} badge="EN POPÜLER"
+                  features={["+3000 Adet SMS Bildirimi", "+750 Yapay Zeka Sesli Arama", "Bildirimleri ayarlardan özelleştirebilirsiniz", "Belirli saatlerde / günlerde zamanlayabilirsiniz", "Hiçbir önemli olayı kaçırmayın"]}
+                />
+
+                {/* Pro adet seçici — sadece manager'a göster */}
+                <Collapse in={packageType === "pro" && manager}>
+                  <Paper sx={{
+                    mt: 1, p: 2, borderRadius: 3,
+                    bgcolor: "warning.light", color: "warning.contrastText",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                  }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <InfoOutlined fontSize="small" />
+                      <Typography sx={{ fontSize: 13 }} fontWeight="bold">
+                        Alt kullanıcılarınız için de Pro Paket satın alabilirsiniz.
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" alignItems="center" sx={{ bgcolor: "background.paper", borderRadius: 2, p: 0.5 }}>
+                      <IconButton size="small" onClick={() => setProCount(Math.max(1, proCount - 1))}><Remove /></IconButton>
+                      <Typography sx={{ px: 2, fontWeight: "900", color: "text.primary" }}>{proCount}</Typography>
+                      <IconButton size="small" onClick={() => setProCount(proCount + 1)}><Add /></IconButton>
+                    </Stack>
+                  </Paper>
+                </Collapse>
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ p: 4, pt: 0 }}>
+              <Button onClick={() => setOpenDialog(false)} sx={{ fontWeight: "bold" }}>Vazgeç</Button>
+              <Button variant="contained" size="large" fullWidth sx={{ borderRadius: 3, fontWeight: "900" }} onClick={() => setStep(2)}>
+                Özete Devam Et
+              </Button>
+            </DialogActions>
+          </>
+        ) : (
+          <>
+            <DialogTitle sx={{ textAlign: "center", pt: 4 }}>
+              <ReceiptLongIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
+              <Typography variant="h5" fontWeight="900">Sipariş Özeti</Typography>
+            </DialogTitle>
+            <DialogContent sx={{ px: { xs: 2, md: 5 } }}>
+              <Paper variant="outlined" sx={{
+                p: 3, borderRadius: 4,
+                bgcolor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.02)" : "#fcfcfc",
+              }}>
+                <Stack spacing={2}>
+                  {/* Araçlar */}
+                  <Box>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2" fontWeight="800">
+                        Araç Yıllık Paket Yenileme (×{selectedDevices.length})
+                      </Typography>
+                      <Typography variant="subtitle1" fontWeight="900">
+                        {(selectedDevices.length * packagePrices.yillik).toLocaleString("tr-TR")} ₺
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      startIcon={showDeviceList ? <VisibilityOff /> : <Visibility />}
+                      onClick={() => setShowDeviceList(!showDeviceList)}
+                      sx={{ textTransform: "none", mt: 0.5, fontWeight: "bold" }}
+                    >
+                      {showDeviceList ? "Araçları Gizle" : "Seçilen Araçları Gör"}
+                    </Button>
+                    <Collapse in={showDeviceList}>
+                      <Box sx={{ mt: 1, p: 1.5, borderRadius: 2, bgcolor: "action.hover", maxHeight: 150, overflowY: "auto" }}>
+                        {selectedDevices.map(id => (
+                          <Typography key={id} variant="caption" sx={{ display: "block", py: 0.2, borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                            • {devices.find(d => d.id === id)?.name}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </Collapse>
+                  </Box>
+
+                  <Divider />
+
+                  {/* Paket */}
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="body2" fontWeight="800">
+                        Paket: {packageType === "pro" ? "Pro Plus (Yıllık)" : "Standart (Ek Ücret Yok)"}
+                      </Typography>
+                      {packageType === "pro" && (
+                        <Typography variant="caption" color="text.secondary">
+                          {proCount} hesap için · araç sayısından bağımsız
+                        </Typography>
+                      )}
+                    </Box>
+                    <Typography variant="subtitle1" fontWeight="900">
+                      {packageType === "pro"
+                        ? `${(packagePrices.pro * proCount).toLocaleString("tr-TR")} ₺`
+                        : "0 ₺"}
+                    </Typography>
+                  </Box>
+
+                  {/* Toplam */}
+                  <Box sx={{ p: 2, borderRadius: 3, bgcolor: "primary.main", color: "#fff", mt: 1 }}>
+                    {loyalty.discountTL > 0 && (
+                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                        <Typography variant="caption" fontWeight="700">
+                          🎉 {loyalty.points} Puan İndirimi
+                        </Typography>
+                        <Typography variant="caption" fontWeight="700">
+                          -{loyalty.discountTL.toLocaleString("tr-TR")} ₺
+                        </Typography>
+                      </Stack>
+                    )}
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="h6" fontWeight="900">Genel Toplam</Typography>
+                      <Stack alignItems="flex-end">
+                        {loyalty.discountTL > 0 && (
+                          <Typography variant="caption" sx={{ textDecoration: "line-through", fontSize: "0.85rem" }}>
+                            {totalPrice.toLocaleString("tr-TR")} ₺
+                          </Typography>
+                        )}
+                        <Typography variant="h5" fontWeight="900">
+                          {discountedPrice.toLocaleString("tr-TR")} ₺
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </Box>
+                </Stack>
+              </Paper>
+
+              <Stack direction="row" spacing={1} sx={{ mt: 3, p: 1.5, borderRadius: 2, border: "1px dashed #ccc" }}>
+                <InfoOutlined sx={{ fontSize: 18, color: "text.secondary" }} />
+                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                  Sistemde kayıtlı GSM numaranıza SMS olarak veya e-posta adresinize ödeme linki gönderilecektir.
+                  Ödeme sonrası 24 saat içinde aktivasyon tamamlanır.
+                </Typography>
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ p: 4, pt: 2 }}>
+              <Button onClick={() => setStep(1)} sx={{ fontWeight: "bold" }}>Paket Değiştir</Button>
+              <Button
+                variant="contained" size="large" fullWidth
+                sx={{ borderRadius: 3, fontWeight: "900" }}
+                onClick={handleConfirmPayment}
+              >
+                Güvenli Ödeme Linki Oluştur
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      {/* Sonuç Modalı */}
+      <Dialog
+        open={resultDialog.open}
+        onClose={() => setResultDialog({ ...resultDialog, open: false })}
+        PaperProps={{ sx: { borderRadius: 5 } }}
+      >
+        <Box sx={{ p: 5, textAlign: "center" }}>
+          {resultDialog.success
+            ? <CheckCircle color="success" sx={{ fontSize: 80, mb: 2 }} />
+            : <Cancel color="error" sx={{ fontSize: 80, mb: 2 }} />}
+          <Typography variant="h5" fontWeight="900">
+            {resultDialog.success ? "İşlem Başarılı!" : "Bir Sorun Oluştu"}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
+            {resultDialog.success
+              ? "Ödeme linkiniz hazır! Lütfen cep telefonunuzu ve e-posta adresinizi kontrol edin."
+              : "Sipariş oluşturulurken bir hata meydana geldi. Lütfen destek ekibiyle iletişime geçin."}
+          </Typography>
+          <Button
+            variant="contained" size="large"
+            onClick={() => setResultDialog({ ...resultDialog, open: false })}
+            sx={{ borderRadius: 3, px: 6 }}
+          >
+            Anladım
+          </Button>
+        </Box>
+      </Dialog>
+
+      {/* Loading */}
+      <Dialog open={loading} PaperProps={{ sx: { bgcolor: "transparent", boxShadow: "none" } }}>
+        <Box sx={{ p: 5, bgcolor: "background.paper", borderRadius: 4, textAlign: "center" }}>
+          <CircularProgress color="primary" size={60} thickness={4} />
+          <Typography sx={{ mt: 2, fontWeight: "bold" }}>İşleminiz Yapılıyor...</Typography>
+        </Box>
+      </Dialog>
+
     </PageLayout>
   );
 };

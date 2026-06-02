@@ -31,7 +31,7 @@ import scheduleReport from './common/scheduleReport';
 import MapScale from '../map/MapScale';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 import exportExcel from '../common/util/exportExcel';
-
+import ReportPageAnime from './components/ReportPageAnime';
 const columnsArray = [
   ['startTime', 'reportStartTime'],
   ['startOdometer', 'positionOdometer'],
@@ -171,6 +171,8 @@ const StopReportPage = () => {
               <ColumnSelect columns={columns} setColumns={setColumns} columnsArray={columnsArray} />
             </ReportFilter>
           </div>
+          {items.length === 0 && !loading && <ReportPageAnime />}
+
           <Table>
             <TableHead>
               <TableRow>

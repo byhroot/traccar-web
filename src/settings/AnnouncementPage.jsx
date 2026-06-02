@@ -65,12 +65,26 @@ const AnnouncementPage = () => {
       subject: 'Aktarım Başarılı 🚚',
       body: 'Veri/Cihaz aktarımı başarıyla tamamlandı.',
     },
+
+    {
+      icon: '🚚',
+      title: 'Sipariş Oluşturuldu',
+      subject: 'Sipariş Oluşturuldu 🚚',
+      body: 'Aktivasyon için Ruhsat&belge yükleyiniz. https://takipon.com/account/belgeler',
+    },
+    {
+      icon: '💳',
+      title: 'Ödeme Bekleniyor',
+      subject: 'Ödeme Bekleniyor 💳',
+      body: 'Siparisiniz icin guvenli odeme gerceklestirebilirsiniz. Odeme Linki:  - Odeme linki gecerlilik suresi 7 gundur. Guvenli gunler dileriz.',
+    },
     {
       icon: '💳',
       title: 'Ödeme Bekleniyor',
       subject: 'Ödeme Bekleniyor 💳',
       body: 'Ödemeniz bekleniyor. Lütfen kontrol ediniz.',
     },
+
     {
       icon: '🔔',
       title: 'Hatırlatma',

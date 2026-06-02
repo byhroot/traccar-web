@@ -1,4 +1,4 @@
-import { Divider, List } from '@mui/material';
+import { Divider, List, Stack } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import PauseCircleFilledIcon from '@mui/icons-material/PauseCircleFilled';
@@ -12,12 +12,14 @@ import RouteIcon from '@mui/icons-material/Route';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import NotesIcon from '@mui/icons-material/Notes';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import { useAdministrator, useRestriction } from '../../common/util/permissions';
 import MenuItem from '../../common/components/MenuItem';
 import HomeIcon from '@mui/icons-material/Home';
 import { Card, CardContent, Typography, Slide, Box } from '@mui/material'; import AssessmentIcon from '@mui/icons-material/Assessment'; // ikon ekleyelim
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 
 const ReportsMenu = () => {
   const t = useTranslation();
@@ -25,7 +27,7 @@ const ReportsMenu = () => {
 
   const admin = useAdministrator();
   const readonly = useRestriction('readonly');
-
+  const navigate = useNavigate();
   const buildLink = (path) => {
     const sourceParams = new URLSearchParams(location.search);
     const deviceIds = sourceParams.getAll('deviceId');
@@ -52,18 +54,88 @@ const ReportsMenu = () => {
       <Slide in direction="down" timeout={700}>
         <Box sx={{ px: 2, py: 1 }}>
           <Card
+            onClick={() => navigate('/dashboard')}
             sx={{
-              background: 'linear-gradient(135deg, #00959E 30%, #42d7f5 90%)',
-              color: '#fffFFf',
+              background: 'linear-gradient(135deg, #00959E 0%, #00bcd4 50%, #42d7f5 100%)',
+              color: '#fff',
               borderRadius: 3,
-              boxShadow: 3,
+              boxShadow: '0 4px 20px rgba(0,149,158,0.35)',
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 28px rgba(0,149,158,0.45)',
+              },
+              '&:active': {
+                transform: 'translateY(0)',
+              },
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: -30,
+                right: -30,
+                width: 120,
+                height: 120,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.08)',
+                pointerEvents: 'none',
+              },
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: -40,
+                left: '30%',
+                width: 160,
+                height: 160,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.05)',
+                pointerEvents: 'none',
+              },
             }}
           >
-            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 3 }}>
-              <AssessmentIcon sx={{ fontSize: 32, mr: 1 }} />
-              <Typography variant="h5" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
-                {t('reportTitle')}
-              </Typography>
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              py: 3,
+              px: 3,
+              '&:last-child': { pb: 3 },
+            }}>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
+                <Box sx={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 2,
+                  background: 'rgba(255,255,255,0.18)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backdropFilter: 'blur(4px)',
+                }}>
+                  <AssessmentIcon sx={{ fontSize: 24 }} />
+                </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 0.5, lineHeight: 1.2 }}>
+                    {t('reportTitle')}
+                  </Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.8, letterSpacing: 0.3 }}>
+                    Dashboard
+                  </Typography>
+                </Box>
+              </Stack>
+              <Box sx={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.18)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <DashboardIcon sx={{ fontSize: 15 }} />
+              </Box>
             </CardContent>
           </Card>
         </Box>
@@ -71,10 +143,10 @@ const ReportsMenu = () => {
 
       <List>
         <MenuItem
-          title={t('dashboardTitle')}
+          title={"AI " + t('reportTitle')}
           link="/reports/ai-details"
-          icon={<HomeIcon />}
-          selected={location.pathname === '/dashboard'}
+          icon={<AutoAwesomeIcon />}
+          selected={location.pathname === '/reports/ai-details'}
         />
         <MenuItem
           title={t('reportTrips')}

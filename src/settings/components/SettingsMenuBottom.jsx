@@ -59,6 +59,7 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
   const userName = useSelector((state) => state.session.user.name);
   const userEmail = useSelector((state) => state.session.user.email);
   const sms = useSelector((state) => state.session.user.attributes?.sms || 0);
+  const servis = useSelector((state) => state.session.user?.attributes?.servis || false);
 
   const go = (link) => {
     navigate(link);
@@ -186,6 +187,19 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
                 <Chip
                   size="small"
                   label="PRO"
+                  sx={{
+                    height: 20, fontSize: '0.65rem',
+                    fontWeight: 700,
+                    background: 'linear-gradient(90deg, #a855f7, #6366f1)',
+                    color: '#fff',
+                    border: 'none',
+                    '& .MuiChip-label': { px: 0.8 },
+                  }}
+                />
+              ) : servis ? (
+                <Chip
+                  size="small"
+                  label="Servis Yetkilisi"
                   sx={{
                     height: 20, fontSize: '0.65rem',
                     fontWeight: 700,

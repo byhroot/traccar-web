@@ -58,7 +58,7 @@ const DarkModeSwitch = () => {
       const updatedAttributes = {
         ...user.attributes,
         darkModeuser: checked,
-        activeMapStyles: checked ? "googleHybrid,darkCarto,locationIqDark" : "custom,googleRoad,googleHybrid,googleSatellite,carto,openTopoMap,locationIqStreets,osm,yandexMap,openFreeMap",
+        activeMapStyles: checked ? "googleHybrid,darkCarto,locationIqDark" : "custom,googleRoad,googleHybrid,googleSatellite,carto,openTopoMap,locationIqStreets,osm,yandexMap",
       };
 
       const response = await fetch(`/api/users/${user.id}`, {

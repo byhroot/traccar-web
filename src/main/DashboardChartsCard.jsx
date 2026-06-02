@@ -49,7 +49,7 @@ const DeviceChart = ({ devices }) => {
   const [metric, setMetric] = useState("distance");
   const [timeRange, setTimeRange] = useState("reportThisWeek");
   const [selectedDevice, setSelectedDevice] = useState("all");
-  const [showPie, setShowPie] = useState(true);
+  const [showPie, setShowPie] = useState(false);
 
   // Animasyonlu KPI state
   const [displayValue, setDisplayValue] = useState(0);
@@ -258,7 +258,7 @@ const DeviceChart = ({ devices }) => {
 
   return (
     <>
-      <Card sx={{ p: 2, borderRadius: 2 }}>
+      <Card sx={{ p: 0.5, borderRadius: 0.5 }}>
         <CardContent>
           {/* KPI */}
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -338,7 +338,7 @@ const DeviceChart = ({ devices }) => {
               {/* AreaChart */}
               {((!isDesktop && !showPie) || isDesktop) && (
                 <Box flex={1} height={300}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={300} minHeight={200}>
                     <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />

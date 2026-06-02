@@ -73,24 +73,21 @@ const NotificationsPageNewProAlertCard = ({ smsLimit, forceOpen = false, onForce
   const [internalOpen, setInternalOpen] = useState(false);
   const [loadingLink, setLoadingLink] = useState(false);
   const [success, setSuccess] = useState(false);
+  smsLimit = smsLimit ?? 0;
 
-  const limitLoaded = smsLimit != null;
-  const isLow = limitLoaded && smsLimit < 50;       // < 50 → satış odaklı
-  const isHigh = limitLoaded && smsLimit >= 50;      // >= 50 → kredi bilgisi
+  const isLow = smsLimit < 100;
+  const isHigh = smsLimit >= 100;
 
-  // SMS hakkını aramaya çevir: 4 kredi / arama (cevaplanan), ama istatistiksel ortalama ~1.5 kredi/arama
-  const smsCount = limitLoaded ? smsLimit : 0;
-  const callCount = limitLoaded ? Math.floor(smsLimit / 4) : 0;       // cevaplananlar için
-
+  const smsCount = smsLimit;
+  const callCount = Math.floor(smsLimit / 4);
   const dialogOpen = forceOpen || internalOpen;
 
   useEffect(() => {
-    if (!limitLoaded) return;
     fetch('/api/paylinks/prices')
       .then(r => r.ok ? r.json() : null)
       .then(data => setProPrice(data?.proPrice ?? 490))
       .catch(() => setProPrice(490));
-  }, [limitLoaded]);
+  }, []);
 
   // Mesaj döngüsü — sadece düşük limitte
   useEffect(() => {
@@ -123,7 +120,7 @@ const NotificationsPageNewProAlertCard = ({ smsLimit, forceOpen = false, onForce
   };
 
   // Limit yüklenmediyse ya da kapatıldıysa banner gösterme
-  if (!limitLoaded || dismissed) return null;
+  if (dismissed) return null;
 
   const current = LOW_MESSAGES[msgIndex];
   const lowAccent = current.accent;
@@ -381,8 +378,8 @@ const NotificationsPageNewProAlertCard = ({ smsLimit, forceOpen = false, onForce
                       <PhoneInTalkIcon sx={{ fontSize: 16, color: '#c4b5fd' }} />
                       <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>AI Arama</Typography>
                     </Stack>
-                    <Typography variant="h5" sx={{ color: '#c4b5fd', fontWeight: 900, lineHeight: 1 }}>{callCount.toLocaleString()}</Typography>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>arama (cevaplanan)</Typography>
+                    <Typography variant="h5" sx={{ color: '#c4b5fd', fontWeight: 900, lineHeight: 1 }}>{callCount.toLocaleString()} ~ {Math.floor(callCount * 4).toLocaleString()}</Typography>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>Cevaplanan- Meşgule Alınan</Typography>
                   </Paper>
                 </Stack>
               </Box>
@@ -441,7 +438,7 @@ const NotificationsPageNewProAlertCard = ({ smsLimit, forceOpen = false, onForce
                     <Box>
                       <Typography variant="body2" fontWeight={800} color="#059669" mb={0.5}>İstatistiklere göre</Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6, display: 'block' }}>
-                        1000 kredi, <strong>1 araç için yaklaşık 1 yıl</strong> yetecek düzeydedir. Bu süre zarfında ortalama 1.500 SMS bildirimi veya 375 AI arama hakkı sunar. Kullanım yoğunluğunuza bağlı olarak bu süre değişebilir, Pro Plus paketinizin avantajlarından uzun süre faydalanabilir, krediniz tükendiğinde TakipOn size sektörün en uygun fiyatlarıyla paket yenileme imkanı sunar.
+                        1000 kredi, <strong>1 araç için yaklaşık 1 yıl</strong> yetecek düzeydedir. Bu süre zarfında ortalama (1.500) SMS bildirimi veya (375~1500) AI arama hakkı sunar. Kullanım yoğunluğunuza bağlı olarak bu süre değişebilir, Pro Plus paketinizin avantajlarından uzun süre faydalanabilir, krediniz tükendiğinde TakipOn size sektörün en uygun fiyatlarıyla paket yenileme imkanı sunar.
                       </Typography>
                     </Box>
                   </Stack>

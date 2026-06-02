@@ -35,7 +35,7 @@ const DeviceConnectionsPage = () => {
           </AccordionSummary>
           <AccordionDetails className={classes.details}>
             <LinkField
-              endpointAll="/api/geofences"
+              endpointAll="/api/geofences?all=true"
               endpointLinked={`/api/geofences?deviceId=${id}`}
               baseId={id}
               keyBase="deviceId"
@@ -43,7 +43,7 @@ const DeviceConnectionsPage = () => {
               label={t('sharedGeofences')}
             />
             <LinkField
-              endpointAll="/api/notifications"
+              endpointAll="/api/notifications?all=true"
               endpointLinked={`/api/notifications?deviceId=${id}`}
               baseId={id}
               keyBase="deviceId"
@@ -53,7 +53,7 @@ const DeviceConnectionsPage = () => {
             />
             {!features.disableDrivers && (
               <LinkField
-                endpointAll="/api/drivers"
+                endpointAll="/api/drivers?all=true"
                 endpointLinked={`/api/drivers?deviceId=${id}`}
                 baseId={id}
                 keyBase="deviceId"
@@ -64,7 +64,7 @@ const DeviceConnectionsPage = () => {
             )}
             {!features.disableComputedAttributes && (
               <LinkField
-                endpointAll="/api/attributes/computed"
+                endpointAll="/api/attributes/computed?all=true"
                 endpointLinked={`/api/attributes/computed?deviceId=${id}`}
                 baseId={id}
                 keyBase="deviceId"
@@ -75,7 +75,7 @@ const DeviceConnectionsPage = () => {
             )}
             {!features.disableSavedCommands && (
               <LinkField
-                endpointAll="/api/commands"
+                endpointAll="/api/commands?all=true"
                 endpointLinked={`/api/commands?deviceId=${id}`}
                 baseId={id}
                 keyBase="deviceId"
@@ -86,7 +86,7 @@ const DeviceConnectionsPage = () => {
             )}
             {!features.disableMaintenance && (
               <LinkField
-                endpointAll="/api/maintenance"
+                endpointAll="/api/maintenance?all=true"
                 endpointLinked={`/api/maintenance?deviceId=${id}`}
                 baseId={id}
                 keyBase="deviceId"
