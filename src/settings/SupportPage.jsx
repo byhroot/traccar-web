@@ -40,7 +40,7 @@ const SupportPage = () => {
   };
 
   // Kullanıcı bilgilerini düz metin olarak birleştir
-  const userDataString = `name==${currentUser.name};;email==${currentUser.email};;phone==${currentUser.phone};;key==&jlvL;1Yx4=wHC=`;
+  const userDataString = `name==${currentUser.name};;email==${currentUser.email};;phone==${currentUser.phone};;key==`;
 
   // Şifreleme işlemi (3 karakter kaydırma)
   const encryptedData = customEncrypt(userDataString, 3);
@@ -49,7 +49,7 @@ const SupportPage = () => {
   const iframeUrl = `https://takipon.com/appcontact?data=${encodeURIComponent(encryptedData)}`;
 
   return (
-    <PageLayout breadcrumbs={['support', 'support']}>
+    <PageLayout breadcrumbs={['settingsSupport', 'settingsSupport']}>
       <iframe
         src={iframeUrl}
         width="100%"

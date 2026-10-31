@@ -46,8 +46,8 @@ const BottomMenu = () => {
     if (location.pathname.startsWith(`/settings`)) {
       return 'account';
     }
-    if (location.pathname.startsWith('/settings')) {
-      return 'settings';
+    if (location.pathname.startsWith('/finans')) {
+      return 'account';
     }
     if (location.pathname.startsWith('/reports')) {
       return 'reports';
@@ -60,8 +60,8 @@ const BottomMenu = () => {
     }
     if (location.pathname === '/dashboard') {
       return 'dashboard';
-    } if (location.pathname === '/servis') {
-      return 'servis';
+    } if (location.pathname === '/finans') {
+      return 'finans';
     }
     if (location.pathname === '/settings/supportpage') {
       return 'settings';
@@ -111,8 +111,8 @@ const BottomMenu = () => {
       case 'dashboard':
         navigate('/dashboard');
         break;
-      case 'servis':
-        navigate('/servis');
+      case 'finans':
+        navigate('/finans');
         break;
       case 'map':
         navigate('/');
@@ -168,7 +168,7 @@ const BottomMenu = () => {
 
         {[
           { label: t('mainpageTitle'), value: 'dashboard', disabled: servis, icon: <DashboardIcon /> },
-          { label: t('sharedServiceName'), value: 'servis', disabled: !servis, icon: <HandymanIcon /> },
+          { label: t('sharedServiceName'), value: 'finans', disabled: !servis, icon: <HandymanIcon /> },
           { label: t('mapTitle'), value: 'map', icon: <SatelliteAltIcon />, badge: socket === false },
           { label: t('reportTitle'), value: 'reports', icon: <AssessmentIcon />, disabled: disableReports },
           { label: readonly ? t('loginLogout') : t('commandIndex'), value: readonly ? 'logout' : 'account', icon: readonly ? <ExitToAppIcon /> : <SettingsSuggestIcon /> },

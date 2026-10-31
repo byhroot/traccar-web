@@ -58,7 +58,6 @@ import LinkField from '../common/components/LinkField';
 import { Box, Alert, AlertTitle } from '@mui/material';
 import QRCode from 'react-qr-code'; // Elindeki mevcut kütüphane bu
 
-
 const UserPage = () => {
   const { classes } = useSettingsStyles();
   const navigate = useNavigate();
@@ -111,29 +110,6 @@ const UserPage = () => {
     }
   };
 
-  const handleOtpCancel = () => {
-    setItem({ ...item, totpKey: null }); // İptal edilirse key'i temizle
-    setOtpDialogOpen(false);
-    setConfirmStep(false);
-  };
-
-  const handleOtpSaveClick = () => {
-    setConfirmStep(true); // İkinci onay aşamasına geç
-  };
-
-  const handleOtpFinalConfirm = () => {
-    setOtpDialogOpen(false);
-    setConfirmStep(false);
-    // Burada otomatik kaydetme istersen onSubmit() çağırabilirsin 
-    // ya da kullanıcının sayfanın altındaki ana kaydet butonuna basmasını beklersin.
-  };
-  const [tooltipOpen, setTooltipOpen] = useState(false);
-
-  // Tooltip'in tıklama ile açılıp kapanmasını sağlamak için
-  const handleTooltipClick = () => {
-    setTooltipOpen(prevOpen => !prevOpen);  // Mevcut durumu tersine çevir
-  };
-
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -141,10 +117,6 @@ const UserPage = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleGenerateTotp = useCatch(async () => {
-    const response = await fetchOrThrow('/api/users/totp', { method: 'POST' });
-    setItem({ ...item, totpKey: await response.text() });
-  });
 
   const closeRevokeDialog = () => {
     setRevokeDialogOpen(false);
@@ -201,7 +173,6 @@ const UserPage = () => {
     >
       {item && (
         <>
-
           {/* User Account List Kartı */}
           {id &&
             <Grid item xs={12} sm={10} md={10} lg={10} xl={8}>

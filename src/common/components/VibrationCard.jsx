@@ -84,10 +84,10 @@ const VibrationCard = () => {
     if (commandType === 'engineResume') {
       updatedAttributes.blockedDevice = false;
     }
-    if (commandType === 'alarmVibrationon') {
+    if (commandType === 'alarmArm') {
       updatedAttributes.alarmVibration = true;
     }
-    if (commandType === 'alarmVibrationoff') {
+    if (commandType === 'alarmDisarm') {
       updatedAttributes.alarmVibration = false;
     }
     if (commandType === 'alarmVibrationlevel') {
@@ -270,7 +270,7 @@ const VibrationCard = () => {
           <IconButton
             color={blockedDevice ? 'success' : 'error'}
             onClick={() => {
-              setSelectedCommand(vibrationStatus ? 'alarmVibrationoff' : 'alarmVibrationon');
+              setSelectedCommand(vibrationStatus ? 'alarmDisarm' : 'alarmArm');
               setConfirmOpen(true);
             }}
             disabled={limitCommands}

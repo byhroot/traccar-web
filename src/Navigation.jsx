@@ -2,7 +2,6 @@ import { Route, Routes, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import MainPage from './main/MainPage';
 import Dashboard from './main/Dashboard';
-import ServicePage from './main/ServicePage';
 import CombinedReportPage from './reports/CombinedReportPage';
 import PositionsReportPage from './reports/PositionsReportPage';
 import ServerPage from './settings/ServerPage';
@@ -73,6 +72,19 @@ import Paymentpage from './settings/PaymentPage';
 import ReportsMenuNew from './reports/components/ReportsMenuNew';
 import NotificationCard from './common/components/NotificationCard';
 import ReportsMenuNewAIDetails from './reports/components/ReportsMenuNewAIDetails';
+import OrdersPage from './finans/OrdersPage';
+import RequestsPage from './finans/RequestsPage';
+import NewRequestPage from './finans/NewRequestPage';
+import ServisJobsPage from './finans/ServisJobsPage';
+import ServisJobDetailPage from './finans/ServisJobDetailPage';
+import AdminRequestsPage from './finans/AdminRequestsPage';
+import AdminRequestDetailPage from './finans/AdminRequestDetailPage';
+import AdminCentersPage from './finans/AdminCentersPage';
+import AdminCenterPage from './finans/AdminCenterPage';
+import FinansDashboard from './finans/FinansDashboard';
+import AdminReviewPage from './finans/AdminReviewPage';
+import RequestDetailPage from './finans/RequestDetailPage';
+
 const Navigation = () => {
   const dispatch = useDispatch();
   const { setLocalLanguage } = useLocalization();
@@ -139,7 +151,6 @@ const Navigation = () => {
         <Route path="geofences" element={<GeofencesPage />} />
         <Route path="emulator" element={<EmulatorPage />} />
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="servis" element={<ServicePage />} />
 
         <Route path="settings">
           <Route path="settingsmenumodern" element={<ModernSettingsMenu />} />
@@ -191,7 +202,21 @@ const Navigation = () => {
           <Route path="supportpage" element={<SupportPage />} />
 
         </Route>
-
+        <Route path="finans">
+          <Route index element={<FinansDashboard />} />
+          <Route path="orders" element={<OrdersPage />} />
+          <Route path="requests" element={<RequestsPage />} />
+          <Route path="requests/new" element={<NewRequestPage />} />
+          <Route path="requests/:id" element={<RequestDetailPage />} />
+          <Route path="servis/jobs" element={<ServisJobsPage />} />
+          <Route path="servis/job/:id" element={<ServisJobDetailPage />} />
+          <Route path="admin/requests" element={<AdminRequestsPage />} />
+          <Route path="admin/request/:id" element={<AdminRequestDetailPage />} />
+          <Route path="admin/review" element={<AdminReviewPage />} />
+          <Route path="admin/centers" element={<AdminCentersPage />} />
+          <Route path="admin/center/:id" element={<AdminCenterPage />} />
+          <Route path="admin/center" element={<AdminCenterPage />} />
+        </Route>
         <Route path="reports">
           <Route path="combined" element={<CombinedReportPage />} />
           <Route path="chart" element={<ChartReportPage />} />

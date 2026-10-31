@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Table, TableRow, TableCell, TableHead, TableBody,
@@ -79,40 +79,110 @@ function ActionTypeIcon({ type }) {
   return map[type] || <CheckCircleOutlineIcon fontSize="small" />;
 }
 
+
+const RANGES = [
+  { v: 24, label: '24 Saat' },
+  { v: 72, label: '3 Gün' },
+  { v: 168, label: '7 Gün' },
+  { v: 'last10', label: 'Son 10 Log' },
+];
+const MIN_LOGS = 10;
+const MAX_LOOKBACK_H = 365 * 24; // Son 10 Log için en fazla 1 yıl geriye bak
+const sortDesc = (arr) => [...arr].sort((a, b) => new Date(b.actionTime) - new Date(a.actionTime));
+
+
 // ─── User Logs Dialog ─────────────────────────────────────────────────────────
 const UserLogsDialog = ({ open, onClose, userId, userName }) => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [range, setRange] = useState(24);
+  const [stopped, setStopped] = useState(false);
+  const [scannedDays, setScannedDays] = useState(0);
+  const abortRef = useRef(null);
+
+  const fetchRange = async (fromMs, toMs, signal) => {
+    const iso = (ms) => new Date(ms).toISOString().replace('Z', '+00:00');
+    const res = await fetchOrThrow(
+      `/api/actions?from=${encodeURIComponent(iso(fromMs))}&to=${encodeURIComponent(iso(toMs))}&userId=${userId}`,
+      { signal },
+    );
+    return res.json();
+  };
+
+  const handleStop = () => abortRef.current?.abort();
+  const handleClose = () => { abortRef.current?.abort(); onClose(); };
 
   useEffectAsync(async () => {
     if (!open || !userId) return;
 
+    abortRef.current?.abort();               // önceki sorguyu iptal et
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
+    setStopped(false);
+    setLogs([]);
+    setScannedDays(0);
+
+    const now = Date.now();
     try {
-      const now = new Date();
-      const to = now.toISOString().replace('Z', '+00:00');
-      const from = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().replace('Z', '+00:00');
-      const res = await fetchOrThrow(
-        `/api/actions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&userId=${userId}`
-      );
-      setLogs(await res.json());
+      if (range === 'last10') {
+        let result = [];
+        let to = now;
+        let stepH = 24;
+        let extraLeft = null; // ilk log bulunana kadar null, sonra 2'den geriye sayar
+        while (result.length < MIN_LOGS && now - to < MAX_LOOKBACK_H * 3600000) {
+          const from = to - stepH * 3600000;
+          const part = await fetchRange(from, to, controller.signal);
+          result = result.concat(part);
+          to = from;
+          setScannedDays(Math.round((now - to) / 86400000));
+          setLogs(sortDesc(result).slice(0, MIN_LOGS));
+          stepH = Math.min(stepH * 2, 168);
+
+          if (extraLeft !== null) {
+            extraLeft -= 1;
+            if (extraLeft <= 0) break;   // ilk logdan sonra 2 sorgu daha atıldı
+          } else if (result.length > 0) {
+            extraLeft = 2;               // ilk log bulundu, 2 sorgu hakkı başlat
+          }
+        }
+        setLogs(sortDesc(result).slice(0, MIN_LOGS));
+      } else {
+        setLogs(sortDesc(await fetchRange(now - range * 3600000, now, controller.signal)));
+      }
     } catch (e) {
-      setError(e.message || 'Loglar yüklenemedi.');
+      if (abortRef.current !== controller) return; // sekme değişti, yeni sorgu devralır
+      if (e.name === 'AbortError') setStopped(true);
+      else setError(e.message || 'Loglar yüklenemedi.');
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) setLoading(false);
     }
-  }, [open, userId]);
+  }, [open, userId, range]);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper">
+    <Dialog open={open} onClose={handleClose} fullScreen scroll="paper">
       <DialogTitle>
         <Stack direction="row" alignItems="center" spacing={1}>
           <HistoryIcon color="primary" />
-          <Typography variant="h6">Son 24 Saat Logları</Typography>
+          <Typography variant="h6">Loglar</Typography>
           <Typography variant="body2" color="textSecondary">— {userName}</Typography>
+          <Chip size="small" label={`${logs.length} kayıt`} />
+          {range === 'last10' && scannedDays > 0 && (
+            <Chip size="small" variant="outlined" label={`Son ${scannedDays} gün tarandı`} />
+          )}
+          {stopped && <Chip size="small" color="warning" label="Durduruldu" />}
+          {loading && (
+            <Button size="small" color="error" variant="outlined" onClick={handleStop}>
+              Durdur
+            </Button>
+          )}
         </Stack>
+        <Tabs value={range} onChange={(_, v) => setRange(v)} sx={{ mt: 1 }}>
+          {RANGES.map((r) => <Tab key={r.label} value={r.v} label={r.label} />)}
+        </Tabs>
       </DialogTitle>
       <DialogContent dividers sx={{ p: 0 }}>
         {loading && <LinearProgress />}

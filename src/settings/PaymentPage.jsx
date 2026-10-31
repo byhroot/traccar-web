@@ -44,6 +44,7 @@ import PaymentStatusCard from "./PaymentStatusCard";
 import PaymentPricesCard from "./PaymentPricesCard";
 import { useAdministrator } from "../common/util/permissions";
 import PaymentStatusAdminCard from "./PaymentStatusAdminCard";
+import FinansMenu from "../finans/FinansMenu";
 
 const PaymentPage = () => {
   const [devices, setDevices] = useState([]);
@@ -227,7 +228,7 @@ const PaymentPage = () => {
   ].filter(Boolean).join(" · ");
 
   return (
-    <PageLayout breadcrumbs={["sharedSettings", "records"]}>
+    <PageLayout menu={<FinansMenu />} breadcrumbs={['sharedServiceName', 'userBilling']}>
       {/* pb: 10 → sticky bar yüksekliği kadar boşluk bırakır */}
       <Box sx={{ width: "100%", maxWidth: 1200, mx: "auto", px: { xs: 1.5, md: 3 }, pb: 14, overflowX: "hidden" }}>
         <PaymentPricesCard refreshKey={refreshKey} />
@@ -374,6 +375,48 @@ const PaymentPage = () => {
             );
           })}
         </Box>
+        {/* Boş durum */}
+        {filteredDevices.length === 0 && (
+          <Zoom in timeout={400}>
+            <Box
+              sx={{
+                gridColumn: '1 / -1',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 8,
+                gap: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 72, height: 72, borderRadius: '50%',
+                  bgcolor: 'action.hover',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  animation: 'floatIcon 3s ease-in-out infinite',
+                  '@keyframes floatIcon': {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-8px)' },
+                  },
+                }}
+              >
+                <CheckCircleOutlineIcon sx={{ fontSize: 36, color: 'success.main' }} />
+              </Box>
+
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                  {search ? 'Araç bulunamadı' : 'Tüm araçlarınız güncel'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 320 }}>
+                  {search
+                    ? `"${search}" ile eşleşen araç yok.`
+                    : 'Paket yenileyebileceğiniz süresi yaklaşan cihazınız bulunmuyor. Paket yenileme işlemleri son 30 gün içinde yapılabilir.'}
+                </Typography>
+              </Box>
+            </Box>
+          </Zoom>
+        )}
       </Box>
 
       {/* ── STICKY BAR ── */}
@@ -651,8 +694,21 @@ const PaymentPage = () => {
               : "Sipariş oluşturulurken bir hata meydana geldi. Lütfen destek ekibiyle iletişime geçin."}
           </Typography>
           <Button
-            variant="contained" size="large"
-            onClick={() => setResultDialog({ ...resultDialog, open: false })}
+            variant="contained"
+            size="large"
+            onClick={() => {
+              setResultDialog({ ...resultDialog, open: false });
+
+              // Sadece başarılıysa seçimleri temizle
+              if (resultDialog.success) {
+                setSelectedDevices([]);
+                setPackageType("standard");
+                setProCount(1);
+                setStep(1);
+                setShowDeviceList(false);
+                setSearch("");
+              }
+            }}
             sx={{ borderRadius: 3, px: 6 }}
           >
             Anladım

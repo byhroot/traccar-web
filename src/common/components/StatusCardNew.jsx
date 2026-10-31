@@ -51,6 +51,8 @@ import { useAttributePreference } from '../util/preferences';
 import EngineIcon from '../../resources/images/data/engine.svg?react';
 import DeviceSettingsNew from '../../settings/DeviceSettingsNew';
 import AreaChartIcon from '@mui/icons-material/AreaChart';
+import FourGMobiledataIcon from '@mui/icons-material/FourGMobiledata';
+import FourGPlusMobiledataIcon from '@mui/icons-material/FourGPlusMobiledata';
 
 const iconMapping = {
   speed: <SpeedIcon color="primary" fontSize="small" />,
@@ -255,13 +257,13 @@ const StatusCardNew = ({ deviceId, position, onClose, disableActions, desktopPad
           color = theme.palette.error.main; emoji = "📶";
         }
       } else {
-        if (diffInMinutes > 5 && speed > 1) {
+        if (diffInMinutes > 5 && speed > 10) {
           label = `${t('deviceStatusOffline')} ${t('commandData')} ${t('sharedLoading')}`;
           color = theme.palette.warning.dark; emoji = "📡"; isDelayed = true;
-        } else if (speed > 1 && ignition) {
+        } else if (speed > 5 && ignition) {
           label = t('eventDeviceMoving');
           color = "green"; emoji = "🚀";
-        } else if (speed <= 1 && ignition) {
+        } else if (speed <= 5 && ignition) {
           label = t('alarmIdle');
           color = theme.palette.warning.main; emoji = "⏳";
         } else {
@@ -318,7 +320,7 @@ const StatusCardNew = ({ deviceId, position, onClose, disableActions, desktopPad
     return { label, color, time: timeLabel, emoji, isDelayed, timePrefix };
 
     // BAĞIMLILIK LİSTESİ GÜNCELLENDİ
-  }, [device?.status, position, isSpecialPage, t]);
+  }, [device, position, isSpecialPage, t]);
 
   const handleGeofence = useCatchCallback(async () => {
     const newItem = { name: t('sharedGeofence'), area: `CIRCLE (${position.latitude} ${position.longitude}, 50)` };
@@ -435,14 +437,23 @@ const StatusCardNew = ({ deviceId, position, onClose, disableActions, desktopPad
                     </Tooltip>
 
                     {/* RSSI İkonu ve Hesaplaması */}
+                    {/* RSSI İkonu ve Hesaplaması */}
                     {position?.attributes?.hasOwnProperty('rssi') && (
                       <Tooltip title={`Sinyal: ${position?.attributes?.rssi}`}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          {device?.status === 'online' || isSpecialPage ?
-                            getRssiIcon(position?.attributes?.rssi)
-                            :
-                            <SignalCellular1BarIcon sx={{ fontSize: 16, color: '#616161' }} />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                          {device?.status === 'online' || isSpecialPage
+                            ? getRssiIcon(position?.attributes?.rssi)
+                            : <SignalCellular1BarIcon sx={{ fontSize: 16, color: '#616161' }} />
                           }
+
+                          {position?.attributes?.hasOwnProperty('cellType') && position?.attributes?.cellType === '4G' && (
+                            <FourGPlusMobiledataIcon
+                              sx={{
+                                fontSize: 13,
+                                color: '#00959E',
+                              }}
+                            />
+                          )}
                         </Box>
                       </Tooltip>
                     )}

@@ -41,6 +41,9 @@ import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import HandymanIcon from '@mui/icons-material/Handyman';
 import { Avatar, Chip } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import TireRepairIcon from '@mui/icons-material/TireRepair';
+
 
 const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
   const t = useTranslation();
@@ -58,8 +61,9 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
   // Önce selector'ları ekle (diğer useSelector'ların yanına):
   const userName = useSelector((state) => state.session.user.name);
   const userEmail = useSelector((state) => state.session.user.email);
-  const sms = useSelector((state) => state.session.user.attributes?.sms || 0);
+  const sms = useSelector((state) => state.session.user.attributes?.smsLimit || 0);
   const servis = useSelector((state) => state.session.user?.attributes?.servis || false);
+  const statuscarddisabled = useSelector((state) => state.session.user?.attributes?.statuscarddisabled || false);
 
   const go = (link) => {
     navigate(link);
@@ -108,9 +112,9 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
         <Box
           sx={{
             position: 'relative',
-            pt: 3,
-            pb: 2.5,
-            px: 2.5,
+            pt: 2,
+            pb: 3,
+            px: 2,
             background: 'linear-gradient(145deg, #00959E 0%, #006f75 60%, #005a60 100%)',
             overflow: 'hidden',
             '&::before': {
@@ -184,9 +188,12 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
                   }}
                 />
               ) : sms > 100 ? (
+
+
                 <Chip
                   size="small"
-                  label="PRO"
+                  label="PRO PLUS"
+                  onClick={() => navigate("/settings/notificationsnew")}
                   sx={{
                     height: 20, fontSize: '0.65rem',
                     fontWeight: 700,
@@ -196,6 +203,8 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
                     '& .MuiChip-label': { px: 0.8 },
                   }}
                 />
+
+
               ) : servis ? (
                 <Chip
                   size="small"
@@ -209,7 +218,22 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
                     '& .MuiChip-label': { px: 0.8 },
                   }}
                 />
-              ) : null}
+              ) : (
+                <Chip
+                  size="small"
+                  label="Standart User"
+                  onClick={() => navigate("/settings/notificationsnew")}
+
+                  sx={{
+                    height: 20, fontSize: '0.65rem',
+                    fontWeight: 700,
+                    background: 'linear-gradient(90deg, #55a6f7, #6366f1)',
+                    color: '#fff',
+                    border: 'none',
+                    '& .MuiChip-label': { px: 0.8 },
+                  }}
+                />
+              )}
             </Box>
           </Box>
         </Box>
@@ -305,13 +329,23 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
                     <SendIcon />,
                     location.pathname.startsWith('/settings/command')
                   )}
+
+                <Divider sx={{ my: 1 }} />
+
+                {!features.disableSavedCommands && !statuscarddisabled &&
+                  renderItem(
+                    t('support'),
+                    '/finans',
+                    <SupportAgentIcon />,
+                    location.pathname.startsWith('/finans')
+                  )}
               </>
             )}
 
             {renderItem(
-              t('settingsSupport'),
+              t('serverAnnouncement'),
               '/settings/supportpage',
-              <SupportAgentIcon fontSize="small" color="primary" />,
+              <CampaignIcon fontSize="small" color="primary" />,
               location.pathname.startsWith('/settings/supportpage')
             )}
             {billingLink &&
@@ -358,14 +392,6 @@ const ModernSettingsMenu = ({ open, onClose, handleLogout }) => {
                     <VerifiedUserIcon />,
                     location.pathname === '/reports/actions'
                   )}
-                {admin &&
-                  renderItem(
-                    t('sharedServiceName'),
-                    '/servis',
-                    <HandymanIcon />,
-                    location.pathname === '/reports/actions'
-                  )}
-
                 {renderItem(
                   t('settingsUsers'),
                   '/settings/users',

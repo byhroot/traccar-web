@@ -142,6 +142,30 @@ export default (t) =>
           type: 'string',
         },
       ],
+      setHbt: [
+        {
+          key: 'time',
+          name: t('reportDuration'),
+          description: t('commandHbtTime'),
+          type: 'number',
+          min: 0,
+          max: 65000,
+          default: 0,
+          unit: 'min',
+          placeholder: '0',
+        },
+        {
+          key: 'value',
+          name: t('positionHeartRate'),
+          description: t('commandHbtInterval'),
+          type: 'number',
+          min: 0,
+          max: 65000,
+          default: 5,
+          unit: 'min',
+          placeholder: '5',
+        },
+      ],
       modePowerSaving: [
         {
           key: 'enable',
@@ -151,9 +175,14 @@ export default (t) =>
       ],
       modeDeepSleep: [
         {
-          key: 'enable',
-          name: t('commandEnable'),
-          type: 'boolean',
+          key: 'mode',
+          name: t('commandDeepSleep'),
+          description: t('commandModeDeepSleepDescription'),
+          type: 'number',
+          min: 0,
+          max: 2,
+          default: 1,
+          placeholder: '1',
         },
       ],
       alarmGeofence: [

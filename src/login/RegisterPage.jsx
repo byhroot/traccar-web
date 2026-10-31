@@ -100,8 +100,14 @@ const RegisterPage = () => {
 
   const handleSendCodeClick = async () => {
     try {
-      const response = await fetch(`/api/registerotp?phone=0${rawPhone}`, {
+      const response = await fetch('/api/registerotp', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: `0${rawPhone}`,
+          name,
+          email,
+        }),
       });
 
       // JSON parse etmeyi burada yapıyoruz, hata kodu olsa bile JSON dönebilir

@@ -97,10 +97,10 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
 
   // ReportFilter'da evaluateDisabled'a ekle:
   const evaluateDisabled = () => {
-    if (deviceType === 'single' && !deviceIds.length) return true;
+    if (deviceType === 'single' && !admin && !deviceIds.length) return true;
     if (selectedOption === 'schedule' && (!description || !calendarId)) return true;
     // custom seçimde 1 günden fazlaysa devre dışı
-    if (deviceType === 'single' && period === 'custom') {
+    if (deviceType === 'single' && !admin && period === 'custom') {
       const diff = dayjs(customTo).diff(dayjs(customFrom), 'hour');
       if (diff > 72) return true;
     }

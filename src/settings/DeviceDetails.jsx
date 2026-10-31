@@ -217,10 +217,10 @@ const CommandDevicePageUsers = () => {
     if (commandType === 'engineResume') {
       updatedAttributes.blockedDevice = false;
     }
-    if (commandType === 'alarmVibrationon') {
+    if (commandType === 'alarmArm') {
       updatedAttributes.alarmVibration = true;
     }
-    if (commandType === 'alarmVibrationoff') {
+    if (commandType === 'alarmDisarm') {
       updatedAttributes.alarmVibration = false;
     }
     if (commandType === 'alarmVibrationlevel') {
@@ -502,8 +502,8 @@ const CommandDevicePageUsers = () => {
             <Stack spacing={3} sx={{ mt: 1 }}>
               <Box textAlign="center">
                 <Typography variant="body2" gutterBottom color="text.secondary">Mevcut Durum: <b>{deviceData?.attributes?.alarmVibration ? t("alarmPowerOn") : t("alarmPowerOff")}</b></Typography>
-                <Button variant="contained" fullWidth color={deviceData?.attributes?.alarmVibration ? "error" : "primary"} onClick={() => handleSendCommand(deviceData?.attributes?.alarmVibration ? 'alarmVibrationoff' : 'alarmVibrationon')} sx={{ borderRadius: 3, py: 1.5, fontWeight: 'bold' }}>
-                  {deviceData?.attributes?.alarmVibration ? t("commandAlarmVibrationoff") : t("commandAlarmVibrationon")}
+                <Button variant="contained" fullWidth color={deviceData?.attributes?.alarmVibration ? "error" : "primary"} onClick={() => handleSendCommand(deviceData?.attributes?.alarmVibration ? 'alarmDisarm' : 'alarmArm')} sx={{ borderRadius: 3, py: 1.5, fontWeight: 'bold' }}>
+                  {deviceData?.attributes?.alarmVibration ? t("commandAlarmDisarm") : t("commandAlarmArm")}
                 </Button>
               </Box>
               <Divider>{t("commandAlarmVibrationlevel")}</Divider>

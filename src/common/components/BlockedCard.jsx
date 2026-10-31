@@ -83,10 +83,10 @@ const BlockedCard = () => {
     if (commandType === 'engineResume') {
       updatedAttributes.blockedDevice = false;
     }
-    if (commandType === 'alarmVibrationon') {
+    if (commandType === 'alarmArm') {
       updatedAttributes.alarmVibration = true;
     }
-    if (commandType === 'alarmVibrationoff') {
+    if (commandType === 'alarmDisarm') {
       updatedAttributes.alarmVibration = false;
     }
     if (commandType === 'alarmVibrationlevel') {

@@ -85,8 +85,8 @@ const NotificationsPageNewProAlertCard = ({ smsLimit, forceOpen = false, onForce
   useEffect(() => {
     fetch('/api/paylinks/prices')
       .then(r => r.ok ? r.json() : null)
-      .then(data => setProPrice(data?.proPrice ?? 490))
-      .catch(() => setProPrice(490));
+      .then(data => setProPrice(data?.proPrice ?? 390))
+      .catch(() => setProPrice(390));
   }, []);
 
   // Mesaj döngüsü — sadece düşük limitte
