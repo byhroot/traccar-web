@@ -29,8 +29,10 @@ import StatusCardNew from '../common/components/StatusCardNew';
 import { useAttributePreference } from '../common/util/preferences';
 import { Menu, MenuItem, ListItemIcon, ListItemText, Checkbox } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Switch, FormControlLabel } from '@mui/material';
 import ReportPageAnime from '../reports/components/ReportPageAnime';
+import MapSnapRoute from '../map/MapSnapRoute';
+import { useAdministrator, useRestriction } from '../common/util/permissions';
 
 const useStyles = makeStyles()((theme) => ({
   root: {
@@ -114,6 +116,13 @@ const ReplayPage = () => {
     other: false,
   });
   const [filterAnchor, setFilterAnchor] = useState(null);
+  const admin = useAdministrator();
+
+  const [snapEnabled, setSnapEnabled] = useState(false);
+  const [snapQuery, setSnapQuery] = useState(null);
+  const [snapPositions, setSnapPositions] = useState([]);
+  const [snapLoading, setSnapLoading] = useState(false);
+  const [snapError, setSnapError] = useState(null);
   const loaded = Boolean(from && to && !loading && positions.length);
 
   const deviceName = useSelector((state) => {
@@ -191,6 +200,9 @@ const ReplayPage = () => {
     const deviceId = deviceIds.find(() => true);
     setLoading(true);
     setSelectedDeviceId(deviceId);
+    setSnapQuery({ deviceId, from, to });
+    setSnapPositions([]);
+    setSnapError(null);
     const query = new URLSearchParams({ deviceId, from, to });
     try {
       const response = await fetchOrThrow(`/api/positions?${query.toString()}`);
@@ -235,8 +247,42 @@ const ReplayPage = () => {
     if (!from && !to) {
       setPositions([]);
       setEvents([]);   // ← eklendi
+      setSnapPositions([]);
+      setSnapQuery(null);
+      setSnapEnabled(false);
     }
   }, [from, to]);
+  useEffect(() => {
+    if (!admin || !snapEnabled || !snapQuery) {
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      setSnapLoading(true);
+      setSnapError(null);
+      try {
+        const query = new URLSearchParams(snapQuery);
+        const response = await fetchOrThrow(`/api/reports/route-snap?${query.toString()}`, {
+          headers: { Accept: 'application/json' },
+        });
+        const data = await response.json();
+        if (!cancelled) {
+          setSnapPositions(data);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setSnapPositions([]);
+          setSnapError(e.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setSnapLoading(false);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [admin, snapEnabled, snapQuery]);
+
   const handleDownload = () => {
     const query = new URLSearchParams({ deviceId: selectedDeviceId, from, to });
     window.location.assign(`/api/positions/kml?${query.toString()}`);
@@ -248,6 +294,7 @@ const ReplayPage = () => {
         <MapOverlay />
         <MapGeofence />
         <MapRoutePath positions={positions} />
+        {admin && snapEnabled && <MapSnapRoute positions={snapPositions} />}
         <MapRouteEvents positions={positions} events={events} filters={eventFilters} />
 
         <MapRoutePoints positions={positions} onClick={onPointClick} showSpeedControl />
@@ -372,7 +419,7 @@ const ReplayPage = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: 4 }}>
-                  {[2, 4, 8, 16].map((speed) => (
+                  {[2, 4, 8, 16].map((speed) => ( //8x ve 16x hız seçenekleri eklendi
                     <button
                       key={speed}
                       onClick={() => setPlaySpeed(speed)}
@@ -399,6 +446,19 @@ const ReplayPage = () => {
                 {deviceName} - {positions && positions[index]
                   ? formatTime(positions[index]?.fixTime, 'seconds')
                   : '--:--'}
+                {admin && (
+                  <div style={{ textAlign: 'center', marginTop: 4 }}>
+                    <FormControlLabel
+                      control={<Switch size="small" checked={snapEnabled} onChange={(e) => setSnapEnabled(e.target.checked)} />}
+                      label={<span style={{ fontSize: 12 }}>OSRM snap karşılaştır</span>}
+                    />
+                    {snapEnabled && (
+                      <div style={{ fontSize: 11, color: snapError ? '#d32f2f' : 'var(--color-text-secondary)' }}>
+                        {snapLoading ? 'Yükleniyor...' : snapError || `ham: ${positions.length} · snap: ${snapPositions.length} (pembe)`}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </>
           )}
