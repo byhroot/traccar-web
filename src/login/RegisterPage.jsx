@@ -52,6 +52,8 @@ const RegisterPage = () => {
   const [intervalId, setIntervalId] = useState(null);
   const [verificationCode, setVerificationCode] = useState('');
   const [isVerified, setIsVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
   // Yeni state'ler:
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('info');
@@ -99,6 +101,10 @@ const RegisterPage = () => {
   const [otpId, setOtpId] = useState(null);
 
   const handleSendCodeClick = async () => {
+    if (isSendingCode) return;
+
+    setIsSendingCode(true);
+
     try {
       const response = await fetch('/api/registerotp', {
         method: 'POST',
@@ -110,26 +116,24 @@ const RegisterPage = () => {
         }),
       });
 
-      // JSON parse etmeyi burada yapıyoruz, hata kodu olsa bile JSON dönebilir
       const data = await response.json();
 
       if (!data.valid) {
-        // valid false ise mesajı alert olarak göster
         setAlertMessage(data.message || 'Kod gönderimi başarısız');
         setAlertSeverity('error');
         return;
       }
 
-      // valid true ise id'yi al ve timer başlat
       setOtpId(data.id);
       setAlertMessage(data.message || 'Doğrulama kodu gönderildi');
       setAlertSeverity('success');
       startTimer();
 
     } catch (error) {
-      // fetch hatası veya JSON parse hatası durumunda
       setAlertMessage(t("commandSendSms") + " " + t("errorConnection") + ': ' + error.message);
       setAlertSeverity('error');
+    } finally {
+      setIsSendingCode(false);
     }
   };
 
@@ -149,6 +153,7 @@ const RegisterPage = () => {
       });
 
       const data = await response.json();
+
       if (data.valid) {
         setIsVerified(true);
         setAlertMessage(t("commandPhone") + " " + t("positionValid"));
@@ -161,6 +166,8 @@ const RegisterPage = () => {
     } catch (error) {
       setAlertMessage(t("errorTitle") + " :" + error.message);
       setAlertSeverity('error');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -285,12 +292,13 @@ const RegisterPage = () => {
               <Button
                 variant="contained"
                 onClick={handleSendCodeClick}
-                disabled={verificationTimer > 0}
+                disabled={verificationTimer > 0 || isSendingCode}
               >
-                {verificationTimer > 0
-                  ? `${t("commandSendSms")} (${Math.floor(verificationTimer / 60)}:${(verificationTimer % 60).toString().padStart(2, '0')})`
-                  : t("commandSendSms")}
-
+                {isSendingCode
+                  ? 'Gönderiliyor...'
+                  : verificationTimer > 0
+                    ? `${t("commandSendSms")} (${Math.floor(verificationTimer / 60)}:${(verificationTimer % 60).toString().padStart(2, '0')})`
+                    : t("commandSendSms")}
               </Button>
 
               <TextField
@@ -313,10 +321,10 @@ const RegisterPage = () => {
             <Button onClick={() => setDialogOpen(false)}>{t("sharedCancel")}</Button>
             <Button
               variant="contained"
-              disabled={verificationCode.length !== 6}
+              disabled={verificationCode.length !== 6 || isVerifying}
               onClick={handleCodeSubmit}
             >
-              {t("sharedAccept")}
+              {isVerifying ? 'Kontrol ediliyor...' : t("sharedAccept")}
             </Button>
           </DialogActions>
           {alertMessage && (

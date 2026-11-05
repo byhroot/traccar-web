@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  useMediaQuery,
   Select,
   MenuItem,
   FormControl,
@@ -12,6 +11,9 @@ import {
   Tooltip,
   Box,
   InputAdornment,
+  Alert,
+  Typography,
+  CircularProgress,
 } from '@mui/material';
 import ReactCountryFlag from 'react-country-flag';
 import { makeStyles } from 'tss-react/mui';
@@ -20,7 +22,6 @@ import VpnLockIcon from '@mui/icons-material/VpnLock';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import { useTheme } from '@mui/material/styles';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { sessionActions } from '../store';
@@ -33,21 +34,38 @@ import {
   nativeEnvironment,
   nativePostMessage,
 } from '../common/components/NativeInterface';
-import LogoImage from './LogoImage';
 import { useCatch } from '../reactHelper';
 import QrCodeDialog from '../common/components/QrCodeDialog';
 import fetchOrThrow from '../common/util/fetchOrThrow';
 
 const useStyles = makeStyles()((theme) => ({
   options: {
-    position: 'fixed',
-    top: theme.spacing(2),
-    right: theme.spacing(2),
     display: 'flex',
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: theme.spacing(1),
+    marginBottom: theme.spacing(1),
+  },
+  select: {
+    borderRadius: theme.spacing(1.5),
+    fontSize: theme.typography.pxToRem(14),
   },
   container: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(2.5),
+  },
+  heading: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(0.5),
+  },
+  overline: {
+    fontWeight: 600,
+    letterSpacing: '0.24em',
+  },
+  fields: {
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing(2),
@@ -55,23 +73,27 @@ const useStyles = makeStyles()((theme) => ({
   extraContainer: {
     display: 'flex',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: theme.spacing(4),
-    marginTop: theme.spacing(2),
-  },
-  registerButton: {
-    minWidth: 'unset',
+    gap: theme.spacing(1, 4),
+    marginTop: theme.spacing(0.5),
   },
   link: {
     cursor: 'pointer',
+    fontWeight: 600,
   },
 }));
+
+// Çeviri anahtarı yoksa fallback metni kullan
+const translate = (t, key, fallback) => {
+  const value = t(key);
+  return value && value !== key ? value : fallback;
+};
 
 const LoginPage = () => {
   const { classes } = useStyles();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const theme = useTheme();
   const t = useTranslation();
 
   const { languages, language, setLocalLanguage } = useLocalization();
@@ -82,6 +104,7 @@ const LoginPage = () => {
   }));
 
   const [failed, setFailed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [email, setEmail] = usePersistedState('loginEmail', '');
   const [password, setPassword] = useState('');
@@ -108,7 +131,11 @@ const LoginPage = () => {
 
   const handlePasswordLogin = async (event) => {
     event.preventDefault();
+    if (submitting) {
+      return;
+    }
     setFailed(false);
+    setSubmitting(true);
     try {
       const query = `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
       const response = await fetch('/api/session', {
@@ -130,6 +157,8 @@ const LoginPage = () => {
     } catch {
       setFailed(true);
       setPassword('');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -161,105 +190,155 @@ const LoginPage = () => {
 
   return (
     <LoginLayout>
-      <div className={classes.options}>
-        {nativeEnvironment && changeEnabled && (
-          <IconButton color="primary" onClick={() => navigate('/change-server')}>
-            <Tooltip
-              title={`${t('settingsServer')}: ${window.location.hostname}`}
-              open={showServerTooltip}
-              arrow
-            >
-              <VpnLockIcon />
-            </Tooltip>
-          </IconButton>
-        )}
-        {!nativeEnvironment && (
-          <IconButton color="primary" onClick={() => setShowQr(true)}>
-            <QrCode2Icon />
-          </IconButton>
-        )}
-        {languageEnabled && (
-          <FormControl>
-            <Select value={language} onChange={(e) => setLocalLanguage(e.target.value)}>
-              {languageList.map((it) => (
-                <MenuItem key={it.code} value={it.code}>
-                  <Box component="span" sx={{ mr: 1 }}>
-                    <ReactCountryFlag countryCode={it.country} svg />
-                  </Box>
-                  {it.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-      </div>
       <div className={classes.container}>
-        {useMediaQuery(theme.breakpoints.down('lg')) && (
-          <LogoImage color={theme.palette.primary.main} />
-        )}
+        <div className={classes.options}>
+          {nativeEnvironment && changeEnabled && (
+            <IconButton color="primary" onClick={() => navigate('/change-server')}>
+              <Tooltip
+                title={`${t('settingsServer')}: ${window.location.hostname}`}
+                open={showServerTooltip}
+                arrow
+              >
+                <VpnLockIcon />
+              </Tooltip>
+            </IconButton>
+          )}
+          {!nativeEnvironment && (
+            <IconButton color="primary" onClick={() => setShowQr(true)}>
+              <QrCode2Icon />
+            </IconButton>
+          )}
+          {languageEnabled && (
+            <FormControl size="small">
+              <Select
+                className={classes.select}
+                value={language}
+                onChange={(e) => setLocalLanguage(e.target.value)}
+                renderValue={(value) => {
+                  const current = languageList.find((it) => it.code === value);
+                  if (!current) {
+                    return value;
+                  }
+                  return (
+                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                      <ReactCountryFlag
+                        countryCode={current.country}
+                        svg
+                        style={{ fontSize: '1.25em' }}
+                      />
+                      <Box component="span" sx={{ ml: 1, display: { xs: 'none', sm: 'inline' } }}>
+                        {current.name}
+                      </Box>
+                    </Box>
+                  );
+                }}
+              >
+                {languageList.map((it) => (
+                  <MenuItem key={it.code} value={it.code}>
+                    <Box component="span" sx={{ mr: 1 }}>
+                      <ReactCountryFlag countryCode={it.country} svg />
+                    </Box>
+                    {it.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </div>
         {!openIdForced && (
           <>
-            <TextField
-              required
-              error={failed}
-              label={t('userEmail')}
-              name="email"
-              value={email}
-              autoComplete="email"
-              autoFocus={!email}
-              onChange={(e) => setEmail(e.target.value)}
-              helperText={failed && 'Invalid username or password'}
-            />
-            <TextField
-              required
-              error={failed}
-              label={t('userPassword')}
-              name="password"
-              value={password}
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              autoFocus={!!email}
-              onChange={(e) => setPassword(e.target.value)}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                        size="small"
-                      >
-                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-            {codeEnabled && (
+            <div className={classes.heading}>
+
+              <Typography variant="h5" component="h1">
+                {t('loginLogin')}
+              </Typography>
+            </div>
+            <div className={classes.fields}>
+              {failed && (
+                <Alert severity="error" variant="outlined">
+                  {translate(t, 'loginFailed', 'Invalid username or password')}
+                </Alert>
+              )}
               <TextField
                 required
                 error={failed}
-                label={t('loginTotpCode')}
-                name="code"
-                value={code}
-                type="number"
-                onChange={(e) => setCode(e.target.value)}
+                label={t('userEmail')}
+                name="email"
+                value={email}
+                autoComplete="email"
+                autoFocus={!email}
+                onChange={(e) => setEmail(e.target.value)}
+                slotProps={{
+                  htmlInput: {
+                    autoCapitalize: 'none',
+                    autoCorrect: 'off',
+                    spellCheck: false,
+                  },
+                }}
               />
-            )}
+              <TextField
+                required
+                error={failed}
+                label={t('userPassword')}
+                name="password"
+                value={password}
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                autoFocus={!!email}
+                onChange={(e) => setPassword(e.target.value)}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+              {codeEnabled && (
+                <TextField
+                  required
+                  error={failed}
+                  label={t('loginTotpCode')}
+                  name="code"
+                  value={code}
+                  type="number"
+                  onChange={(e) => setCode(e.target.value)}
+                  slotProps={{
+                    htmlInput: {
+                      inputMode: 'numeric',
+                      autoComplete: 'one-time-code',
+                    },
+                  }}
+                />
+              )}
+            </div>
             <Button
               onClick={handlePasswordLogin}
               type="submit"
               variant="contained"
               color="secondary"
-              disabled={!email || !password || (codeEnabled && !code)}
+              size="large"
+              disabled={submitting || !email || !password || (codeEnabled && !code)}
             >
-              {t('loginLogin')}
+              {submitting ? <CircularProgress size={22} color="inherit" /> : t('loginLogin')}
             </Button>
           </>
         )}
         {openIdEnabled && (
-          <Button onClick={() => handleOpenIdLogin()} variant="contained" color="secondary">
+          <Button
+            onClick={() => handleOpenIdLogin()}
+            variant={openIdForced ? 'contained' : 'outlined'}
+            color={openIdForced ? 'secondary' : 'primary'}
+            size="large"
+          >
             {t('loginOpenId')}
           </Button>
         )}
@@ -267,20 +346,24 @@ const LoginPage = () => {
           <div className={classes.extraContainer}>
             {registrationEnabled && (
               <Link
+                component="button"
+                type="button"
                 onClick={() => navigate('/register')}
                 className={classes.link}
-                underline="none"
-                variant="caption"
+                underline="hover"
+                variant="body2"
               >
                 {t('loginRegister')}
               </Link>
             )}
             {emailEnabled && (
               <Link
+                component="button"
+                type="button"
                 onClick={() => navigate('/reset-password')}
                 className={classes.link}
-                underline="none"
-                variant="caption"
+                underline="hover"
+                variant="body2"
               >
                 {t('loginReset')}
               </Link>
